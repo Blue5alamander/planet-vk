@@ -12,6 +12,8 @@ if(TARGET planet-examples)
     endif ()
 
     add_executable(vulkan-tutorial 30_multisampling.cpp)
+    vk_shader(vulkan-tutorial 27_shader_depth.frag)
+    vk_shader(vulkan-tutorial 27_shader_depth.vert)
     target_include_directories (vulkan-tutorial PRIVATE ${STB_INCLUDEDIR})
     target_link_libraries(vulkan-tutorial PUBLIC
             planet-vk
@@ -20,5 +22,11 @@ if(TARGET planet-examples)
             glm::glm
             tinyobjloader::tinyobjloader
         )
-
+    install(TARGETS vulkan-tutorial EXPORT vulkan-tutorial RUNTIME DESTINATION bin)
+    install(FILES
+            ${CMAKE_CURRENT_SOURCE_DIR}/viking_room.obj
+            ${CMAKE_CURRENT_SOURCE_DIR}/viking_room.png
+            ${CMAKE_CURRENT_BINARY_DIR}/27_shader_depth.frag.spirv
+            ${CMAKE_CURRENT_BINARY_DIR}/27_shader_depth.vert.spirv
+        DESTINATION share)
 endif()

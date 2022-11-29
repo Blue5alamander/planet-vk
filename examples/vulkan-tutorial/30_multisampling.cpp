@@ -32,8 +32,8 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const std::string MODEL_PATH = "models/viking_room.obj";
-const std::string TEXTURE_PATH = "textures/viking_room.png";
+const std::string MODEL_PATH = "share/viking_room.obj";
+const std::string TEXTURE_PATH = "share/viking_room.png";
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -702,8 +702,8 @@ class HelloTriangleApplication {
     }
 
     void createGraphicsPipeline() {
-        auto vertShaderCode = readFile("shaders/vert.spv");
-        auto fragShaderCode = readFile("shaders/frag.spv");
+        auto vertShaderCode = readFile("share/27_shader_depth.vert.spirv");
+        auto fragShaderCode = readFile("share/27_shader_depth.frag.spirv");
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1991,7 +1991,7 @@ class HelloTriangleApplication {
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
         if (!file.is_open()) {
-            throw std::runtime_error("failed to open file!");
+            throw std::runtime_error("failed to open file!\n" + filename);
         }
 
         size_t fileSize = (size_t)file.tellg();
