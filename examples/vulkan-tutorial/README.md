@@ -5,5 +5,5 @@ This is the code from the [Vulkan Tutorial](https://vulkan-tutorial.com/Introduc
 Compiling this example will require some other libraries to be present. On Debian like systems:
 
 ```bash
-sudo apt-get install libstb-dev libtinyobjloader-dev
+sudo apt-get install libglfw3-dev libglm-dev libstb-dev libtinyobjloader-dev
 ```
