@@ -55,3 +55,36 @@ if(NOT felspar-memory_POPULATED)
     FetchContent_Populate(felspar-memory)
     add_subdirectory(${felspar-memory_SOURCE_DIR} ${felspar-memory_BINARY_DIR})
 endif()
+
+FetchContent_Declare(
+        planet
+        GIT_REPOSITORY https://github.com/Blue5alamander/planet.git
+        GIT_TAG main
+    )
+FetchContent_GetProperties(planet)
+if(NOT planet_POPULATED)
+    FetchContent_Populate(planet)
+    add_subdirectory(${planet_SOURCE_DIR} ${planet_BINARY_DIR})
+endif()
+
+FetchContent_Declare(
+        planet-audio
+        GIT_REPOSITORY https://github.com/Blue5alamander/planet-audio.git
+        GIT_TAG main
+    )
+FetchContent_GetProperties(planet-audio)
+if(NOT planet-audio_POPULATED)
+    FetchContent_Populate(planet-audio)
+    add_subdirectory(${planet-audio_SOURCE_DIR} ${planet-audio_BINARY_DIR})
+endif()
+
+FetchContent_Declare(
+        planet-sdl
+        GIT_REPOSITORY https://github.com/Blue5alamander/planet-sdl.git
+        GIT_TAG main
+    )
+FetchContent_GetProperties(planet-sdl)
+if(NOT planet-sdl_POPULATED)
+    FetchContent_Populate(planet-sdl)
+    add_subdirectory(${planet-sdl_SOURCE_DIR} ${planet-sdl_BINARY_DIR})
+endif()
