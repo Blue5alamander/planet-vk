@@ -709,8 +709,8 @@ class HelloTriangleApplication {
     }
 
     void createGraphicsPipeline() {
-        auto vertShaderCode = readFile("share/27_shader_depth.vert.spirv");
-        auto fragShaderCode = readFile("share/27_shader_depth.frag.spirv");
+        auto vertShaderCode = am.file_data("27_shader_depth.vert.spirv");
+        auto fragShaderCode = am.file_data("27_shader_depth.frag.spirv");
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1794,7 +1794,7 @@ class HelloTriangleApplication {
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
-    VkShaderModule createShaderModule(const std::vector<char> &code) {
+    VkShaderModule createShaderModule(std::vector<std::byte> const &code) {
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = code.size();
