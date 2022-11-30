@@ -34,8 +34,8 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const std::string MODEL_PATH = "share/viking_room.obj";
-const std::string TEXTURE_PATH = "share/viking_room.png";
+const std::string MODEL_PATH = "viking_room.obj";
+const std::string TEXTURE_PATH = "viking_room.png";
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -956,7 +956,7 @@ class HelloTriangleApplication {
     void createTextureImage() {
         int texWidth, texHeight, texChannels;
         stbi_uc *pixels = stbi_load(
-                TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels,
+                am.find_path(TEXTURE_PATH).c_str(), &texWidth, &texHeight, &texChannels,
                 STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         mipLevels = static_cast<uint32_t>(std::floor(
@@ -1306,7 +1306,7 @@ class HelloTriangleApplication {
 
         if (!tinyobj::LoadObj(
                     &attrib, &shapes, &materials, &warn, &err,
-                    MODEL_PATH.c_str())) {
+                    am.find_path(MODEL_PATH).c_str())) {
             throw std::runtime_error(warn + err);
         }
 
