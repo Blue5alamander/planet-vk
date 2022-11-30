@@ -1,3 +1,5 @@
+#include <planet/asset_manager.hpp>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -148,7 +150,12 @@ struct UniformBufferObject {
 };
 
 class HelloTriangleApplication {
+    planet::asset_manager am;
+
   public:
+    HelloTriangleApplication(int const argc, char const *const argv[])
+    : am{argv[0]} {}
+
     void run() {
         initWindow();
         initVulkan();
@@ -2017,8 +2024,8 @@ class HelloTriangleApplication {
     }
 };
 
-int main() {
-    HelloTriangleApplication app;
+int main(int argc, char const *argv[]) {
+    HelloTriangleApplication app{argc, argv};
 
     try {
         app.run();
