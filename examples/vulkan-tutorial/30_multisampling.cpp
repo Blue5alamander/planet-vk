@@ -956,8 +956,8 @@ class HelloTriangleApplication {
     void createTextureImage() {
         int texWidth, texHeight, texChannels;
         stbi_uc *pixels = stbi_load(
-                am.find_path(TEXTURE_PATH).c_str(), &texWidth, &texHeight, &texChannels,
-                STBI_rgb_alpha);
+                am.find_path(TEXTURE_PATH).c_str(), &texWidth, &texHeight,
+                &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         mipLevels = static_cast<uint32_t>(std::floor(
                             std::log2(std::max(texWidth, texHeight))))
@@ -1992,24 +1992,6 @@ class HelloTriangleApplication {
         }
 
         return true;
-    }
-
-    static std::vector<char> readFile(const std::string &filename) {
-        std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-        if (!file.is_open()) {
-            throw std::runtime_error("failed to open file!\n" + filename);
-        }
-
-        size_t fileSize = (size_t)file.tellg();
-        std::vector<char> buffer(fileSize);
-
-        file.seekg(0);
-        file.read(buffer.data(), fileSize);
-
-        file.close();
-
-        return buffer;
     }
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
