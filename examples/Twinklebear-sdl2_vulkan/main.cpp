@@ -15,12 +15,8 @@ constexpr int win_height = 720;
 
 int main(int argc, const char **argv) {
     planet::asset_manager assets{argv[0]};
-
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-        std::cerr << "Failed to init SDL: " << SDL_GetError() << "\n";
-        return -1;
-    }
-    SDL_Vulkan_LoadLibrary(nullptr);
+    felspar::io::poll_warden poll;
+    planet::sdl::init sdl{poll};
 
     SDL_Window *window = SDL_CreateWindow(
             "SDL2 + Vulkan", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -601,7 +597,6 @@ int main(int argc, const char **argv) {
     vkDestroyInstance(vk_instance, nullptr);
 
     SDL_DestroyWindow(window);
-    SDL_Quit();
 
     return 0;
 }
