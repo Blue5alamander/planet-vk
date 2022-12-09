@@ -19,12 +19,10 @@
 
 #include <iostream>
 #include <fstream>
-#include <stdexcept>
 #include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <cstdlib>
-#include <cstdint>
 #include <limits>
 #include <array>
 #include <optional>
@@ -444,16 +442,13 @@ class HelloTriangleApplication {
     }
 
     void pickPhysicalDevice() {
-        uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        auto devices = planet::vk::fetch_vector<
+                vkEnumeratePhysicalDevices, VkPhysicalDevice>(nullptr);
 
-        if (deviceCount == 0) {
-            throw std::runtime_error(
-                    "failed to find GPUs with Vulkan support!");
+        if (devices.empty()) {
+            throw felspar::stdexcept::runtime_error{
+                    "failed to find GPUs with Vulkan support!"};
         }
-
-        std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
         for (const auto &device : devices) {
             if (isDeviceSuitable(device)) {
@@ -464,7 +459,8 @@ class HelloTriangleApplication {
         }
 
         if (physicalDevice == VK_NULL_HANDLE) {
-            throw std::runtime_error("failed to find a suitable GPU!");
+            throw felspar::stdexcept::runtime_error{
+                    "failed to find a suitable GPU!"};
         }
     }
 
@@ -1855,13 +1851,9 @@ class HelloTriangleApplication {
     }
 
     bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
-        uint32_t extensionCount;
-        vkEnumerateDeviceExtensionProperties(
-                device, nullptr, &extensionCount, nullptr);
-
-        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-        vkEnumerateDeviceExtensionProperties(
-                device, nullptr, &extensionCount, availableExtensions.data());
+        auto const availableExtensions = planet::vk::fetch_vector<
+                vkEnumerateDeviceExtensionProperties, VkExtensionProperties>(
+                device, nullptr);
 
         std::set<std::string> requiredExtensions(
                 extensions.device_extensions.begin(),
@@ -1921,11 +1913,8 @@ class HelloTriangleApplication {
     }
 
     bool checkValidationLayerSupport() {
-        uint32_t layerCount;
-        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-        std::vector<VkLayerProperties> availableLayers(layerCount);
-        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+        auto availableLayers = planet::vk::fetch_vector<
+                vkEnumerateInstanceLayerProperties, VkLayerProperties>();
 
         for (const char *layerName : extensions.validation_layers) {
             bool layerFound = false;
