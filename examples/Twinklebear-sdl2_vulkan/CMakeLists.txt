@@ -3,7 +3,7 @@ if(TARGET planet-examples)
     vk_shader(sdl2-example frag.frag)
     vk_shader(sdl2-example vert.vert)
     target_link_libraries(sdl2-example PUBLIC
-            planet-vk
+            planet-vk-sdl
         )
     install(TARGETS sdl2-example EXPORT sdl2-example RUNTIME DESTINATION bin)
     install(FILES

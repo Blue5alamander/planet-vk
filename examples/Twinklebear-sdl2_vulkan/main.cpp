@@ -1,5 +1,4 @@
-#include <planet/sdl.hpp>
-#include <planet/vk.hpp>
+#include <planet/vk-sdl.hpp>
 
 #include <iostream>
 #include <vector>
@@ -18,9 +17,7 @@ int main(int argc, const char **argv) {
     felspar::io::poll_warden poll;
     planet::sdl::init sdl{poll};
 
-    SDL_Window *window = SDL_CreateWindow(
-            "SDL2 + Vulkan", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-            win_width, win_height, SDL_WINDOW_VULKAN);
+    planet::vk::sdl::window window{sdl, "SDL2 + Vulkan", win_width, win_height};
 
     {
         uint32_t extension_count = 0;
@@ -41,14 +38,14 @@ int main(int argc, const char **argv) {
     extensions.validation_layers.push_back("VK_LAYER_KHRONOS_validation");
     {
         unsigned int count;
-        if (!SDL_Vulkan_GetInstanceExtensions(window, &count, nullptr)) {
+        if (!SDL_Vulkan_GetInstanceExtensions(window.get(), &count, nullptr)) {
             throw felspar::stdexcept::runtime_error{SDL_GetError()};
         }
         auto const existing_extension_count =
                 extensions.vulkan_extensions.size();
         extensions.vulkan_extensions.resize(existing_extension_count + count);
         if (!SDL_Vulkan_GetInstanceExtensions(
-                    window, &count,
+                    window.get(), &count,
                     extensions.vulkan_extensions.data()
                             + existing_extension_count)) {
             throw felspar::stdexcept::runtime_error{SDL_GetError()};
@@ -82,7 +79,7 @@ int main(int argc, const char **argv) {
     }
 
     VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
-    if (not SDL_Vulkan_CreateSurface(window, vk_instance, &vk_surface)) {
+    if (not SDL_Vulkan_CreateSurface(window.get(), vk_instance, &vk_surface)) {
         throw felspar::stdexcept::runtime_error{
                 "SDL_Vulkan_CreateSurface failed"};
     }
@@ -528,7 +525,7 @@ int main(int argc, const char **argv) {
             }
             if (event.type == SDL_WINDOWEVENT
                 && event.window.event == SDL_WINDOWEVENT_CLOSE
-                && event.window.windowID == SDL_GetWindowID(window)) {
+                && event.window.windowID == SDL_GetWindowID(window.get())) {
                 done = true;
             }
         }
@@ -595,8 +592,6 @@ int main(int argc, const char **argv) {
     vkDestroySurfaceKHR(vk_instance, vk_surface, nullptr);
     vkDestroyDevice(vk_device, nullptr);
     vkDestroyInstance(vk_instance, nullptr);
-
-    SDL_DestroyWindow(window);
 
     return 0;
 }

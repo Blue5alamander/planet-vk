@@ -6,3 +6,8 @@ target_link_libraries(planet-vk INTERFACE
         planet-sdl
         Vulkan::Vulkan
     )
+
+add_library(planet-vk-sdl
+        sdl.cpp
+    )
+target_link_libraries(planet-vk-sdl planet-vk)
