@@ -1,4 +1,5 @@
 #include <planet/asset_manager.hpp>
+#include <planet/vk.hpp>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -21,7 +22,6 @@
 #include <stdexcept>
 #include <algorithm>
 #include <chrono>
-#include <vector>
 #include <cstring>
 #include <cstdlib>
 #include <cstdint>
@@ -38,12 +38,6 @@ const std::string MODEL_PATH = "viking_room.obj";
 const std::string TEXTURE_PATH = "viking_room.png";
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-
-const std::vector<const char *> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"};
-
-const std::vector<const char *> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -154,7 +148,10 @@ class HelloTriangleApplication {
 
   public:
     HelloTriangleApplication(int const argc, char const *const argv[])
-    : am{argv[0]} {}
+    : am{argv[0]} {
+        extensions.validation_layers.push_back("VK_LAYER_KHRONOS_validation");
+        extensions.device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    }
 
     void run() {
         initWindow();
@@ -165,6 +162,8 @@ class HelloTriangleApplication {
 
   private:
     GLFWwindow *window;
+
+    planet::vk::extensions extensions;
 
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -389,16 +388,18 @@ class HelloTriangleApplication {
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
 
-        auto extensions = getRequiredExtensions();
+        getRequiredExtensions();
         createInfo.enabledExtensionCount =
-                static_cast<uint32_t>(extensions.size());
-        createInfo.ppEnabledExtensionNames = extensions.data();
+                static_cast<uint32_t>(extensions.vulkan_extensions.size());
+        createInfo.ppEnabledExtensionNames =
+                extensions.vulkan_extensions.data();
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
         if (enableValidationLayers) {
             createInfo.enabledLayerCount =
-                    static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
+                    static_cast<uint32_t>(extensions.validation_layers.size());
+            createInfo.ppEnabledLayerNames =
+                    extensions.validation_layers.data();
 
             populateDebugMessengerCreateInfo(debugCreateInfo);
             createInfo.pNext =
@@ -504,13 +505,15 @@ class HelloTriangleApplication {
         createInfo.pEnabledFeatures = &deviceFeatures;
 
         createInfo.enabledExtensionCount =
-                static_cast<uint32_t>(deviceExtensions.size());
-        createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+                static_cast<uint32_t>(extensions.device_extensions.size());
+        createInfo.ppEnabledExtensionNames =
+                extensions.device_extensions.data();
 
         if (enableValidationLayers) {
             createInfo.enabledLayerCount =
-                    static_cast<uint32_t>(validationLayers.size());
-            createInfo.ppEnabledLayerNames = validationLayers.data();
+                    static_cast<uint32_t>(extensions.validation_layers.size());
+            createInfo.ppEnabledLayerNames =
+                    extensions.validation_layers.data();
         } else {
             createInfo.enabledLayerCount = 0;
         }
@@ -1916,7 +1919,8 @@ class HelloTriangleApplication {
                 device, nullptr, &extensionCount, availableExtensions.data());
 
         std::set<std::string> requiredExtensions(
-                deviceExtensions.begin(), deviceExtensions.end());
+                extensions.device_extensions.begin(),
+                extensions.device_extensions.end());
 
         for (const auto &extension : availableExtensions) {
             requiredExtensions.erase(extension.extensionName);
@@ -1956,19 +1960,19 @@ class HelloTriangleApplication {
         return indices;
     }
 
-    std::vector<const char *> getRequiredExtensions() {
+    void getRequiredExtensions() {
         uint32_t glfwExtensionCount = 0;
         const char **glfwExtensions;
         glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-        std::vector<const char *> extensions(
-                glfwExtensions, glfwExtensions + glfwExtensionCount);
+        extensions.vulkan_extensions.insert(
+                extensions.vulkan_extensions.end(), glfwExtensions,
+                glfwExtensions + glfwExtensionCount);
 
         if (enableValidationLayers) {
-            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            extensions.vulkan_extensions.push_back(
+                    VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
-
-        return extensions;
     }
 
     bool checkValidationLayerSupport() {
@@ -1978,7 +1982,7 @@ class HelloTriangleApplication {
         std::vector<VkLayerProperties> availableLayers(layerCount);
         vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-        for (const char *layerName : validationLayers) {
+        for (const char *layerName : extensions.validation_layers) {
             bool layerFound = false;
 
             for (const auto &layerProperties : availableLayers) {
