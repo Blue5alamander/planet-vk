@@ -410,9 +410,7 @@ class HelloTriangleApplication {
             createInfo.pNext = nullptr;
         }
 
-        if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create instance!");
-        }
+        planet::vk::worked(vkCreateInstance(&createInfo, nullptr, &instance));
     }
 
     void populateDebugMessengerCreateInfo(
@@ -436,18 +434,13 @@ class HelloTriangleApplication {
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         populateDebugMessengerCreateInfo(createInfo);
 
-        if (CreateDebugUtilsMessengerEXT(
-                    instance, &createInfo, nullptr, &debugMessenger)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to set up debug messenger!");
-        }
+        planet::vk::worked(CreateDebugUtilsMessengerEXT(
+                instance, &createInfo, nullptr, &debugMessenger));
     }
 
     void createSurface() {
-        if (glfwCreateWindowSurface(instance, window, nullptr, &surface)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
-        }
+        planet::vk::worked(
+                glfwCreateWindowSurface(instance, window, nullptr, &surface));
     }
 
     void pickPhysicalDevice() {
@@ -518,10 +511,8 @@ class HelloTriangleApplication {
             createInfo.enabledLayerCount = 0;
         }
 
-        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create logical device!");
-        }
+        planet::vk::worked(
+                vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
 
         vkGetDeviceQueue(
                 device, indices.graphicsFamily.value(), 0, &graphicsQueue);
@@ -574,10 +565,8 @@ class HelloTriangleApplication {
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
 
-        if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create swap chain!");
-        }
+        planet::vk::worked(
+                vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain));
 
         vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
         swapChainImages.resize(imageCount);
@@ -675,10 +664,8 @@ class HelloTriangleApplication {
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies = &dependency;
 
-        if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create render pass!");
-        }
+        planet::vk::worked(vkCreateRenderPass(
+                device, &renderPassInfo, nullptr, &renderPass));
     }
 
     void createDescriptorSetLayout() {
@@ -704,11 +691,8 @@ class HelloTriangleApplication {
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(
-                    device, &layoutInfo, nullptr, &descriptorSetLayout)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create descriptor set layout!");
-        }
+        planet::vk::worked(vkCreateDescriptorSetLayout(
+                device, &layoutInfo, nullptr, &descriptorSetLayout));
     }
 
     void createGraphicsPipeline() {
@@ -820,11 +804,8 @@ class HelloTriangleApplication {
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
-        if (vkCreatePipelineLayout(
-                    device, &pipelineLayoutInfo, nullptr, &pipelineLayout)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create pipeline layout!");
-        }
+        planet::vk::worked(vkCreatePipelineLayout(
+                device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -843,12 +824,9 @@ class HelloTriangleApplication {
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        if (vkCreateGraphicsPipelines(
-                    device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-                    &graphicsPipeline)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create graphics pipeline!");
-        }
+        planet::vk::worked(vkCreateGraphicsPipelines(
+                device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+                &graphicsPipeline));
 
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -871,12 +849,9 @@ class HelloTriangleApplication {
             framebufferInfo.height = swapChainExtent.height;
             framebufferInfo.layers = 1;
 
-            if (vkCreateFramebuffer(
-                        device, &framebufferInfo, nullptr,
-                        &swapChainFramebuffers[i])
-                != VK_SUCCESS) {
-                throw std::runtime_error("failed to create framebuffer!");
-            }
+            planet::vk::worked(vkCreateFramebuffer(
+                    device, &framebufferInfo, nullptr,
+                    &swapChainFramebuffers[i]));
         }
     }
 
@@ -889,10 +864,8 @@ class HelloTriangleApplication {
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-        if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create graphics command pool!");
-        }
+        planet::vk::worked(
+                vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool));
     }
 
     void createColorResources() {
@@ -1151,10 +1124,8 @@ class HelloTriangleApplication {
         samplerInfo.maxLod = static_cast<float>(mipLevels);
         samplerInfo.mipLodBias = 0.0f;
 
-        if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create texture sampler!");
-        }
+        planet::vk::worked(vkCreateSampler(
+                device, &samplerInfo, nullptr, &textureSampler));
     }
 
     VkImageView createImageView(
@@ -1174,10 +1145,8 @@ class HelloTriangleApplication {
         viewInfo.subresourceRange.layerCount = 1;
 
         VkImageView imageView;
-        if (vkCreateImageView(device, &viewInfo, nullptr, &imageView)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create texture image view!");
-        }
+        planet::vk::worked(
+                vkCreateImageView(device, &viewInfo, nullptr, &imageView));
 
         return imageView;
     }
@@ -1208,9 +1177,7 @@ class HelloTriangleApplication {
         imageInfo.samples = numSamples;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create image!");
-        }
+        planet::vk::worked(vkCreateImage(device, &imageInfo, nullptr, &image));
 
         VkMemoryRequirements memRequirements;
         vkGetImageMemoryRequirements(device, image, &memRequirements);
@@ -1221,10 +1188,8 @@ class HelloTriangleApplication {
         allocInfo.memoryTypeIndex =
                 findMemoryType(memRequirements.memoryTypeBits, properties);
 
-        if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate image memory!");
-        }
+        planet::vk::worked(
+                vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory));
 
         vkBindImageMemory(device, image, imageMemory, 0);
     }
@@ -1434,10 +1399,8 @@ class HelloTriangleApplication {
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-        if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create descriptor pool!");
-        }
+        planet::vk::worked(vkCreateDescriptorPool(
+                device, &poolInfo, nullptr, &descriptorPool));
     }
 
     void createDescriptorSets() {
@@ -1451,10 +1414,8 @@ class HelloTriangleApplication {
         allocInfo.pSetLayouts = layouts.data();
 
         descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-        if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data())
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate descriptor sets!");
-        }
+        planet::vk::worked(vkAllocateDescriptorSets(
+                device, &allocInfo, descriptorSets.data()));
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};
@@ -1505,10 +1466,8 @@ class HelloTriangleApplication {
         bufferInfo.usage = usage;
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create buffer!");
-        }
+        planet::vk::worked(
+                vkCreateBuffer(device, &bufferInfo, nullptr, &buffer));
 
         VkMemoryRequirements memRequirements;
         vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
@@ -1519,10 +1478,8 @@ class HelloTriangleApplication {
         allocInfo.memoryTypeIndex =
                 findMemoryType(memRequirements.memoryTypeBits, properties);
 
-        if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate buffer memory!");
-        }
+        planet::vk::worked(
+                vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory));
 
         vkBindBufferMemory(device, buffer, bufferMemory, 0);
     }
@@ -1595,20 +1552,15 @@ class HelloTriangleApplication {
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
-        if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data())
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate command buffers!");
-        }
+        planet::vk::worked(vkAllocateCommandBuffers(
+                device, &allocInfo, commandBuffers.data()));
     }
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error(
-                    "failed to begin recording command buffer!");
-        }
+        planet::vk::worked(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1663,9 +1615,7 @@ class HelloTriangleApplication {
 
         vkCmdEndRenderPass(commandBuffer);
 
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
-        }
+        planet::vk::worked(vkEndCommandBuffer(commandBuffer));
     }
 
     void createSyncObjects() {
@@ -1766,11 +1716,8 @@ class HelloTriangleApplication {
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(
-                    graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame])
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to submit draw command buffer!");
-        }
+        planet::vk::worked(vkQueueSubmit(
+                graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]));
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1804,10 +1751,8 @@ class HelloTriangleApplication {
         createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
         VkShaderModule shaderModule;
-        if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule)
-            != VK_SUCCESS) {
-            throw std::runtime_error("failed to create shader module!");
-        }
+        planet::vk::worked(vkCreateShaderModule(
+                device, &createInfo, nullptr, &shaderModule));
 
         return shaderModule;
     }
