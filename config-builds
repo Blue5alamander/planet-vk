@@ -28,7 +28,7 @@ $CMAKE -B build.tmp/clang-release \
     -DCMAKE_BUILD_TYPE=Release
 
 
-export CXXFLAGS=-stdlib=libc++
+export CXXFLAGS="-stdlib=libc++ -fuse-ld=lld-15 -Wno-unused-command-line-argument"
 
 $CMAKE -B build.tmp/clang-debug-libc++ \
     -DCMAKE_INSTALL_PREFIX=dist/clang-debug-libc++
