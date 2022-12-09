@@ -8,12 +8,14 @@
 #include <array>
 #include <SDL.h>
 #include <SDL_vulkan.h>
-#include "spirv_shaders_embedded_spv.h"
 
-int win_width = 1280;
-int win_height = 720;
+constexpr int win_width = 1280;
+constexpr int win_height = 720;
+
 
 int main(int argc, const char **argv) {
+    planet::asset_manager assets{argv[0]};
+
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         std::cerr << "Failed to init SDL: " << SDL_GetError() << "\n";
         return -1;
@@ -266,12 +268,14 @@ int main(int argc, const char **argv) {
     VkRenderPass vk_render_pass;
     VkPipeline vk_pipeline;
     {
+        auto vert_spv = assets.file_data("vert.vert.spirv");
+        auto frag_spv = assets.file_data("frag.frag.spirv");
         VkShaderModule vertex_shader_module = VK_NULL_HANDLE;
 
         VkShaderModuleCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        create_info.codeSize = sizeof(vert_spv);
-        create_info.pCode = vert_spv;
+        create_info.codeSize = vert_spv.size();
+        create_info.pCode = reinterpret_cast<std::uint32_t *>(vert_spv.data());
         planet::vk::worked(vkCreateShaderModule(
                 vk_device, &create_info, nullptr, &vertex_shader_module));
 
@@ -284,8 +288,8 @@ int main(int argc, const char **argv) {
 
         VkShaderModule fragment_shader_module = VK_NULL_HANDLE;
         create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        create_info.codeSize = sizeof(frag_spv);
-        create_info.pCode = frag_spv;
+        create_info.codeSize = frag_spv.size();
+        create_info.pCode = reinterpret_cast<std::uint32_t *>(frag_spv.data());
         planet::vk::worked(vkCreateShaderModule(
                 vk_device, &create_info, nullptr, &fragment_shader_module));
 
