@@ -34,23 +34,8 @@ int main(int argc, const char **argv) {
         }
     }
 
-    planet::vk::extensions extensions;
+    planet::vk::extensions extensions{window};
     extensions.validation_layers.push_back("VK_LAYER_KHRONOS_validation");
-    {
-        unsigned int count;
-        if (!SDL_Vulkan_GetInstanceExtensions(window.get(), &count, nullptr)) {
-            throw felspar::stdexcept::runtime_error{SDL_GetError()};
-        }
-        auto const existing_extension_count =
-                extensions.vulkan_extensions.size();
-        extensions.vulkan_extensions.resize(existing_extension_count + count);
-        if (!SDL_Vulkan_GetInstanceExtensions(
-                    window.get(), &count,
-                    extensions.vulkan_extensions.data()
-                            + existing_extension_count)) {
-            throw felspar::stdexcept::runtime_error{SDL_GetError()};
-        }
-    }
     std::cout << "Requested extensions\n";
     for (auto ex : extensions.vulkan_extensions) { std::cout << ex << '\n'; }
 

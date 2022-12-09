@@ -1,4 +1,5 @@
 #include <planet/sdl/init.hpp>
+#include <planet/vk/extensions.hpp>
 #include <planet/vk/sdl/window.hpp>
 
 #include <felspar/exceptions.hpp>
@@ -9,6 +10,11 @@
 
 
 using namespace std::literals;
+
+
+/**
+ * ## planet::vk::sdl::window
+ */
 
 
 planet::vk::sdl::window::window(
@@ -45,4 +51,24 @@ planet::vk::sdl::window::window(
     int ww{}, wh{};
     SDL_Vulkan_GetDrawableSize(pw.get(), &ww, &wh);
     size = {float(ww), float(wh)};
+}
+
+
+/**
+ * ## planet::vk::extensions
+ */
+
+
+planet::vk::extensions::extensions(sdl::window &w) {
+    unsigned int count;
+    if (not SDL_Vulkan_GetInstanceExtensions(w.get(), &count, nullptr)) {
+        throw felspar::stdexcept::runtime_error{SDL_GetError()};
+    }
+    auto const existing_extension_count = vulkan_extensions.size();
+    vulkan_extensions.resize(existing_extension_count + count);
+    if (not SDL_Vulkan_GetInstanceExtensions(
+                w.get(), &count,
+                vulkan_extensions.data() + existing_extension_count)) {
+        throw felspar::stdexcept::runtime_error{SDL_GetError()};
+    }
 }
