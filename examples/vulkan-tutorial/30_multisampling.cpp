@@ -163,7 +163,7 @@ class HelloTriangleApplication {
 
     planet::vk::extensions extensions;
 
-    VkInstance instance;
+    planet::vk::instance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
 
@@ -338,11 +338,11 @@ class HelloTriangleApplication {
         vkDestroyDevice(device, nullptr);
 
         if (enableValidationLayers) {
-            DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+            DestroyDebugUtilsMessengerEXT(
+                    instance.get(), debugMessenger, nullptr);
         }
 
-        vkDestroySurfaceKHR(instance, surface, nullptr);
-        vkDestroyInstance(instance, nullptr);
+        vkDestroySurfaceKHR(instance.get(), surface, nullptr);
 
         glfwDestroyWindow(window);
 
@@ -374,23 +374,12 @@ class HelloTriangleApplication {
                     "validation layers requested, but not available!");
         }
 
-        VkApplicationInfo appInfo{};
-        appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        auto appInfo = planet::vk::application_info();
         appInfo.pApplicationName = "Hello Triangle";
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.pEngineName = "No Engine";
-        appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
-
-        VkInstanceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        createInfo.pApplicationInfo = &appInfo;
 
         getRequiredExtensions();
-        createInfo.enabledExtensionCount =
-                static_cast<uint32_t>(extensions.vulkan_extensions.size());
-        createInfo.ppEnabledExtensionNames =
-                extensions.vulkan_extensions.data();
+        auto createInfo = planet::vk::instance::info(extensions, appInfo);
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
         if (enableValidationLayers) {
@@ -408,7 +397,7 @@ class HelloTriangleApplication {
             createInfo.pNext = nullptr;
         }
 
-        planet::vk::worked(vkCreateInstance(&createInfo, nullptr, &instance));
+        instance = planet::vk::instance{createInfo};
     }
 
     void populateDebugMessengerCreateInfo(
@@ -433,17 +422,17 @@ class HelloTriangleApplication {
         populateDebugMessengerCreateInfo(createInfo);
 
         planet::vk::worked(CreateDebugUtilsMessengerEXT(
-                instance, &createInfo, nullptr, &debugMessenger));
+                instance.get(), &createInfo, nullptr, &debugMessenger));
     }
 
     void createSurface() {
-        planet::vk::worked(
-                glfwCreateWindowSurface(instance, window, nullptr, &surface));
+        planet::vk::worked(glfwCreateWindowSurface(
+                instance.get(), window, nullptr, &surface));
     }
 
     void pickPhysicalDevice() {
         auto devices = planet::vk::fetch_vector<
-                vkEnumeratePhysicalDevices, VkPhysicalDevice>(nullptr);
+                vkEnumeratePhysicalDevices, VkPhysicalDevice>(instance.get());
 
         if (devices.empty()) {
             throw felspar::stdexcept::runtime_error{

@@ -40,31 +40,19 @@ int main(int argc, const char **argv) {
     for (auto ex : extensions.vulkan_extensions) { std::cout << ex << '\n'; }
 
     // Make the Vulkan Instance
-    VkInstance vk_instance = VK_NULL_HANDLE;
+    planet::vk::instance vk_instance;
     {
-        VkApplicationInfo app_info = {};
-        app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        auto app_info = planet::vk::application_info();
         app_info.pApplicationName = "SDL2 + Vulkan";
         app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        app_info.pEngineName = "None";
-        app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        app_info.apiVersion = VK_API_VERSION_1_1;
 
-        VkInstanceCreateInfo create_info = {};
-        create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        create_info.pApplicationInfo = nullptr; // &app_info
-        create_info.enabledExtensionCount = extensions.vulkan_extensions.size();
-        create_info.ppEnabledExtensionNames =
-                extensions.vulkan_extensions.data();
-        create_info.enabledLayerCount = extensions.validation_layers.size();
-        create_info.ppEnabledLayerNames = extensions.validation_layers.data();
-
-        planet::vk::worked(
-                vkCreateInstance(&create_info, nullptr, &vk_instance));
+        vk_instance = planet::vk::instance{
+                planet::vk::instance::info(extensions, app_info)};
     }
 
     VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
-    if (not SDL_Vulkan_CreateSurface(window.get(), vk_instance, &vk_surface)) {
+    if (not SDL_Vulkan_CreateSurface(
+                window.get(), vk_instance.get(), &vk_surface)) {
         throw felspar::stdexcept::runtime_error{
                 "SDL_Vulkan_CreateSurface failed"};
     }
@@ -72,10 +60,11 @@ int main(int argc, const char **argv) {
     VkPhysicalDevice vk_physical_device = VK_NULL_HANDLE;
     {
         uint32_t device_count = 0;
-        vkEnumeratePhysicalDevices(vk_instance, &device_count, nullptr);
+        vkEnumeratePhysicalDevices(vk_instance.get(), &device_count, nullptr);
         std::cout << "Found " << device_count << " devices\n";
         std::vector<VkPhysicalDevice> devices(device_count, VkPhysicalDevice{});
-        vkEnumeratePhysicalDevices(vk_instance, &device_count, devices.data());
+        vkEnumeratePhysicalDevices(
+                vk_instance.get(), &device_count, devices.data());
 
         const bool has_discrete_gpu =
                 std::find_if(
@@ -574,9 +563,8 @@ int main(int argc, const char **argv) {
     for (auto &v : swapchain_image_views) {
         vkDestroyImageView(vk_device, v, nullptr);
     }
-    vkDestroySurfaceKHR(vk_instance, vk_surface, nullptr);
+    vkDestroySurfaceKHR(vk_instance.get(), vk_surface, nullptr);
     vkDestroyDevice(vk_device, nullptr);
-    vkDestroyInstance(vk_instance, nullptr);
 
     return 0;
 }
