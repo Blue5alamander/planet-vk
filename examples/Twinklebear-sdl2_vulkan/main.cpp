@@ -84,20 +84,6 @@ int main(int argc, const char **argv) {
             vkGetPhysicalDeviceFeatures(d, &features);
             std::cout << properties.deviceName << "\n";
 
-            // Check for RTX support
-            uint32_t extension_count = 0;
-            vkEnumerateDeviceExtensionProperties(
-                    d, nullptr, &extension_count, nullptr);
-            std::cout << "num extensions: " << extension_count << "\n";
-            std::vector<VkExtensionProperties> extensions(
-                    extension_count, VkExtensionProperties{});
-            vkEnumerateDeviceExtensionProperties(
-                    d, nullptr, &extension_count, extensions.data());
-            std::cout << "Device available extensions:\n";
-            for (const auto &e : extensions) {
-                std::cout << e.extensionName << "\n";
-            }
-
             if (has_discrete_gpu
                 && properties.deviceType
                         == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
