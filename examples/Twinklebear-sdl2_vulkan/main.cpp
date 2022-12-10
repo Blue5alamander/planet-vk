@@ -1,7 +1,5 @@
 #include <planet/vk-sdl.hpp>
 
-#include <felspar/memory/small_vector.hpp>
-
 #include <iostream>
 #include <vector>
 #include <string>
@@ -60,52 +58,12 @@ int main(int argc, const char **argv) {
     std::cout << "Found " << vk_instance.physical_devices().size()
               << " devices. Using " << vk_instance.gpu().properties.deviceName
               << "\n";
+    std::cout << "Graphics queue is "
+              << vk_instance.gpu().graphics_queue_index()
+              << " and presentation queue is "
+              << vk_instance.gpu().presentation_queue_index() << "\n";
 
-    VkDevice vk_device = VK_NULL_HANDLE;
-    VkQueue vk_graphics_queue = VK_NULL_HANDLE,
-            vk_present_queue = VK_NULL_HANDLE;
-    {
-        std::cout << "Graphics queue is "
-                  << vk_instance.gpu().graphics_queue_index()
-                  << " and presentation queue is "
-                  << vk_instance.gpu().presentation_queue_index() << "\n";
-
-        felspar::memory::small_vector<VkDeviceQueueCreateInfo, 2>
-                queue_create_infos;
-        const float queue_priority = 1.f;
-        for (auto const q : std::array{
-                     vk_instance.gpu().graphics_queue_index(),
-                     vk_instance.gpu().presentation_queue_index()}) {
-            queue_create_infos.emplace_back();
-            queue_create_infos.back().sType =
-                    VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queue_create_infos.back().queueFamilyIndex = q;
-            queue_create_infos.back().queueCount = 1;
-            queue_create_infos.back().pQueuePriorities = &queue_priority;
-        }
-
-        VkPhysicalDeviceFeatures device_features = {};
-
-        VkDeviceCreateInfo create_info = {};
-        create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        create_info.queueCreateInfoCount = queue_create_infos.size();
-        create_info.pQueueCreateInfos = queue_create_infos.data();
-        create_info.enabledLayerCount = extensions.validation_layers.size();
-        create_info.ppEnabledLayerNames = extensions.validation_layers.data();
-        create_info.enabledExtensionCount = extensions.device_extensions.size();
-        create_info.ppEnabledExtensionNames =
-                extensions.device_extensions.data();
-        create_info.pEnabledFeatures = &device_features;
-        planet::vk::worked(vkCreateDevice(
-                vk_instance.gpu().get(), &create_info, nullptr, &vk_device));
-
-        vkGetDeviceQueue(
-                vk_device, vk_instance.gpu().graphics_queue_index(), 0,
-                &vk_graphics_queue);
-        vkGetDeviceQueue(
-                vk_device, vk_instance.gpu().presentation_queue_index(), 0,
-                &vk_present_queue);
-    }
+    planet::vk::device vk_device{vk_instance, extensions};
 
     // Setup swapchain, assume a real GPU so don't bother querying the
     // capabilities, just get what we want
@@ -135,15 +93,15 @@ int main(int argc, const char **argv) {
         create_info.clipped = true;
         create_info.oldSwapchain = VK_NULL_HANDLE;
         planet::vk::worked(vkCreateSwapchainKHR(
-                vk_device, &create_info, nullptr, &vk_swapchain));
+                vk_device.get(), &create_info, nullptr, &vk_swapchain));
 
         // Get the swap chain images
         uint32_t num_swapchain_imgs = 0;
         vkGetSwapchainImagesKHR(
-                vk_device, vk_swapchain, &num_swapchain_imgs, nullptr);
+                vk_device.get(), vk_swapchain, &num_swapchain_imgs, nullptr);
         swapchain_images.resize(num_swapchain_imgs);
         vkGetSwapchainImagesKHR(
-                vk_device, vk_swapchain, &num_swapchain_imgs,
+                vk_device.get(), vk_swapchain, &num_swapchain_imgs,
                 swapchain_images.data());
 
         for (const auto &img : swapchain_images) {
@@ -167,7 +125,7 @@ int main(int argc, const char **argv) {
 
             VkImageView img_view;
             planet::vk::worked(vkCreateImageView(
-                    vk_device, &view_create_info, nullptr, &img_view));
+                    vk_device.get(), &view_create_info, nullptr, &img_view));
             swapchain_image_views.push_back(img_view);
         }
     }
@@ -186,7 +144,7 @@ int main(int argc, const char **argv) {
         create_info.codeSize = vert_spv.size();
         create_info.pCode = reinterpret_cast<std::uint32_t *>(vert_spv.data());
         planet::vk::worked(vkCreateShaderModule(
-                vk_device, &create_info, nullptr, &vertex_shader_module));
+                vk_device.get(), &create_info, nullptr, &vertex_shader_module));
 
         VkPipelineShaderStageCreateInfo vertex_stage = {};
         vertex_stage.sType =
@@ -200,7 +158,8 @@ int main(int argc, const char **argv) {
         create_info.codeSize = frag_spv.size();
         create_info.pCode = reinterpret_cast<std::uint32_t *>(frag_spv.data());
         planet::vk::worked(vkCreateShaderModule(
-                vk_device, &create_info, nullptr, &fragment_shader_module));
+                vk_device.get(), &create_info, nullptr,
+                &fragment_shader_module));
 
         VkPipelineShaderStageCreateInfo fragment_stage = {};
         fragment_stage.sType =
@@ -282,7 +241,7 @@ int main(int argc, const char **argv) {
         VkPipelineLayoutCreateInfo pipeline_info = {};
         pipeline_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         planet::vk::worked(vkCreatePipelineLayout(
-                vk_device, &pipeline_info, nullptr, &vk_pipeline_layout));
+                vk_device.get(), &pipeline_info, nullptr, &vk_pipeline_layout));
 
         VkAttachmentDescription color_attachment = {};
         color_attachment.format = swapchain_img_format;
@@ -310,7 +269,7 @@ int main(int argc, const char **argv) {
         render_pass_info.subpassCount = 1;
         render_pass_info.pSubpasses = &subpass;
         planet::vk::worked(vkCreateRenderPass(
-                vk_device, &render_pass_info, nullptr, &vk_render_pass));
+                vk_device.get(), &render_pass_info, nullptr, &vk_render_pass));
 
         VkGraphicsPipelineCreateInfo graphics_pipeline_info = {};
         graphics_pipeline_info.sType =
@@ -327,11 +286,11 @@ int main(int argc, const char **argv) {
         graphics_pipeline_info.renderPass = vk_render_pass;
         graphics_pipeline_info.subpass = 0;
         planet::vk::worked(vkCreateGraphicsPipelines(
-                vk_device, VK_NULL_HANDLE, 1, &graphics_pipeline_info, nullptr,
-                &vk_pipeline));
+                vk_device.get(), VK_NULL_HANDLE, 1, &graphics_pipeline_info,
+                nullptr, &vk_pipeline));
 
-        vkDestroyShaderModule(vk_device, vertex_shader_module, nullptr);
-        vkDestroyShaderModule(vk_device, fragment_shader_module, nullptr);
+        vkDestroyShaderModule(vk_device.get(), vertex_shader_module, nullptr);
+        vkDestroyShaderModule(vk_device.get(), fragment_shader_module, nullptr);
     }
 
     // Setup framebuffers
@@ -347,8 +306,8 @@ int main(int argc, const char **argv) {
         create_info.height = win_height;
         create_info.layers = 1;
         VkFramebuffer fb = VK_NULL_HANDLE;
-        planet::vk::worked(
-                vkCreateFramebuffer(vk_device, &create_info, nullptr, &fb));
+        planet::vk::worked(vkCreateFramebuffer(
+                vk_device.get(), &create_info, nullptr, &fb));
         framebuffers.push_back(fb);
     }
 
@@ -359,7 +318,7 @@ int main(int argc, const char **argv) {
         create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         create_info.queueFamilyIndex = vk_instance.gpu().graphics_queue_index();
         planet::vk::worked(vkCreateCommandPool(
-                vk_device, &create_info, nullptr, &vk_command_pool));
+                vk_device.get(), &create_info, nullptr, &vk_command_pool));
     }
 
     std::vector<VkCommandBuffer> command_buffers(
@@ -371,7 +330,7 @@ int main(int argc, const char **argv) {
         info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         info.commandBufferCount = command_buffers.size();
         planet::vk::worked(vkAllocateCommandBuffers(
-                vk_device, &info, command_buffers.data()));
+                vk_device.get(), &info, command_buffers.data()));
     }
 
     // Now record the rendering commands (TODO: Could also do this pre-recording
@@ -416,9 +375,9 @@ int main(int argc, const char **argv) {
         info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
         planet::vk::worked(vkCreateSemaphore(
-                vk_device, &info, nullptr, &img_avail_semaphore));
+                vk_device.get(), &info, nullptr, &img_avail_semaphore));
         planet::vk::worked(vkCreateSemaphore(
-                vk_device, &info, nullptr, &render_finished_semaphore));
+                vk_device.get(), &info, nullptr, &render_finished_semaphore));
     }
 
     // We use a fence to wait for the rendering work to finish
@@ -426,7 +385,8 @@ int main(int argc, const char **argv) {
     {
         VkFenceCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        planet::vk::worked(vkCreateFence(vk_device, &info, nullptr, &vk_fence));
+        planet::vk::worked(
+                vkCreateFence(vk_device.get(), &info, nullptr, &vk_fence));
     }
 
     std::cout << "Running loop\n";
@@ -449,8 +409,9 @@ int main(int argc, const char **argv) {
         // Get an image from the swap chain
         uint32_t img_index = 0;
         planet::vk::worked(vkAcquireNextImageKHR(
-                vk_device, vk_swapchain, std::numeric_limits<uint64_t>::max(),
-                img_avail_semaphore, VK_NULL_HANDLE, &img_index));
+                vk_device.get(), vk_swapchain,
+                std::numeric_limits<uint64_t>::max(), img_avail_semaphore,
+                VK_NULL_HANDLE, &img_index));
 
         // We need to wait for the image before we can run the commands to draw
         // to it, and signal the render finished one when we're done
@@ -461,7 +422,7 @@ int main(int argc, const char **argv) {
         const std::array<VkPipelineStageFlags, 1> wait_stages = {
                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
 
-        planet::vk::worked(vkResetFences(vk_device, 1, &vk_fence));
+        planet::vk::worked(vkResetFences(vk_device.get(), 1, &vk_fence));
 
         VkSubmitInfo submit_info = {};
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -472,8 +433,8 @@ int main(int argc, const char **argv) {
         submit_info.pCommandBuffers = &command_buffers[img_index];
         submit_info.signalSemaphoreCount = signal_semaphores.size();
         submit_info.pSignalSemaphores = signal_semaphores.data();
-        planet::vk::worked(
-                vkQueueSubmit(vk_graphics_queue, 1, &submit_info, vk_fence));
+        planet::vk::worked(vkQueueSubmit(
+                vk_device.graphics_queue, 1, &submit_info, vk_fence));
 
         // Finally, present the updated image in the swap chain
         std::array<VkSwapchainKHR, 1> present_chain = {vk_swapchain};
@@ -484,29 +445,29 @@ int main(int argc, const char **argv) {
         present_info.swapchainCount = present_chain.size();
         present_info.pSwapchains = present_chain.data();
         present_info.pImageIndices = &img_index;
-        planet::vk::worked(vkQueuePresentKHR(vk_present_queue, &present_info));
+        planet::vk::worked(
+                vkQueuePresentKHR(vk_device.present_queue, &present_info));
 
         // Wait for the frame to finish
         planet::vk::worked(vkWaitForFences(
-                vk_device, 1, &vk_fence, true,
+                vk_device.get(), 1, &vk_fence, true,
                 std::numeric_limits<uint64_t>::max()));
     }
 
-    vkDestroySemaphore(vk_device, img_avail_semaphore, nullptr);
-    vkDestroySemaphore(vk_device, render_finished_semaphore, nullptr);
-    vkDestroyFence(vk_device, vk_fence, nullptr);
-    vkDestroyCommandPool(vk_device, vk_command_pool, nullptr);
-    vkDestroySwapchainKHR(vk_device, vk_swapchain, nullptr);
+    vkDestroySemaphore(vk_device.get(), img_avail_semaphore, nullptr);
+    vkDestroySemaphore(vk_device.get(), render_finished_semaphore, nullptr);
+    vkDestroyFence(vk_device.get(), vk_fence, nullptr);
+    vkDestroyCommandPool(vk_device.get(), vk_command_pool, nullptr);
+    vkDestroySwapchainKHR(vk_device.get(), vk_swapchain, nullptr);
     for (auto &fb : framebuffers) {
-        vkDestroyFramebuffer(vk_device, fb, nullptr);
+        vkDestroyFramebuffer(vk_device.get(), fb, nullptr);
     }
-    vkDestroyPipeline(vk_device, vk_pipeline, nullptr);
-    vkDestroyRenderPass(vk_device, vk_render_pass, nullptr);
-    vkDestroyPipelineLayout(vk_device, vk_pipeline_layout, nullptr);
+    vkDestroyPipeline(vk_device.get(), vk_pipeline, nullptr);
+    vkDestroyRenderPass(vk_device.get(), vk_render_pass, nullptr);
+    vkDestroyPipelineLayout(vk_device.get(), vk_pipeline_layout, nullptr);
     for (auto &v : swapchain_image_views) {
-        vkDestroyImageView(vk_device, v, nullptr);
+        vkDestroyImageView(vk_device.get(), v, nullptr);
     }
-    vkDestroyDevice(vk_device, nullptr);
 
     return 0;
 }

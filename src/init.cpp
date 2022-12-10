@@ -1,5 +1,8 @@
+#include <planet/vk/device.hpp>
 #include <planet/vk/extensions.hpp>
 #include <planet/vk/instance.hpp>
+
+#include <felspar/memory/small_vector.hpp>
 
 
 /**
@@ -102,4 +105,51 @@ planet::vk::physical_device::physical_device(
 
         ++index;
     }
+}
+
+
+/**
+ * ## planet::vk::device
+ */
+
+
+planet::vk::device::device(
+        vk::instance const &instance, vk::extensions const &extensions) {
+    felspar::memory::small_vector<VkDeviceQueueCreateInfo, 2> queue_create_infos;
+    const float queue_priority = 1.f;
+    for (auto const q : std::array{
+                 instance.gpu().graphics_queue_index(),
+                 instance.gpu().presentation_queue_index()}) {
+        queue_create_infos.emplace_back();
+        queue_create_infos.back().sType =
+                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queue_create_infos.back().queueFamilyIndex = q;
+        queue_create_infos.back().queueCount = 1;
+        queue_create_infos.back().pQueuePriorities = &queue_priority;
+    }
+
+    VkPhysicalDeviceFeatures device_features = {};
+
+    VkDeviceCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    create_info.queueCreateInfoCount = queue_create_infos.size();
+    create_info.pQueueCreateInfos = queue_create_infos.data();
+    create_info.enabledLayerCount = extensions.validation_layers.size();
+    create_info.ppEnabledLayerNames = extensions.validation_layers.data();
+    create_info.enabledExtensionCount = extensions.device_extensions.size();
+    create_info.ppEnabledExtensionNames = extensions.device_extensions.data();
+    create_info.pEnabledFeatures = &device_features;
+    planet::vk::worked(vkCreateDevice(
+            instance.gpu().get(), &create_info, nullptr, &handle));
+
+    vkGetDeviceQueue(
+            handle, instance.gpu().graphics_queue_index(), 0, &graphics_queue);
+    vkGetDeviceQueue(
+            handle, instance.gpu().presentation_queue_index(), 0,
+            &present_queue);
+}
+
+
+planet::vk::device::~device() {
+    if (handle) { vkDestroyDevice(handle, nullptr); }
 }
