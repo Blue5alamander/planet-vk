@@ -1,5 +1,7 @@
 #include <planet/vk-sdl.hpp>
 
+#include <felspar/memory/small_vector.hpp>
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -43,64 +45,65 @@ int main(int argc, const char **argv) {
         app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 
         vk_instance = planet::vk::instance{
-                planet::vk::instance::info(extensions, app_info)};
-    }
-
-    VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
-    if (not SDL_Vulkan_CreateSurface(
-                window.get(), vk_instance.get(), &vk_surface)) {
-        throw felspar::stdexcept::runtime_error{
-                "SDL_Vulkan_CreateSurface failed"};
+                planet::vk::instance::info(extensions, app_info),
+                [&window](VkInstance h) {
+                    VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
+                    if (not SDL_Vulkan_CreateSurface(
+                                window.get(), h, &vk_surface)) {
+                        throw felspar::stdexcept::runtime_error{
+                                "SDL_Vulkan_CreateSurface failed"};
+                    }
+                    return vk_surface;
+                }};
     }
 
     std::cout << "Found " << vk_instance.devices().size() << " devices\n";
     std::cout << "Using " << vk_instance.gpu().properties.deviceName << "\n";
 
     VkDevice vk_device = VK_NULL_HANDLE;
-    VkQueue vk_queue = VK_NULL_HANDLE;
-    uint32_t graphics_queue_index = -1;
+    VkQueue vk_graphics_queue = VK_NULL_HANDLE,
+            vk_present_queue = VK_NULL_HANDLE;
     {
-        for (uint32_t i = 0;
-             i < vk_instance.gpu().queue_family_properties.size(); ++i) {
-            // We want present and graphics on the same queue (kind of assume
-            // this will be supported on any discrete GPU)
-            VkBool32 present_support = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(
-                    vk_instance.gpu().get(), i, vk_surface, &present_support);
-            if (present_support
-                and (vk_instance.gpu().queue_family_properties[i].queueFlags
-                     & VK_QUEUE_GRAPHICS_BIT)) {
-                graphics_queue_index = i;
-            }
-        }
-        std::cout << "Graphics queue is " << graphics_queue_index << "\n";
-        const float queue_priority = 1.f;
+        std::cout << "Graphics queue is "
+                  << vk_instance.gpu().graphics_queue_index()
+                  << " and presentation queue is "
+                  << vk_instance.gpu().presentation_queue_index() << "\n";
 
-        VkDeviceQueueCreateInfo queue_create_info = {};
-        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_create_info.queueFamilyIndex = graphics_queue_index;
-        queue_create_info.queueCount = 1;
-        queue_create_info.pQueuePriorities = &queue_priority;
+        felspar::memory::small_vector<VkDeviceQueueCreateInfo, 2>
+                queue_create_infos;
+        const float queue_priority = 1.f;
+        for (auto const q : std::array{
+                     vk_instance.gpu().graphics_queue_index(),
+                     vk_instance.gpu().presentation_queue_index()}) {
+            queue_create_infos.emplace_back();
+            queue_create_infos.back().sType =
+                    VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queue_create_infos.back().queueFamilyIndex = q;
+            queue_create_infos.back().queueCount = 1;
+            queue_create_infos.back().pQueuePriorities = &queue_priority;
+        }
 
         VkPhysicalDeviceFeatures device_features = {};
-        // TODO: RTX feature
-
-        const std::array<const char *, 1> device_extensions = {
-                VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
         VkDeviceCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        create_info.queueCreateInfoCount = 1;
-        create_info.pQueueCreateInfos = &queue_create_info;
+        create_info.queueCreateInfoCount = queue_create_infos.size();
+        create_info.pQueueCreateInfos = queue_create_infos.data();
         create_info.enabledLayerCount = extensions.validation_layers.size();
         create_info.ppEnabledLayerNames = extensions.validation_layers.data();
-        create_info.enabledExtensionCount = device_extensions.size();
-        create_info.ppEnabledExtensionNames = device_extensions.data();
+        create_info.enabledExtensionCount = extensions.device_extensions.size();
+        create_info.ppEnabledExtensionNames =
+                extensions.device_extensions.data();
         create_info.pEnabledFeatures = &device_features;
         planet::vk::worked(vkCreateDevice(
                 vk_instance.gpu().get(), &create_info, nullptr, &vk_device));
 
-        vkGetDeviceQueue(vk_device, graphics_queue_index, 0, &vk_queue);
+        vkGetDeviceQueue(
+                vk_device, vk_instance.gpu().graphics_queue_index(), 0,
+                &vk_graphics_queue);
+        vkGetDeviceQueue(
+                vk_device, vk_instance.gpu().presentation_queue_index(), 0,
+                &vk_present_queue);
     }
 
     // Setup swapchain, assume a real GPU so don't bother querying the
@@ -116,7 +119,7 @@ int main(int argc, const char **argv) {
     {
         VkSwapchainCreateInfoKHR create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        create_info.surface = vk_surface;
+        create_info.surface = vk_instance.surface;
         create_info.minImageCount = 2;
         create_info.imageFormat = swapchain_img_format;
         create_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -353,7 +356,7 @@ int main(int argc, const char **argv) {
     {
         VkCommandPoolCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        create_info.queueFamilyIndex = graphics_queue_index;
+        create_info.queueFamilyIndex = vk_instance.gpu().graphics_queue_index();
         planet::vk::worked(vkCreateCommandPool(
                 vk_device, &create_info, nullptr, &vk_command_pool));
     }
@@ -468,7 +471,8 @@ int main(int argc, const char **argv) {
         submit_info.pCommandBuffers = &command_buffers[img_index];
         submit_info.signalSemaphoreCount = signal_semaphores.size();
         submit_info.pSignalSemaphores = signal_semaphores.data();
-        planet::vk::worked(vkQueueSubmit(vk_queue, 1, &submit_info, vk_fence));
+        planet::vk::worked(
+                vkQueueSubmit(vk_graphics_queue, 1, &submit_info, vk_fence));
 
         // Finally, present the updated image in the swap chain
         std::array<VkSwapchainKHR, 1> present_chain = {vk_swapchain};
@@ -479,7 +483,7 @@ int main(int argc, const char **argv) {
         present_info.swapchainCount = present_chain.size();
         present_info.pSwapchains = present_chain.data();
         present_info.pImageIndices = &img_index;
-        planet::vk::worked(vkQueuePresentKHR(vk_queue, &present_info));
+        planet::vk::worked(vkQueuePresentKHR(vk_present_queue, &present_info));
 
         // Wait for the frame to finish
         planet::vk::worked(vkWaitForFences(
@@ -501,7 +505,6 @@ int main(int argc, const char **argv) {
     for (auto &v : swapchain_image_views) {
         vkDestroyImageView(vk_device, v, nullptr);
     }
-    vkDestroySurfaceKHR(vk_instance.get(), vk_surface, nullptr);
     vkDestroyDevice(vk_device, nullptr);
 
     return 0;

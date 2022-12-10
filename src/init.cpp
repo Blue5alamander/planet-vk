@@ -32,12 +32,15 @@ VkInstanceCreateInfo planet::vk::instance::info(
 }
 
 
-planet::vk::instance::instance(VkInstanceCreateInfo const &info) {
+planet::vk::instance::instance(
+        VkInstanceCreateInfo const &info,
+        std::function<VkSurfaceKHR(VkInstance)> mksurface) {
     planet::vk::worked(vkCreateInstance(&info, nullptr, &handle));
     auto devices = planet::vk::fetch_vector<
             vkEnumeratePhysicalDevices, VkPhysicalDevice>(handle);
     physical_devices.reserve(devices.size());
-    for (auto dh : devices) { physical_devices.emplace_back(dh); }
+    surface = mksurface(handle);
+    for (auto dh : devices) { physical_devices.emplace_back(dh, surface); }
 
     bool const has_discrete_gpu =
             std::find_if(
@@ -68,6 +71,7 @@ planet::vk::instance::instance(VkInstanceCreateInfo const &info) {
 
 
 void planet::vk::instance::reset() noexcept {
+    if (surface) { vkDestroySurfaceKHR(handle, surface, nullptr); }
     if (handle) { vkDestroyInstance(handle, nullptr); }
 }
 
@@ -77,11 +81,23 @@ void planet::vk::instance::reset() noexcept {
  */
 
 
-planet::vk::physical_device::physical_device(VkPhysicalDevice h) : handle{h} {
+planet::vk::physical_device::physical_device(
+        VkPhysicalDevice h, VkSurfaceKHR surface)
+: handle{h} {
     vkGetPhysicalDeviceProperties(handle, &properties);
     vkGetPhysicalDeviceFeatures(handle, &features);
     vkGetPhysicalDeviceMemoryProperties(handle, &memory_properties);
     queue_family_properties = fetch_vector<
             vkGetPhysicalDeviceQueueFamilyProperties, VkQueueFamilyProperties>(
             handle);
+
+    for (std::uint32_t index = {}; const auto &qf : queue_family_properties) {
+        if (qf.queueFlags bitand VK_QUEUE_GRAPHICS_BIT) { graphics = index; }
+
+        VkBool32 presentf = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(handle, index, surface, &presentf);
+        if (presentf) { present = index; }
+
+        ++index;
+    }
 }

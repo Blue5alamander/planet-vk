@@ -30,14 +30,20 @@ namespace planet::vk {
         static VkInstanceCreateInfo
                 info(extensions const &, VkApplicationInfo const &);
         instance() noexcept {}
-        explicit instance(VkInstanceCreateInfo const &);
+        instance(
+                VkInstanceCreateInfo const &,
+                std::function<VkSurfaceKHR(VkInstance)>);
         ~instance() { reset(); }
 
+        instance(instance const &) = delete;
+        instance(instance &&) = delete;
+        instance &operator=(instance const &) = delete;
         instance &operator=(instance &&i) noexcept {
             reset();
             handle = std::exchange(i.handle, VK_NULL_HANDLE);
             physical_devices = std::move(i.physical_devices);
             gpu_in_use = std::exchange(i.gpu_in_use, nullptr);
+            surface = std::exchange(i.surface, VK_NULL_HANDLE);
             return *this;
         }
 
@@ -51,6 +57,8 @@ namespace planet::vk {
             gpu_in_use = &d;
             return *gpu_in_use;
         }
+
+        VkSurfaceKHR surface;
     };
 
 

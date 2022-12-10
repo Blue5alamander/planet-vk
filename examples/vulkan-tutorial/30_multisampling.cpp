@@ -66,15 +66,6 @@ void DestroyDebugUtilsMessengerEXT(
     if (func != nullptr) { func(instance, debugMessenger, pAllocator); }
 }
 
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    bool isComplete() {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
-
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
@@ -165,7 +156,6 @@ class HelloTriangleApplication {
 
     planet::vk::instance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
-    VkSurfaceKHR surface;
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     VkDevice device;
@@ -244,7 +234,6 @@ class HelloTriangleApplication {
     void initVulkan() {
         createInstance();
         setupDebugMessenger();
-        createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
         createSwapChain();
@@ -341,8 +330,6 @@ class HelloTriangleApplication {
                     instance.get(), debugMessenger, nullptr);
         }
 
-        vkDestroySurfaceKHR(instance.get(), surface, nullptr);
-
         glfwDestroyWindow(window);
 
         glfwTerminate();
@@ -396,7 +383,13 @@ class HelloTriangleApplication {
             createInfo.pNext = nullptr;
         }
 
-        instance = planet::vk::instance{createInfo};
+        instance = planet::vk::instance{
+                createInfo, [this](VkInstance h) {
+                    VkSurfaceKHR surface = VK_NULL_HANDLE;
+                    planet::vk::worked(glfwCreateWindowSurface(
+                            h, window, nullptr, &surface));
+                    return surface;
+                }};
     }
 
     void populateDebugMessengerCreateInfo(
@@ -424,11 +417,6 @@ class HelloTriangleApplication {
                 instance.get(), &createInfo, nullptr, &debugMessenger));
     }
 
-    void createSurface() {
-        planet::vk::worked(glfwCreateWindowSurface(
-                instance.get(), window, nullptr, &surface));
-    }
-
     void pickPhysicalDevice() {
         auto const devices = instance.devices();
 
@@ -444,11 +432,10 @@ class HelloTriangleApplication {
     }
 
     void createLogicalDevice() {
-        QueueFamilyIndices indices = findQueueFamilies(instance.gpu());
-
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {
-                indices.graphicsFamily.value(), indices.presentFamily.value()};
+                instance.gpu().graphics_queue_index(),
+                instance.gpu().presentation_queue_index()};
 
         float queuePriority = 1.0f;
         for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -490,9 +477,11 @@ class HelloTriangleApplication {
                 instance.gpu().get(), &createInfo, nullptr, &device));
 
         vkGetDeviceQueue(
-                device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+                device, instance.gpu().graphics_queue_index(), 0,
+                &graphicsQueue);
         vkGetDeviceQueue(
-                device, indices.presentFamily.value(), 0, &presentQueue);
+                device, instance.gpu().presentation_queue_index(), 0,
+                &presentQueue);
     }
 
     void createSwapChain() {
@@ -513,7 +502,7 @@ class HelloTriangleApplication {
 
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = surface;
+        createInfo.surface = instance.surface;
 
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = surfaceFormat.format;
@@ -522,11 +511,12 @@ class HelloTriangleApplication {
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = findQueueFamilies(instance.gpu());
         uint32_t queueFamilyIndices[] = {
-                indices.graphicsFamily.value(), indices.presentFamily.value()};
+                instance.gpu().graphics_queue_index(),
+                instance.gpu().presentation_queue_index()};
 
-        if (indices.graphicsFamily != indices.presentFamily) {
+        if (instance.gpu().graphics_queue_index()
+            != instance.gpu().presentation_queue_index()) {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             createInfo.queueFamilyIndexCount = 2;
             createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -831,14 +821,10 @@ class HelloTriangleApplication {
     }
 
     void createCommandPool() {
-        QueueFamilyIndices queueFamilyIndices =
-                findQueueFamilies(instance.gpu());
-
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
+        poolInfo.queueFamilyIndex = instance.gpu().graphics_queue_index();
         planet::vk::worked(
                 vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool));
     }
@@ -1778,27 +1764,27 @@ class HelloTriangleApplication {
         SwapChainSupportDetails details;
 
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-                device.get(), surface, &details.capabilities);
+                device.get(), instance.surface, &details.capabilities);
 
         uint32_t formatCount;
         vkGetPhysicalDeviceSurfaceFormatsKHR(
-                device.get(), surface, &formatCount, nullptr);
+                device.get(), instance.surface, &formatCount, nullptr);
 
         if (formatCount != 0) {
             details.formats.resize(formatCount);
             vkGetPhysicalDeviceSurfaceFormatsKHR(
-                    device.get(), surface, &formatCount,
+                    device.get(), instance.surface, &formatCount,
                     details.formats.data());
         }
 
         uint32_t presentModeCount;
         vkGetPhysicalDeviceSurfacePresentModesKHR(
-                device.get(), surface, &presentModeCount, nullptr);
+                device.get(), instance.surface, &presentModeCount, nullptr);
 
         if (presentModeCount != 0) {
             details.presentModes.resize(presentModeCount);
             vkGetPhysicalDeviceSurfacePresentModesKHR(
-                    device.get(), surface, &presentModeCount,
+                    device.get(), instance.surface, &presentModeCount,
                     details.presentModes.data());
         }
 
@@ -1806,8 +1792,6 @@ class HelloTriangleApplication {
     }
 
     bool isDeviceSuitable(planet::vk::physical_device const &device) {
-        QueueFamilyIndices indices = findQueueFamilies(device);
-
         bool extensionsSupported = checkDeviceExtensionSupport(device);
 
         bool swapChainAdequate = false;
@@ -1818,8 +1802,8 @@ class HelloTriangleApplication {
                     && !swapChainSupport.presentModes.empty();
         }
 
-        return indices.isComplete() && extensionsSupported && swapChainAdequate
-                && device.features.samplerAnisotropy;
+        return device.has_queue_families() and extensionsSupported
+                and swapChainAdequate and device.features.samplerAnisotropy;
     }
 
     bool checkDeviceExtensionSupport(planet::vk::physical_device const &device) {
@@ -1836,30 +1820,6 @@ class HelloTriangleApplication {
         }
 
         return requiredExtensions.empty();
-    }
-
-    QueueFamilyIndices
-            findQueueFamilies(planet::vk::physical_device const &device) {
-        QueueFamilyIndices indices;
-
-        int i = 0;
-        for (const auto &queueFamily : device.queue_family_properties) {
-            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                indices.graphicsFamily = i;
-            }
-
-            VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(
-                    device.get(), i, surface, &presentSupport);
-
-            if (presentSupport) { indices.presentFamily = i; }
-
-            if (indices.isComplete()) { break; }
-
-            i++;
-        }
-
-        return indices;
     }
 
     void getRequiredExtensions() {
