@@ -24,6 +24,7 @@ namespace planet::vk {
         void reset() noexcept;
 
         std::vector<physical_device> physical_devices;
+        physical_device const *gpu_in_use = nullptr;
 
       public:
         static VkInstanceCreateInfo
@@ -36,6 +37,7 @@ namespace planet::vk {
             reset();
             handle = std::exchange(i.handle, VK_NULL_HANDLE);
             physical_devices = std::move(i.physical_devices);
+            gpu_in_use = std::exchange(i.gpu_in_use, nullptr);
             return *this;
         }
 
@@ -44,7 +46,11 @@ namespace planet::vk {
         std::span<physical_device const> devices() const {
             return physical_devices;
         }
-        physical_device const &best_gpu() const;
+        physical_device const &gpu() const noexcept { return *gpu_in_use; }
+        physical_device const &use_gpu(physical_device const &d) noexcept {
+            gpu_in_use = &d;
+            return *gpu_in_use;
+        }
     };
 
 

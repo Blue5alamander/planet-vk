@@ -38,15 +38,7 @@ planet::vk::instance::instance(VkInstanceCreateInfo const &info) {
             vkEnumeratePhysicalDevices, VkPhysicalDevice>(handle);
     physical_devices.reserve(devices.size());
     for (auto dh : devices) { physical_devices.emplace_back(dh); }
-}
 
-
-void planet::vk::instance::reset() noexcept {
-    if (handle) { vkDestroyInstance(handle, nullptr); }
-}
-
-
-planet::vk::physical_device const &planet::vk::instance::best_gpu() const {
     bool const has_discrete_gpu =
             std::find_if(
                     physical_devices.begin(), physical_devices.end(),
@@ -60,16 +52,23 @@ planet::vk::physical_device const &planet::vk::instance::best_gpu() const {
         if (has_discrete_gpu
             and d.properties.deviceType
                     == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-            return d;
+            gpu_in_use = &d;
         } else if (
                 not has_discrete_gpu
                 and d.properties.deviceType
                         == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
-            return d;
+            gpu_in_use = &d;
         }
     }
+    if (not gpu_in_use) {
+        throw felspar::stdexcept::runtime_error{
+                "No suitable GPU has been found"};
+    }
+}
 
-    throw felspar::stdexcept::runtime_error{"No suitable GPU has been found"};
+
+void planet::vk::instance::reset() noexcept {
+    if (handle) { vkDestroyInstance(handle, nullptr); }
 }
 
 

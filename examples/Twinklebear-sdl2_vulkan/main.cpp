@@ -54,8 +54,7 @@ int main(int argc, const char **argv) {
     }
 
     std::cout << "Found " << vk_instance.devices().size() << " devices\n";
-    auto const &vk_physical_device = vk_instance.best_gpu();
-    std::cout << "Using " << vk_physical_device.properties.deviceName << "\n";
+    std::cout << "Using " << vk_instance.gpu().properties.deviceName << "\n";
 
     VkDevice vk_device = VK_NULL_HANDLE;
     VkQueue vk_queue = VK_NULL_HANDLE;
@@ -63,18 +62,18 @@ int main(int argc, const char **argv) {
     {
         uint32_t num_queue_families = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(
-                vk_physical_device.get(), &num_queue_families, nullptr);
+                vk_instance.gpu().get(), &num_queue_families, nullptr);
         std::vector<VkQueueFamilyProperties> family_props(
                 num_queue_families, VkQueueFamilyProperties{});
         vkGetPhysicalDeviceQueueFamilyProperties(
-                vk_physical_device.get(), &num_queue_families,
+                vk_instance.gpu().get(), &num_queue_families,
                 family_props.data());
         for (uint32_t i = 0; i < num_queue_families; ++i) {
             // We want present and graphics on the same queue (kind of assume
             // this will be supported on any discrete GPU)
             VkBool32 present_support = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(
-                    vk_physical_device.get(), i, vk_surface, &present_support);
+                    vk_instance.gpu().get(), i, vk_surface, &present_support);
             if (present_support
                 && (family_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
                 graphics_queue_index = i;
@@ -105,7 +104,7 @@ int main(int argc, const char **argv) {
         create_info.ppEnabledExtensionNames = device_extensions.data();
         create_info.pEnabledFeatures = &device_features;
         planet::vk::worked(vkCreateDevice(
-                vk_physical_device.get(), &create_info, nullptr, &vk_device));
+                vk_instance.gpu().get(), &create_info, nullptr, &vk_device));
 
         vkGetDeviceQueue(vk_device, graphics_queue_index, 0, &vk_queue);
     }

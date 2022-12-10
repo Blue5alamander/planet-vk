@@ -167,7 +167,6 @@ class HelloTriangleApplication {
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
 
-    planet::vk::physical_device const *physicalDevice = nullptr;
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     VkDevice device;
 
@@ -433,27 +432,19 @@ class HelloTriangleApplication {
     void pickPhysicalDevice() {
         auto const devices = instance.devices();
 
-        if (devices.empty()) {
-            throw felspar::stdexcept::runtime_error{
-                    "failed to find GPUs with Vulkan support!"};
-        }
-
         for (auto const &device : devices) {
             if (isDeviceSuitable(device)) {
-                physicalDevice = &device;
+                instance.use_gpu(device);
                 msaaSamples = getMaxUsableSampleCount();
-                break;
+                return;
             }
         }
-
-        if (not physicalDevice) {
-            throw felspar::stdexcept::runtime_error{
-                    "failed to find a suitable GPU!"};
-        }
+        throw felspar::stdexcept::runtime_error{
+                "failed to find a suitable GPU!"};
     }
 
     void createLogicalDevice() {
-        QueueFamilyIndices indices = findQueueFamilies(*physicalDevice);
+        QueueFamilyIndices indices = findQueueFamilies(instance.gpu());
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {
@@ -496,7 +487,7 @@ class HelloTriangleApplication {
         }
 
         planet::vk::worked(vkCreateDevice(
-                physicalDevice->get(), &createInfo, nullptr, &device));
+                instance.gpu().get(), &createInfo, nullptr, &device));
 
         vkGetDeviceQueue(
                 device, indices.graphicsFamily.value(), 0, &graphicsQueue);
@@ -506,7 +497,7 @@ class HelloTriangleApplication {
 
     void createSwapChain() {
         SwapChainSupportDetails swapChainSupport =
-                querySwapChainSupport(*physicalDevice);
+                querySwapChainSupport(instance.gpu());
 
         VkSurfaceFormatKHR surfaceFormat =
                 chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -531,7 +522,7 @@ class HelloTriangleApplication {
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = findQueueFamilies(*physicalDevice);
+        QueueFamilyIndices indices = findQueueFamilies(instance.gpu());
         uint32_t queueFamilyIndices[] = {
                 indices.graphicsFamily.value(), indices.presentFamily.value()};
 
@@ -841,7 +832,7 @@ class HelloTriangleApplication {
 
     void createCommandPool() {
         QueueFamilyIndices queueFamilyIndices =
-                findQueueFamilies(*physicalDevice);
+                findQueueFamilies(instance.gpu());
 
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -886,7 +877,7 @@ class HelloTriangleApplication {
         for (VkFormat format : candidates) {
             VkFormatProperties props;
             vkGetPhysicalDeviceFormatProperties(
-                    physicalDevice->get(), format, &props);
+                    instance.gpu().get(), format, &props);
 
             if (tiling == VK_IMAGE_TILING_LINEAR
                 && (props.linearTilingFeatures & features) == features) {
@@ -979,7 +970,7 @@ class HelloTriangleApplication {
         // Check if image format supports linear blitting
         VkFormatProperties formatProperties;
         vkGetPhysicalDeviceFormatProperties(
-                physicalDevice->get(), imageFormat, &formatProperties);
+                instance.gpu().get(), imageFormat, &formatProperties);
 
         if (!(formatProperties.optimalTilingFeatures
               & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
@@ -1065,8 +1056,8 @@ class HelloTriangleApplication {
 
     VkSampleCountFlagBits getMaxUsableSampleCount() {
         VkSampleCountFlags counts =
-                physicalDevice->properties.limits.framebufferColorSampleCounts
-                & physicalDevice->properties.limits.framebufferDepthSampleCounts;
+                instance.gpu().properties.limits.framebufferColorSampleCounts
+                & instance.gpu().properties.limits.framebufferDepthSampleCounts;
         if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
         if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
         if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
@@ -1093,7 +1084,7 @@ class HelloTriangleApplication {
         samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.maxAnisotropy =
-                physicalDevice->properties.limits.maxSamplerAnisotropy;
+                instance.gpu().properties.limits.maxSamplerAnisotropy;
         samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         samplerInfo.unnormalizedCoordinates = VK_FALSE;
         samplerInfo.compareEnable = VK_FALSE;
@@ -1509,9 +1500,9 @@ class HelloTriangleApplication {
     uint32_t findMemoryType(
             uint32_t typeFilter, VkMemoryPropertyFlags properties) {
         for (uint32_t i = 0;
-             i < physicalDevice->memory_properties.memoryTypeCount; i++) {
+             i < instance.gpu().memory_properties.memoryTypeCount; i++) {
             if ((typeFilter & (1 << i))
-                && (physicalDevice->memory_properties.memoryTypes[i].propertyFlags
+                && (instance.gpu().memory_properties.memoryTypes[i].propertyFlags
                     & properties)
                         == properties) {
                 return i;
