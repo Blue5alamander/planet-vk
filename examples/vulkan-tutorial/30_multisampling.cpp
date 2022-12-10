@@ -355,8 +355,6 @@ class HelloTriangleApplication {
 
         vkDestroyCommandPool(device.get(), commandPool, nullptr);
 
-        vkDestroyDevice(device.get(), nullptr);
-
         if (enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(
                     instance.get(), debugMessenger, nullptr);

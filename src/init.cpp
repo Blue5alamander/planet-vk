@@ -152,5 +152,8 @@ planet::vk::device::device(
 
 
 planet::vk::device::~device() {
-    if (handle) { vkDestroyDevice(handle, nullptr); }
+    if (handle) {
+        vkDeviceWaitIdle(handle);
+        vkDestroyDevice(handle, nullptr);
+    }
 }
