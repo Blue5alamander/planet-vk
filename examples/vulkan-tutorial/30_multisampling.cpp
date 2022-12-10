@@ -206,9 +206,6 @@ class HelloTriangleApplication {
         return planet::vk::device{instance, extensions};
     }();
 
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
-
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
@@ -1413,8 +1410,8 @@ class HelloTriangleApplication {
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffer;
 
-        vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(graphicsQueue);
+        vkQueueSubmit(device.graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(device.graphics_queue);
 
         vkFreeCommandBuffers(device.get(), commandPool, 1, &commandBuffer);
     }
@@ -1620,7 +1617,8 @@ class HelloTriangleApplication {
         submitInfo.pSignalSemaphores = signalSemaphores;
 
         planet::vk::worked(vkQueueSubmit(
-                graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]));
+                device.graphics_queue, 1, &submitInfo,
+                inFlightFences[currentFrame]));
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1634,7 +1632,7 @@ class HelloTriangleApplication {
 
         presentInfo.pImageIndices = &imageIndex;
 
-        result = vkQueuePresentKHR(presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(device.present_queue, &presentInfo);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR
             || framebufferResized) {
