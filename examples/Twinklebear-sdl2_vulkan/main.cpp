@@ -20,14 +20,8 @@ int main(int argc, const char **argv) {
     planet::vk::sdl::window window{sdl, "SDL2 + Vulkan", win_width, win_height};
 
     {
-        uint32_t extension_count = 0;
-        vkEnumerateInstanceExtensionProperties(
-                nullptr, &extension_count, nullptr);
-        std::cout << "num extensions: " << extension_count << "\n";
-        std::vector<VkExtensionProperties> extensions(
-                extension_count, VkExtensionProperties{});
-        vkEnumerateInstanceExtensionProperties(
-                nullptr, &extension_count, extensions.data());
+        auto extensions = planet::vk::fetch_vector<vkEnumerateInstanceExtensionProperties,VkExtensionProperties>(nullptr);
+        std::cout << "num extensions: " << extensions.size() << "\n";
         std::cout << "Available extensions:\n";
         for (const auto &e : extensions) {
             std::cout << e.extensionName << "\n";
@@ -59,12 +53,9 @@ int main(int argc, const char **argv) {
 
     VkPhysicalDevice vk_physical_device = VK_NULL_HANDLE;
     {
-        uint32_t device_count = 0;
-        vkEnumeratePhysicalDevices(vk_instance.get(), &device_count, nullptr);
-        std::cout << "Found " << device_count << " devices\n";
-        std::vector<VkPhysicalDevice> devices(device_count, VkPhysicalDevice{});
-        vkEnumeratePhysicalDevices(
-                vk_instance.get(), &device_count, devices.data());
+        auto devices = planet::vk::fetch_vector<
+                vkEnumeratePhysicalDevices, VkPhysicalDevice>(instance.get());
+        std::cout << "Found " << devices.size() << " devices\n";
 
         const bool has_discrete_gpu =
                 std::find_if(
