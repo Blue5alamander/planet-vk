@@ -1842,16 +1842,8 @@ class HelloTriangleApplication {
             findQueueFamilies(planet::vk::physical_device const &device) {
         QueueFamilyIndices indices;
 
-        uint32_t queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(
-                device.get(), &queueFamilyCount, nullptr);
-
-        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(
-                device.get(), &queueFamilyCount, queueFamilies.data());
-
         int i = 0;
-        for (const auto &queueFamily : queueFamilies) {
+        for (const auto &queueFamily : device.queue_family_properties) {
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.graphicsFamily = i;
             }

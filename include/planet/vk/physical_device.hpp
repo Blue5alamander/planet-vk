@@ -21,6 +21,7 @@ namespace planet::vk {
         VkPhysicalDeviceProperties properties = {};
         VkPhysicalDeviceFeatures features = {};
         VkPhysicalDeviceMemoryProperties memory_properties = {};
+        std::vector<VkQueueFamilyProperties> queue_family_properties;
     };
 
 

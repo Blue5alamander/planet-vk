@@ -81,4 +81,7 @@ planet::vk::physical_device::physical_device(VkPhysicalDevice h) : handle{h} {
     vkGetPhysicalDeviceProperties(handle, &properties);
     vkGetPhysicalDeviceFeatures(handle, &features);
     vkGetPhysicalDeviceMemoryProperties(handle, &memory_properties);
+    queue_family_properties = fetch_vector<
+            vkGetPhysicalDeviceQueueFamilyProperties, VkQueueFamilyProperties>(
+            handle);
 }

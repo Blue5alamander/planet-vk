@@ -60,22 +60,16 @@ int main(int argc, const char **argv) {
     VkQueue vk_queue = VK_NULL_HANDLE;
     uint32_t graphics_queue_index = -1;
     {
-        uint32_t num_queue_families = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(
-                vk_instance.gpu().get(), &num_queue_families, nullptr);
-        std::vector<VkQueueFamilyProperties> family_props(
-                num_queue_families, VkQueueFamilyProperties{});
-        vkGetPhysicalDeviceQueueFamilyProperties(
-                vk_instance.gpu().get(), &num_queue_families,
-                family_props.data());
-        for (uint32_t i = 0; i < num_queue_families; ++i) {
+        for (uint32_t i = 0;
+             i < vk_instance.gpu().queue_family_properties.size(); ++i) {
             // We want present and graphics on the same queue (kind of assume
             // this will be supported on any discrete GPU)
             VkBool32 present_support = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(
                     vk_instance.gpu().get(), i, vk_surface, &present_support);
             if (present_support
-                && (family_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
+                and (vk_instance.gpu().queue_family_properties[i].queueFlags
+                     & VK_QUEUE_GRAPHICS_BIT)) {
                 graphics_queue_index = i;
             }
         }
