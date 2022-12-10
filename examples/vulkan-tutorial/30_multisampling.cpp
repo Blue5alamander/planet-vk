@@ -143,22 +143,68 @@ class HelloTriangleApplication {
     }
 
     void run() {
-        initWindow();
         initVulkan();
         mainLoop();
         cleanup();
     }
 
   private:
-    GLFWwindow *window;
+    GLFWwindow *window = [this]() {
+        glfwInit();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        auto *w = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+        glfwSetWindowUserPointer(w, this);
+        glfwSetFramebufferSizeCallback(w, framebufferResizeCallback);
+        return w;
+    }();
 
     planet::vk::extensions extensions;
 
-    planet::vk::instance instance;
+    planet::vk::instance instance = [this]() {
+        if (enableValidationLayers && !checkValidationLayerSupport()) {
+            throw std::runtime_error(
+                    "validation layers requested, but not available!");
+        }
+
+        auto appInfo = planet::vk::application_info();
+        appInfo.pApplicationName = "Hello Triangle";
+        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+
+        getRequiredExtensions();
+        auto createInfo = planet::vk::instance::info(extensions, appInfo);
+
+        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+        if (enableValidationLayers) {
+            createInfo.enabledLayerCount =
+                    static_cast<uint32_t>(extensions.validation_layers.size());
+            createInfo.ppEnabledLayerNames =
+                    extensions.validation_layers.data();
+
+            populateDebugMessengerCreateInfo(debugCreateInfo);
+            createInfo.pNext =
+                    (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
+        } else {
+            createInfo.enabledLayerCount = 0;
+            createInfo.pNext = nullptr;
+        }
+
+        return planet::vk::instance{
+                createInfo, [this](VkInstance h) {
+                    VkSurfaceKHR surface = VK_NULL_HANDLE;
+                    planet::vk::worked(glfwCreateWindowSurface(
+                            h, window, nullptr, &surface));
+                    return surface;
+                }};
+    }();
+
     VkDebugUtilsMessengerEXT debugMessenger;
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-    VkDevice device;
+    planet::vk::device device = [this]() {
+        setupDebugMessenger();
+        pickPhysicalDevice();
+        return planet::vk::device{instance, extensions};
+    }();
 
     VkQueue graphicsQueue;
     VkQueue presentQueue;
@@ -214,16 +260,6 @@ class HelloTriangleApplication {
 
     bool framebufferResized = false;
 
-    void initWindow() {
-        glfwInit();
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(window, this);
-        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-    }
-
     static void framebufferResizeCallback(
             GLFWwindow *window, int width, int height) {
         auto app = reinterpret_cast<HelloTriangleApplication *>(
@@ -232,10 +268,6 @@ class HelloTriangleApplication {
     }
 
     void initVulkan() {
-        createInstance();
-        setupDebugMessenger();
-        pickPhysicalDevice();
-        createLogicalDevice();
         createSwapChain();
         createImageViews();
         createRenderPass();
@@ -264,66 +296,69 @@ class HelloTriangleApplication {
             drawFrame();
         }
 
-        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(device.get());
     }
 
     void cleanupSwapChain() {
-        vkDestroyImageView(device, depthImageView, nullptr);
-        vkDestroyImage(device, depthImage, nullptr);
-        vkFreeMemory(device, depthImageMemory, nullptr);
+        vkDestroyImageView(device.get(), depthImageView, nullptr);
+        vkDestroyImage(device.get(), depthImage, nullptr);
+        vkFreeMemory(device.get(), depthImageMemory, nullptr);
 
-        vkDestroyImageView(device, colorImageView, nullptr);
-        vkDestroyImage(device, colorImage, nullptr);
-        vkFreeMemory(device, colorImageMemory, nullptr);
+        vkDestroyImageView(device.get(), colorImageView, nullptr);
+        vkDestroyImage(device.get(), colorImage, nullptr);
+        vkFreeMemory(device.get(), colorImageMemory, nullptr);
 
         for (auto framebuffer : swapChainFramebuffers) {
-            vkDestroyFramebuffer(device, framebuffer, nullptr);
+            vkDestroyFramebuffer(device.get(), framebuffer, nullptr);
         }
 
         for (auto imageView : swapChainImageViews) {
-            vkDestroyImageView(device, imageView, nullptr);
+            vkDestroyImageView(device.get(), imageView, nullptr);
         }
 
-        vkDestroySwapchainKHR(device, swapChain, nullptr);
+        vkDestroySwapchainKHR(device.get(), swapChain, nullptr);
     }
 
     void cleanup() {
         cleanupSwapChain();
 
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyRenderPass(device, renderPass, nullptr);
+        vkDestroyPipeline(device.get(), graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(device.get(), pipelineLayout, nullptr);
+        vkDestroyRenderPass(device.get(), renderPass, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroyBuffer(device, uniformBuffers[i], nullptr);
-            vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+            vkDestroyBuffer(device.get(), uniformBuffers[i], nullptr);
+            vkFreeMemory(device.get(), uniformBuffersMemory[i], nullptr);
         }
 
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+        vkDestroyDescriptorPool(device.get(), descriptorPool, nullptr);
 
-        vkDestroySampler(device, textureSampler, nullptr);
-        vkDestroyImageView(device, textureImageView, nullptr);
+        vkDestroySampler(device.get(), textureSampler, nullptr);
+        vkDestroyImageView(device.get(), textureImageView, nullptr);
 
-        vkDestroyImage(device, textureImage, nullptr);
-        vkFreeMemory(device, textureImageMemory, nullptr);
+        vkDestroyImage(device.get(), textureImage, nullptr);
+        vkFreeMemory(device.get(), textureImageMemory, nullptr);
 
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+        vkDestroyDescriptorSetLayout(
+                device.get(), descriptorSetLayout, nullptr);
 
-        vkDestroyBuffer(device, indexBuffer, nullptr);
-        vkFreeMemory(device, indexBufferMemory, nullptr);
+        vkDestroyBuffer(device.get(), indexBuffer, nullptr);
+        vkFreeMemory(device.get(), indexBufferMemory, nullptr);
 
-        vkDestroyBuffer(device, vertexBuffer, nullptr);
-        vkFreeMemory(device, vertexBufferMemory, nullptr);
+        vkDestroyBuffer(device.get(), vertexBuffer, nullptr);
+        vkFreeMemory(device.get(), vertexBufferMemory, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(device, inFlightFences[i], nullptr);
+            vkDestroySemaphore(
+                    device.get(), renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(
+                    device.get(), imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(device.get(), inFlightFences[i], nullptr);
         }
 
-        vkDestroyCommandPool(device, commandPool, nullptr);
+        vkDestroyCommandPool(device.get(), commandPool, nullptr);
 
-        vkDestroyDevice(device, nullptr);
+        vkDestroyDevice(device.get(), nullptr);
 
         if (enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(
@@ -343,7 +378,7 @@ class HelloTriangleApplication {
             glfwWaitEvents();
         }
 
-        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(device.get());
 
         cleanupSwapChain();
 
@@ -352,44 +387,6 @@ class HelloTriangleApplication {
         createColorResources();
         createDepthResources();
         createFramebuffers();
-    }
-
-    void createInstance() {
-        if (enableValidationLayers && !checkValidationLayerSupport()) {
-            throw std::runtime_error(
-                    "validation layers requested, but not available!");
-        }
-
-        auto appInfo = planet::vk::application_info();
-        appInfo.pApplicationName = "Hello Triangle";
-        appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-
-        getRequiredExtensions();
-        auto createInfo = planet::vk::instance::info(extensions, appInfo);
-
-        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-        if (enableValidationLayers) {
-            createInfo.enabledLayerCount =
-                    static_cast<uint32_t>(extensions.validation_layers.size());
-            createInfo.ppEnabledLayerNames =
-                    extensions.validation_layers.data();
-
-            populateDebugMessengerCreateInfo(debugCreateInfo);
-            createInfo.pNext =
-                    (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
-        } else {
-            createInfo.enabledLayerCount = 0;
-
-            createInfo.pNext = nullptr;
-        }
-
-        instance = planet::vk::instance{
-                createInfo, [this](VkInstance h) {
-                    VkSurfaceKHR surface = VK_NULL_HANDLE;
-                    planet::vk::worked(glfwCreateWindowSurface(
-                            h, window, nullptr, &surface));
-                    return surface;
-                }};
     }
 
     void populateDebugMessengerCreateInfo(
@@ -429,59 +426,6 @@ class HelloTriangleApplication {
         }
         throw felspar::stdexcept::runtime_error{
                 "failed to find a suitable GPU!"};
-    }
-
-    void createLogicalDevice() {
-        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = {
-                instance.gpu().graphics_queue_index(),
-                instance.gpu().presentation_queue_index()};
-
-        float queuePriority = 1.0f;
-        for (uint32_t queueFamily : uniqueQueueFamilies) {
-            VkDeviceQueueCreateInfo queueCreateInfo{};
-            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueCreateInfo.queueFamilyIndex = queueFamily;
-            queueCreateInfo.queueCount = 1;
-            queueCreateInfo.pQueuePriorities = &queuePriority;
-            queueCreateInfos.push_back(queueCreateInfo);
-        }
-
-        VkPhysicalDeviceFeatures deviceFeatures{};
-        deviceFeatures.samplerAnisotropy = VK_TRUE;
-
-        VkDeviceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-
-        createInfo.queueCreateInfoCount =
-                static_cast<uint32_t>(queueCreateInfos.size());
-        createInfo.pQueueCreateInfos = queueCreateInfos.data();
-
-        createInfo.pEnabledFeatures = &deviceFeatures;
-
-        createInfo.enabledExtensionCount =
-                static_cast<uint32_t>(extensions.device_extensions.size());
-        createInfo.ppEnabledExtensionNames =
-                extensions.device_extensions.data();
-
-        if (enableValidationLayers) {
-            createInfo.enabledLayerCount =
-                    static_cast<uint32_t>(extensions.validation_layers.size());
-            createInfo.ppEnabledLayerNames =
-                    extensions.validation_layers.data();
-        } else {
-            createInfo.enabledLayerCount = 0;
-        }
-
-        planet::vk::worked(vkCreateDevice(
-                instance.gpu().get(), &createInfo, nullptr, &device));
-
-        vkGetDeviceQueue(
-                device, instance.gpu().graphics_queue_index(), 0,
-                &graphicsQueue);
-        vkGetDeviceQueue(
-                device, instance.gpu().presentation_queue_index(), 0,
-                &presentQueue);
     }
 
     void createSwapChain() {
@@ -530,13 +474,13 @@ class HelloTriangleApplication {
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
 
-        planet::vk::worked(
-                vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain));
+        planet::vk::worked(vkCreateSwapchainKHR(
+                device.get(), &createInfo, nullptr, &swapChain));
 
-        vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(device.get(), swapChain, &imageCount, nullptr);
         swapChainImages.resize(imageCount);
         vkGetSwapchainImagesKHR(
-                device, swapChain, &imageCount, swapChainImages.data());
+                device.get(), swapChain, &imageCount, swapChainImages.data());
 
         swapChainImageFormat = surfaceFormat.format;
         swapChainExtent = extent;
@@ -630,7 +574,7 @@ class HelloTriangleApplication {
         renderPassInfo.pDependencies = &dependency;
 
         planet::vk::worked(vkCreateRenderPass(
-                device, &renderPassInfo, nullptr, &renderPass));
+                device.get(), &renderPassInfo, nullptr, &renderPass));
     }
 
     void createDescriptorSetLayout() {
@@ -657,7 +601,7 @@ class HelloTriangleApplication {
         layoutInfo.pBindings = bindings.data();
 
         planet::vk::worked(vkCreateDescriptorSetLayout(
-                device, &layoutInfo, nullptr, &descriptorSetLayout));
+                device.get(), &layoutInfo, nullptr, &descriptorSetLayout));
     }
 
     void createGraphicsPipeline() {
@@ -770,7 +714,7 @@ class HelloTriangleApplication {
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
         planet::vk::worked(vkCreatePipelineLayout(
-                device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+                device.get(), &pipelineLayoutInfo, nullptr, &pipelineLayout));
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -790,11 +734,11 @@ class HelloTriangleApplication {
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
         planet::vk::worked(vkCreateGraphicsPipelines(
-                device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+                device.get(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
                 &graphicsPipeline));
 
-        vkDestroyShaderModule(device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(device, vertShaderModule, nullptr);
+        vkDestroyShaderModule(device.get(), fragShaderModule, nullptr);
+        vkDestroyShaderModule(device.get(), vertShaderModule, nullptr);
     }
 
     void createFramebuffers() {
@@ -815,7 +759,7 @@ class HelloTriangleApplication {
             framebufferInfo.layers = 1;
 
             planet::vk::worked(vkCreateFramebuffer(
-                    device, &framebufferInfo, nullptr,
+                    device.get(), &framebufferInfo, nullptr,
                     &swapChainFramebuffers[i]));
         }
     }
@@ -825,8 +769,8 @@ class HelloTriangleApplication {
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolInfo.queueFamilyIndex = instance.gpu().graphics_queue_index();
-        planet::vk::worked(
-                vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool));
+        planet::vk::worked(vkCreateCommandPool(
+                device.get(), &poolInfo, nullptr, &commandPool));
     }
 
     void createColorResources() {
@@ -914,9 +858,9 @@ class HelloTriangleApplication {
                 stagingBuffer, stagingBufferMemory);
 
         void *data;
-        vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+        vkMapMemory(device.get(), stagingBufferMemory, 0, imageSize, 0, &data);
         memcpy(data, pixels, static_cast<size_t>(imageSize));
-        vkUnmapMemory(device, stagingBufferMemory);
+        vkUnmapMemory(device.get(), stagingBufferMemory);
 
         stbi_image_free(pixels);
 
@@ -939,8 +883,8 @@ class HelloTriangleApplication {
         // transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while
         // generating mipmaps
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+        vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
+        vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
 
         generateMipmaps(
                 textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight,
@@ -1081,7 +1025,7 @@ class HelloTriangleApplication {
         samplerInfo.mipLodBias = 0.0f;
 
         planet::vk::worked(vkCreateSampler(
-                device, &samplerInfo, nullptr, &textureSampler));
+                device.get(), &samplerInfo, nullptr, &textureSampler));
     }
 
     VkImageView createImageView(
@@ -1101,8 +1045,8 @@ class HelloTriangleApplication {
         viewInfo.subresourceRange.layerCount = 1;
 
         VkImageView imageView;
-        planet::vk::worked(
-                vkCreateImageView(device, &viewInfo, nullptr, &imageView));
+        planet::vk::worked(vkCreateImageView(
+                device.get(), &viewInfo, nullptr, &imageView));
 
         return imageView;
     }
@@ -1133,10 +1077,11 @@ class HelloTriangleApplication {
         imageInfo.samples = numSamples;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        planet::vk::worked(vkCreateImage(device, &imageInfo, nullptr, &image));
+        planet::vk::worked(
+                vkCreateImage(device.get(), &imageInfo, nullptr, &image));
 
         VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(device, image, &memRequirements);
+        vkGetImageMemoryRequirements(device.get(), image, &memRequirements);
 
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -1144,10 +1089,10 @@ class HelloTriangleApplication {
         allocInfo.memoryTypeIndex =
                 findMemoryType(memRequirements.memoryTypeBits, properties);
 
-        planet::vk::worked(
-                vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory));
+        planet::vk::worked(vkAllocateMemory(
+                device.get(), &allocInfo, nullptr, &imageMemory));
 
-        vkBindImageMemory(device, image, imageMemory, 0);
+        vkBindImageMemory(device.get(), image, imageMemory, 0);
     }
 
     void transitionImageLayout(
@@ -1274,9 +1219,9 @@ class HelloTriangleApplication {
                 stagingBuffer, stagingBufferMemory);
 
         void *data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        vkMapMemory(device.get(), stagingBufferMemory, 0, bufferSize, 0, &data);
         memcpy(data, vertices.data(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
+        vkUnmapMemory(device.get(), stagingBufferMemory);
 
         createBuffer(
                 bufferSize,
@@ -1287,8 +1232,8 @@ class HelloTriangleApplication {
 
         copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+        vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
+        vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
     }
 
     void createIndexBuffer() {
@@ -1303,9 +1248,9 @@ class HelloTriangleApplication {
                 stagingBuffer, stagingBufferMemory);
 
         void *data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        vkMapMemory(device.get(), stagingBufferMemory, 0, bufferSize, 0, &data);
         memcpy(data, indices.data(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
+        vkUnmapMemory(device.get(), stagingBufferMemory);
 
         createBuffer(
                 bufferSize,
@@ -1316,8 +1261,8 @@ class HelloTriangleApplication {
 
         copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
+        vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
+        vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
     }
 
     void createUniformBuffers() {
@@ -1335,7 +1280,7 @@ class HelloTriangleApplication {
                     uniformBuffers[i], uniformBuffersMemory[i]);
 
             vkMapMemory(
-                    device, uniformBuffersMemory[i], 0, bufferSize, 0,
+                    device.get(), uniformBuffersMemory[i], 0, bufferSize, 0,
                     &uniformBuffersMapped[i]);
         }
     }
@@ -1356,7 +1301,7 @@ class HelloTriangleApplication {
         poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
         planet::vk::worked(vkCreateDescriptorPool(
-                device, &poolInfo, nullptr, &descriptorPool));
+                device.get(), &poolInfo, nullptr, &descriptorPool));
     }
 
     void createDescriptorSets() {
@@ -1371,7 +1316,7 @@ class HelloTriangleApplication {
 
         descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
         planet::vk::worked(vkAllocateDescriptorSets(
-                device, &allocInfo, descriptorSets.data()));
+                device.get(), &allocInfo, descriptorSets.data()));
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};
@@ -1405,7 +1350,8 @@ class HelloTriangleApplication {
             descriptorWrites[1].pImageInfo = &imageInfo;
 
             vkUpdateDescriptorSets(
-                    device, static_cast<uint32_t>(descriptorWrites.size()),
+                    device.get(),
+                    static_cast<uint32_t>(descriptorWrites.size()),
                     descriptorWrites.data(), 0, nullptr);
         }
     }
@@ -1423,10 +1369,10 @@ class HelloTriangleApplication {
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
         planet::vk::worked(
-                vkCreateBuffer(device, &bufferInfo, nullptr, &buffer));
+                vkCreateBuffer(device.get(), &bufferInfo, nullptr, &buffer));
 
         VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+        vkGetBufferMemoryRequirements(device.get(), buffer, &memRequirements);
 
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -1434,10 +1380,10 @@ class HelloTriangleApplication {
         allocInfo.memoryTypeIndex =
                 findMemoryType(memRequirements.memoryTypeBits, properties);
 
-        planet::vk::worked(
-                vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory));
+        planet::vk::worked(vkAllocateMemory(
+                device.get(), &allocInfo, nullptr, &bufferMemory));
 
-        vkBindBufferMemory(device, buffer, bufferMemory, 0);
+        vkBindBufferMemory(device.get(), buffer, bufferMemory, 0);
     }
 
     VkCommandBuffer beginSingleTimeCommands() {
@@ -1448,7 +1394,7 @@ class HelloTriangleApplication {
         allocInfo.commandBufferCount = 1;
 
         VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+        vkAllocateCommandBuffers(device.get(), &allocInfo, &commandBuffer);
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1470,7 +1416,7 @@ class HelloTriangleApplication {
         vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(graphicsQueue);
 
-        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+        vkFreeCommandBuffers(device.get(), commandPool, 1, &commandBuffer);
     }
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
@@ -1508,7 +1454,7 @@ class HelloTriangleApplication {
         allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
         planet::vk::worked(vkAllocateCommandBuffers(
-                device, &allocInfo, commandBuffers.data()));
+                device.get(), &allocInfo, commandBuffers.data()));
     }
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -1587,14 +1533,15 @@ class HelloTriangleApplication {
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             if (vkCreateSemaphore(
-                        device, &semaphoreInfo, nullptr,
+                        device.get(), &semaphoreInfo, nullptr,
                         &imageAvailableSemaphores[i])
                         != VK_SUCCESS
                 || vkCreateSemaphore(
-                           device, &semaphoreInfo, nullptr,
+                           device.get(), &semaphoreInfo, nullptr,
                            &renderFinishedSemaphores[i])
                         != VK_SUCCESS
-                || vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i])
+                || vkCreateFence(
+                           device.get(), &fenceInfo, nullptr, &inFlightFences[i])
                         != VK_SUCCESS) {
                 throw std::runtime_error(
                         "failed to create synchronization objects for a "
@@ -1629,11 +1576,12 @@ class HelloTriangleApplication {
 
     void drawFrame() {
         vkWaitForFences(
-                device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+                device.get(), 1, &inFlightFences[currentFrame], VK_TRUE,
+                UINT64_MAX);
 
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(
-                device, swapChain, UINT64_MAX,
+                device.get(), swapChain, UINT64_MAX,
                 imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE,
                 &imageIndex);
 
@@ -1646,7 +1594,7 @@ class HelloTriangleApplication {
 
         updateUniformBuffer(currentFrame);
 
-        vkResetFences(device, 1, &inFlightFences[currentFrame]);
+        vkResetFences(device.get(), 1, &inFlightFences[currentFrame]);
 
         vkResetCommandBuffer(
                 commandBuffers[currentFrame],
@@ -1707,7 +1655,7 @@ class HelloTriangleApplication {
 
         VkShaderModule shaderModule;
         planet::vk::worked(vkCreateShaderModule(
-                device, &createInfo, nullptr, &shaderModule));
+                device.get(), &createInfo, nullptr, &shaderModule));
 
         return shaderModule;
     }

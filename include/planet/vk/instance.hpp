@@ -38,14 +38,7 @@ namespace planet::vk {
         instance(instance const &) = delete;
         instance(instance &&) = delete;
         instance &operator=(instance const &) = delete;
-        instance &operator=(instance &&i) noexcept {
-            reset();
-            handle = std::exchange(i.handle, VK_NULL_HANDLE);
-            pdevices = std::move(i.pdevices);
-            gpu_in_use = std::exchange(i.gpu_in_use, nullptr);
-            surface = std::exchange(i.surface, VK_NULL_HANDLE);
-            return *this;
-        }
+        instance &operator=(instance &&i) = delete;
 
         VkInstance get() noexcept { return handle; }
 

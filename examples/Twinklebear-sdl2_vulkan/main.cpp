@@ -36,13 +36,11 @@ int main(int argc, const char **argv) {
     for (auto ex : extensions.vulkan_extensions) { std::cout << ex << '\n'; }
 
     // Make the Vulkan Instance
-    planet::vk::instance vk_instance;
-    {
+    planet::vk::instance vk_instance = [&]() {
         auto app_info = planet::vk::application_info();
         app_info.pApplicationName = "SDL2 + Vulkan";
         app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-
-        vk_instance = planet::vk::instance{
+        return planet::vk::instance{
                 planet::vk::instance::info(extensions, app_info),
                 [&window](VkInstance h) {
                     VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
@@ -53,7 +51,7 @@ int main(int argc, const char **argv) {
                     }
                     return vk_surface;
                 }};
-    }
+    }();
 
     std::cout << "Found " << vk_instance.physical_devices().size()
               << " devices. Using " << vk_instance.gpu().properties.deviceName
