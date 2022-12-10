@@ -20,6 +20,7 @@ namespace planet::vk {
 
         VkPhysicalDeviceProperties properties = {};
         VkPhysicalDeviceFeatures features = {};
+        VkPhysicalDeviceMemoryProperties memory_properties = {};
     };
 
 

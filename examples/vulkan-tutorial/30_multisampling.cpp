@@ -167,7 +167,7 @@ class HelloTriangleApplication {
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
 
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    planet::vk::physical_device const *physicalDevice = nullptr;
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     VkDevice device;
 
@@ -431,30 +431,29 @@ class HelloTriangleApplication {
     }
 
     void pickPhysicalDevice() {
-        auto devices = planet::vk::fetch_vector<
-                vkEnumeratePhysicalDevices, VkPhysicalDevice>(instance.get());
+        auto const devices = instance.devices();
 
         if (devices.empty()) {
             throw felspar::stdexcept::runtime_error{
                     "failed to find GPUs with Vulkan support!"};
         }
 
-        for (const auto &device : devices) {
+        for (auto const &device : devices) {
             if (isDeviceSuitable(device)) {
-                physicalDevice = device;
+                physicalDevice = &device;
                 msaaSamples = getMaxUsableSampleCount();
                 break;
             }
         }
 
-        if (physicalDevice == VK_NULL_HANDLE) {
+        if (not physicalDevice) {
             throw felspar::stdexcept::runtime_error{
                     "failed to find a suitable GPU!"};
         }
     }
 
     void createLogicalDevice() {
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+        QueueFamilyIndices indices = findQueueFamilies(*physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {
@@ -496,8 +495,8 @@ class HelloTriangleApplication {
             createInfo.enabledLayerCount = 0;
         }
 
-        planet::vk::worked(
-                vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
+        planet::vk::worked(vkCreateDevice(
+                physicalDevice->get(), &createInfo, nullptr, &device));
 
         vkGetDeviceQueue(
                 device, indices.graphicsFamily.value(), 0, &graphicsQueue);
@@ -507,7 +506,7 @@ class HelloTriangleApplication {
 
     void createSwapChain() {
         SwapChainSupportDetails swapChainSupport =
-                querySwapChainSupport(physicalDevice);
+                querySwapChainSupport(*physicalDevice);
 
         VkSurfaceFormatKHR surfaceFormat =
                 chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -532,7 +531,7 @@ class HelloTriangleApplication {
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+        QueueFamilyIndices indices = findQueueFamilies(*physicalDevice);
         uint32_t queueFamilyIndices[] = {
                 indices.graphicsFamily.value(), indices.presentFamily.value()};
 
@@ -842,7 +841,7 @@ class HelloTriangleApplication {
 
     void createCommandPool() {
         QueueFamilyIndices queueFamilyIndices =
-                findQueueFamilies(physicalDevice);
+                findQueueFamilies(*physicalDevice);
 
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -886,7 +885,8 @@ class HelloTriangleApplication {
             VkFormatFeatureFlags features) {
         for (VkFormat format : candidates) {
             VkFormatProperties props;
-            vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+            vkGetPhysicalDeviceFormatProperties(
+                    physicalDevice->get(), format, &props);
 
             if (tiling == VK_IMAGE_TILING_LINEAR
                 && (props.linearTilingFeatures & features) == features) {
@@ -979,7 +979,7 @@ class HelloTriangleApplication {
         // Check if image format supports linear blitting
         VkFormatProperties formatProperties;
         vkGetPhysicalDeviceFormatProperties(
-                physicalDevice, imageFormat, &formatProperties);
+                physicalDevice->get(), imageFormat, &formatProperties);
 
         if (!(formatProperties.optimalTilingFeatures
               & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
@@ -1064,13 +1064,9 @@ class HelloTriangleApplication {
     }
 
     VkSampleCountFlagBits getMaxUsableSampleCount() {
-        VkPhysicalDeviceProperties physicalDeviceProperties;
-        vkGetPhysicalDeviceProperties(
-                physicalDevice, &physicalDeviceProperties);
-
         VkSampleCountFlags counts =
-                physicalDeviceProperties.limits.framebufferColorSampleCounts
-                & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+                physicalDevice->properties.limits.framebufferColorSampleCounts
+                & physicalDevice->properties.limits.framebufferDepthSampleCounts;
         if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
         if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
         if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
@@ -1088,9 +1084,6 @@ class HelloTriangleApplication {
     }
 
     void createTextureSampler() {
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -1099,7 +1092,8 @@ class HelloTriangleApplication {
         samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         samplerInfo.anisotropyEnable = VK_TRUE;
-        samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+        samplerInfo.maxAnisotropy =
+                physicalDevice->properties.limits.maxSamplerAnisotropy;
         samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         samplerInfo.unnormalizedCoordinates = VK_FALSE;
         samplerInfo.compareEnable = VK_FALSE;
@@ -1514,12 +1508,11 @@ class HelloTriangleApplication {
 
     uint32_t findMemoryType(
             uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-        VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        for (uint32_t i = 0;
+             i < physicalDevice->memory_properties.memoryTypeCount; i++) {
             if ((typeFilter & (1 << i))
-                && (memProperties.memoryTypes[i].propertyFlags & properties)
+                && (physicalDevice->memory_properties.memoryTypes[i].propertyFlags
+                    & properties)
                         == properties) {
                 return i;
             }
@@ -1789,37 +1782,39 @@ class HelloTriangleApplication {
         }
     }
 
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) {
+    SwapChainSupportDetails
+            querySwapChainSupport(planet::vk::physical_device const &device) {
         SwapChainSupportDetails details;
 
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-                device, surface, &details.capabilities);
+                device.get(), surface, &details.capabilities);
 
         uint32_t formatCount;
         vkGetPhysicalDeviceSurfaceFormatsKHR(
-                device, surface, &formatCount, nullptr);
+                device.get(), surface, &formatCount, nullptr);
 
         if (formatCount != 0) {
             details.formats.resize(formatCount);
             vkGetPhysicalDeviceSurfaceFormatsKHR(
-                    device, surface, &formatCount, details.formats.data());
+                    device.get(), surface, &formatCount,
+                    details.formats.data());
         }
 
         uint32_t presentModeCount;
         vkGetPhysicalDeviceSurfacePresentModesKHR(
-                device, surface, &presentModeCount, nullptr);
+                device.get(), surface, &presentModeCount, nullptr);
 
         if (presentModeCount != 0) {
             details.presentModes.resize(presentModeCount);
             vkGetPhysicalDeviceSurfacePresentModesKHR(
-                    device, surface, &presentModeCount,
+                    device.get(), surface, &presentModeCount,
                     details.presentModes.data());
         }
 
         return details;
     }
 
-    bool isDeviceSuitable(VkPhysicalDevice device) {
+    bool isDeviceSuitable(planet::vk::physical_device const &device) {
         QueueFamilyIndices indices = findQueueFamilies(device);
 
         bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -1832,17 +1827,14 @@ class HelloTriangleApplication {
                     && !swapChainSupport.presentModes.empty();
         }
 
-        VkPhysicalDeviceFeatures supportedFeatures;
-        vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-
         return indices.isComplete() && extensionsSupported && swapChainAdequate
-                && supportedFeatures.samplerAnisotropy;
+                && device.features.samplerAnisotropy;
     }
 
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
+    bool checkDeviceExtensionSupport(planet::vk::physical_device const &device) {
         auto const availableExtensions = planet::vk::fetch_vector<
                 vkEnumerateDeviceExtensionProperties, VkExtensionProperties>(
-                device, nullptr);
+                device.get(), nullptr);
 
         std::set<std::string> requiredExtensions(
                 extensions.device_extensions.begin(),
@@ -1855,16 +1847,17 @@ class HelloTriangleApplication {
         return requiredExtensions.empty();
     }
 
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices
+            findQueueFamilies(planet::vk::physical_device const &device) {
         QueueFamilyIndices indices;
 
         uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(
-                device, &queueFamilyCount, nullptr);
+                device.get(), &queueFamilyCount, nullptr);
 
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(
-                device, &queueFamilyCount, queueFamilies.data());
+                device.get(), &queueFamilyCount, queueFamilies.data());
 
         int i = 0;
         for (const auto &queueFamily : queueFamilies) {
@@ -1874,7 +1867,7 @@ class HelloTriangleApplication {
 
             VkBool32 presentSupport = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(
-                    device, i, surface, &presentSupport);
+                    device.get(), i, surface, &presentSupport);
 
             if (presentSupport) { indices.presentFamily = i; }
 

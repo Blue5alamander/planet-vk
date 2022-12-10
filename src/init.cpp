@@ -81,4 +81,5 @@ planet::vk::physical_device const &planet::vk::instance::best_gpu() const {
 planet::vk::physical_device::physical_device(VkPhysicalDevice h) : handle{h} {
     vkGetPhysicalDeviceProperties(handle, &properties);
     vkGetPhysicalDeviceFeatures(handle, &features);
+    vkGetPhysicalDeviceMemoryProperties(handle, &memory_properties);
 }
