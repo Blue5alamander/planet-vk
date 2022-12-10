@@ -418,7 +418,7 @@ class HelloTriangleApplication {
     }
 
     void pickPhysicalDevice() {
-        auto const devices = instance.devices();
+        auto const devices = instance.physical_devices();
 
         for (auto const &device : devices) {
             if (isDeviceSuitable(device)) {

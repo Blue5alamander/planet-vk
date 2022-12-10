@@ -57,8 +57,9 @@ int main(int argc, const char **argv) {
                 }};
     }
 
-    std::cout << "Found " << vk_instance.devices().size() << " devices\n";
-    std::cout << "Using " << vk_instance.gpu().properties.deviceName << "\n";
+    std::cout << "Found " << vk_instance.physical_devices().size()
+              << " devices. Using " << vk_instance.gpu().properties.deviceName
+              << "\n";
 
     VkDevice vk_device = VK_NULL_HANDLE;
     VkQueue vk_graphics_queue = VK_NULL_HANDLE,

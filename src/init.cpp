@@ -38,20 +38,20 @@ planet::vk::instance::instance(
     planet::vk::worked(vkCreateInstance(&info, nullptr, &handle));
     auto devices = planet::vk::fetch_vector<
             vkEnumeratePhysicalDevices, VkPhysicalDevice>(handle);
-    physical_devices.reserve(devices.size());
+    pdevices.reserve(devices.size());
     surface = mksurface(handle);
-    for (auto dh : devices) { physical_devices.emplace_back(dh, surface); }
+    for (auto dh : devices) { pdevices.emplace_back(dh, surface); }
 
     bool const has_discrete_gpu =
             std::find_if(
-                    physical_devices.begin(), physical_devices.end(),
+                    pdevices.begin(), pdevices.end(),
                     [](auto const &d) {
                         return d.properties.deviceType
                                 == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
                     })
-            != physical_devices.end();
+            != pdevices.end();
 
-    for (auto const &d : physical_devices) {
+    for (auto const &d : pdevices) {
         if (has_discrete_gpu
             and d.properties.deviceType
                     == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
@@ -71,8 +71,10 @@ planet::vk::instance::instance(
 
 
 void planet::vk::instance::reset() noexcept {
-    if (surface) { vkDestroySurfaceKHR(handle, surface, nullptr); }
-    if (handle) { vkDestroyInstance(handle, nullptr); }
+    if (handle) {
+        if (surface) { vkDestroySurfaceKHR(handle, surface, nullptr); }
+        vkDestroyInstance(handle, nullptr);
+    }
 }
 
 

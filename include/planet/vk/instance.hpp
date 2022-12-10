@@ -23,7 +23,7 @@ namespace planet::vk {
         VkInstance handle = VK_NULL_HANDLE;
         void reset() noexcept;
 
-        std::vector<physical_device> physical_devices;
+        std::vector<physical_device> pdevices;
         physical_device const *gpu_in_use = nullptr;
 
       public:
@@ -41,7 +41,7 @@ namespace planet::vk {
         instance &operator=(instance &&i) noexcept {
             reset();
             handle = std::exchange(i.handle, VK_NULL_HANDLE);
-            physical_devices = std::move(i.physical_devices);
+            pdevices = std::move(i.pdevices);
             gpu_in_use = std::exchange(i.gpu_in_use, nullptr);
             surface = std::exchange(i.surface, VK_NULL_HANDLE);
             return *this;
@@ -49,8 +49,8 @@ namespace planet::vk {
 
         VkInstance get() noexcept { return handle; }
 
-        std::span<physical_device const> devices() const {
-            return physical_devices;
+        std::span<physical_device const> physical_devices() const {
+            return pdevices;
         }
         physical_device const &gpu() const noexcept { return *gpu_in_use; }
         physical_device const &use_gpu(physical_device const &d) noexcept {
