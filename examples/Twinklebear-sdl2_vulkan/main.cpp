@@ -20,7 +20,9 @@ int main(int argc, const char **argv) {
     planet::vk::sdl::window window{sdl, "SDL2 + Vulkan", win_width, win_height};
 
     {
-        auto extensions = planet::vk::fetch_vector<vkEnumerateInstanceExtensionProperties,VkExtensionProperties>(nullptr);
+        auto extensions = planet::vk::fetch_vector<
+                vkEnumerateInstanceExtensionProperties, VkExtensionProperties>(
+                nullptr);
         std::cout << "num extensions: " << extensions.size() << "\n";
         std::cout << "Available extensions:\n";
         for (const auto &e : extensions) {
@@ -51,44 +53,9 @@ int main(int argc, const char **argv) {
                 "SDL_Vulkan_CreateSurface failed"};
     }
 
-    VkPhysicalDevice vk_physical_device = VK_NULL_HANDLE;
-    {
-        auto devices = planet::vk::fetch_vector<
-                vkEnumeratePhysicalDevices, VkPhysicalDevice>(instance.get());
-        std::cout << "Found " << devices.size() << " devices\n";
-
-        const bool has_discrete_gpu =
-                std::find_if(
-                        devices.begin(), devices.end(),
-                        [](const VkPhysicalDevice &d) {
-                            VkPhysicalDeviceProperties properties;
-                            vkGetPhysicalDeviceProperties(d, &properties);
-                            return properties.deviceType
-                                    == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-                        })
-                != devices.end();
-
-        for (const auto &d : devices) {
-            VkPhysicalDeviceProperties properties;
-            VkPhysicalDeviceFeatures features;
-            vkGetPhysicalDeviceProperties(d, &properties);
-            vkGetPhysicalDeviceFeatures(d, &features);
-            std::cout << properties.deviceName << "\n";
-
-            if (has_discrete_gpu
-                && properties.deviceType
-                        == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-                vk_physical_device = d;
-                break;
-            } else if (
-                    !has_discrete_gpu
-                    && properties.deviceType
-                            == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
-                vk_physical_device = d;
-                break;
-            }
-        }
-    }
+    std::cout << "Found " << vk_instance.devices().size() << " devices\n";
+    auto const &vk_physical_device = vk_instance.best_gpu();
+    std::cout << "Using " << vk_physical_device.properties.deviceName << "\n";
 
     VkDevice vk_device = VK_NULL_HANDLE;
     VkQueue vk_queue = VK_NULL_HANDLE;
@@ -96,17 +63,18 @@ int main(int argc, const char **argv) {
     {
         uint32_t num_queue_families = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(
-                vk_physical_device, &num_queue_families, nullptr);
+                vk_physical_device.get(), &num_queue_families, nullptr);
         std::vector<VkQueueFamilyProperties> family_props(
                 num_queue_families, VkQueueFamilyProperties{});
         vkGetPhysicalDeviceQueueFamilyProperties(
-                vk_physical_device, &num_queue_families, family_props.data());
+                vk_physical_device.get(), &num_queue_families,
+                family_props.data());
         for (uint32_t i = 0; i < num_queue_families; ++i) {
             // We want present and graphics on the same queue (kind of assume
             // this will be supported on any discrete GPU)
             VkBool32 present_support = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(
-                    vk_physical_device, i, vk_surface, &present_support);
+                    vk_physical_device.get(), i, vk_surface, &present_support);
             if (present_support
                 && (family_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
                 graphics_queue_index = i;
@@ -137,7 +105,7 @@ int main(int argc, const char **argv) {
         create_info.ppEnabledExtensionNames = device_extensions.data();
         create_info.pEnabledFeatures = &device_features;
         planet::vk::worked(vkCreateDevice(
-                vk_physical_device, &create_info, nullptr, &vk_device));
+                vk_physical_device.get(), &create_info, nullptr, &vk_device));
 
         vkGetDeviceQueue(vk_device, graphics_queue_index, 0, &vk_queue);
     }

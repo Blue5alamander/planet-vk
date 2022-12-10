@@ -2,6 +2,10 @@
 
 
 #include <planet/vk/helpers.hpp>
+#include <planet/vk/physical_device.hpp>
+
+#include <span>
+#include <vector>
 
 
 namespace planet::vk {
@@ -19,6 +23,8 @@ namespace planet::vk {
         VkInstance handle = VK_NULL_HANDLE;
         void reset() noexcept;
 
+        std::vector<physical_device> physical_devices;
+
       public:
         static VkInstanceCreateInfo
                 info(extensions const &, VkApplicationInfo const &);
@@ -29,10 +35,16 @@ namespace planet::vk {
         instance &operator=(instance &&i) noexcept {
             reset();
             handle = std::exchange(i.handle, VK_NULL_HANDLE);
+            physical_devices = std::move(i.physical_devices);
             return *this;
         }
 
         VkInstance get() noexcept { return handle; }
+
+        std::span<physical_device const> devices() const {
+            return physical_devices;
+        }
+        physical_device const &best_gpu() const;
     };
 
 
