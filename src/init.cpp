@@ -158,7 +158,8 @@ planet::vk::physical_device::physical_device(
 
 
 planet::vk::device::device(
-        vk::instance const &instance, vk::extensions const &extensions) {
+        vk::instance const &i, vk::extensions const &extensions)
+: instance{i} {
     felspar::memory::small_vector<VkDeviceQueueCreateInfo, 2> queue_create_infos;
     const float queue_priority = 1.f;
     for (auto const q : std::array{

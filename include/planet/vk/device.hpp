@@ -17,8 +17,10 @@ namespace planet::vk {
 
       public:
         device() noexcept;
-        device(instance const &, extensions const &);
+        device(vk::instance const &, extensions const &);
         ~device();
+
+        vk::instance const &instance;
 
         device(device const &) = delete;
         device(device &&) = delete;
