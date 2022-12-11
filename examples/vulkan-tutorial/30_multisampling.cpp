@@ -198,10 +198,6 @@ class HelloTriangleApplication {
     }();
 
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
-    std::vector<VkImage> swapChainImages;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
-    std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
     VkRenderPass renderPass;
@@ -257,7 +253,6 @@ class HelloTriangleApplication {
 
     void initVulkan() {
         createSwapChain();
-        createImageViews();
         createRenderPass();
         createDescriptorSetLayout();
         createGraphicsPipeline();
@@ -298,10 +293,6 @@ class HelloTriangleApplication {
 
         for (auto framebuffer : swapChainFramebuffers) {
             vkDestroyFramebuffer(device.get(), framebuffer, nullptr);
-        }
-
-        for (auto imageView : swapChainImageViews) {
-            vkDestroyImageView(device.get(), imageView, nullptr);
         }
     }
 
@@ -367,7 +358,6 @@ class HelloTriangleApplication {
         cleanupSwapChain();
 
         createSwapChain();
-        createImageViews();
         createColorResources();
         createDepthResources();
         createFramebuffers();
@@ -416,31 +406,11 @@ class HelloTriangleApplication {
         instance.surface.refresh_characteristics(instance.gpu());
         VkExtent2D extent = chooseSwapExtent();
         auto imageCount = swapChain.recreate(extent);
-
-        vkGetSwapchainImagesKHR(
-                device.get(), swapChain.get(), &imageCount, nullptr);
-        swapChainImages.resize(imageCount);
-        vkGetSwapchainImagesKHR(
-                device.get(), swapChain.get(), &imageCount,
-                swapChainImages.data());
-
-        swapChainImageFormat = instance.surface.best_format.format;
-        swapChainExtent = extent;
-    }
-
-    void createImageViews() {
-        swapChainImageViews.resize(swapChainImages.size());
-
-        for (uint32_t i = 0; i < swapChainImages.size(); i++) {
-            swapChainImageViews[i] = createImageView(
-                    swapChainImages[i], swapChainImageFormat,
-                    VK_IMAGE_ASPECT_COLOR_BIT, 1);
-        }
     }
 
     void createRenderPass() {
         VkAttachmentDescription colorAttachment{};
-        colorAttachment.format = swapChainImageFormat;
+        colorAttachment.format = swapChain.image_format;
         colorAttachment.samples = msaaSamples;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -461,7 +431,7 @@ class HelloTriangleApplication {
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         VkAttachmentDescription colorAttachmentResolve{};
-        colorAttachmentResolve.format = swapChainImageFormat;
+        colorAttachmentResolve.format = swapChain.image_format;
         colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
         colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -684,11 +654,12 @@ class HelloTriangleApplication {
     }
 
     void createFramebuffers() {
-        swapChainFramebuffers.resize(swapChainImageViews.size());
+        swapChainFramebuffers.resize(swapChain.image_views.size());
 
-        for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+        for (size_t i = 0; i < swapChain.image_views.size(); i++) {
             std::array<VkImageView, 3> attachments = {
-                    colorImageView, depthImageView, swapChainImageViews[i]};
+                    colorImageView, depthImageView,
+                    swapChain.image_views[i].get()};
 
             VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -696,8 +667,8 @@ class HelloTriangleApplication {
             framebufferInfo.attachmentCount =
                     static_cast<uint32_t>(attachments.size());
             framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = swapChainExtent.width;
-            framebufferInfo.height = swapChainExtent.height;
+            framebufferInfo.width = swapChain.extents.width;
+            framebufferInfo.height = swapChain.extents.height;
             framebufferInfo.layers = 1;
 
             planet::vk::worked(vkCreateFramebuffer(
@@ -716,11 +687,11 @@ class HelloTriangleApplication {
     }
 
     void createColorResources() {
-        VkFormat colorFormat = swapChainImageFormat;
+        VkFormat colorFormat = swapChain.image_format;
 
         createImage(
-                swapChainExtent.width, swapChainExtent.height, 1, msaaSamples,
-                colorFormat, VK_IMAGE_TILING_OPTIMAL,
+                swapChain.extents.width, swapChain.extents.height, 1,
+                msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
                         | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage,
@@ -733,8 +704,8 @@ class HelloTriangleApplication {
         VkFormat depthFormat = findDepthFormat();
 
         createImage(
-                swapChainExtent.width, swapChainExtent.height, 1, msaaSamples,
-                depthFormat, VK_IMAGE_TILING_OPTIMAL,
+                swapChain.extents.width, swapChain.extents.height, 1,
+                msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage,
                 depthImageMemory);
@@ -1410,7 +1381,7 @@ class HelloTriangleApplication {
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
         renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = swapChainExtent;
+        renderPassInfo.renderArea.extent = swapChain.extents;
 
         std::array<VkClearValue, 2> clearValues{};
         clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -1430,15 +1401,15 @@ class HelloTriangleApplication {
         VkViewport viewport{};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = (float)swapChainExtent.width;
-        viewport.height = (float)swapChainExtent.height;
+        viewport.width = (float)swapChain.extents.width;
+        viewport.height = (float)swapChain.extents.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
         VkRect2D scissor{};
         scissor.offset = {0, 0};
-        scissor.extent = swapChainExtent;
+        scissor.extent = swapChain.extents;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
         VkBuffer vertexBuffers[] = {vertexBuffer};
@@ -1509,7 +1480,7 @@ class HelloTriangleApplication {
                 glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.proj = glm::perspective(
                 glm::radians(45.0f),
-                swapChainExtent.width / (float)swapChainExtent.height, 0.1f,
+                swapChain.extents.width / (float)swapChain.extents.height, 0.1f,
                 10.0f);
         ubo.proj[1][1] *= -1;
 
@@ -1606,7 +1577,7 @@ class HelloTriangleApplication {
     VkExtent2D chooseSwapExtent() {
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
-        return planet::vk::swap_chain::extents(
+        return planet::vk::swap_chain::calculate_extents(
                 device,
                 {static_cast<float>(width), static_cast<float>(height)});
     }

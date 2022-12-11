@@ -53,50 +53,8 @@ int main(int argc, const char **argv) {
               << vk_instance.surface.presentation_queue_index() << "\n";
 
     planet::vk::device vk_device{vk_instance, extensions};
-
-    VkExtent2D swapchain_extent =
-            planet::vk::swap_chain::extents(vk_device, {win_width, win_height});
-    VkFormat const swapchain_img_format =
-            vk_instance.surface.best_format.format;
-
-    planet::vk::swap_chain vk_swapchain{vk_device, swapchain_extent};
-    std::vector<VkImage> swapchain_images;
-    std::vector<VkImageView> swapchain_image_views;
-    {
-        // Get the swap chain images
-        uint32_t num_swapchain_imgs = 0;
-        vkGetSwapchainImagesKHR(
-                vk_device.get(), vk_swapchain.get(), &num_swapchain_imgs, nullptr);
-        swapchain_images.resize(num_swapchain_imgs);
-        vkGetSwapchainImagesKHR(
-                vk_device.get(), vk_swapchain.get(), &num_swapchain_imgs,
-                swapchain_images.data());
-
-        for (const auto &img : swapchain_images) {
-            VkImageViewCreateInfo view_create_info = {};
-            view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-            view_create_info.image = img;
-            view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            view_create_info.format = swapchain_img_format;
-
-            view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-            view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-            view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-            view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-            view_create_info.subresourceRange.aspectMask =
-                    VK_IMAGE_ASPECT_COLOR_BIT;
-            view_create_info.subresourceRange.baseMipLevel = 0;
-            view_create_info.subresourceRange.levelCount = 1;
-            view_create_info.subresourceRange.baseArrayLayer = 0;
-            view_create_info.subresourceRange.layerCount = 1;
-
-            VkImageView img_view;
-            planet::vk::worked(vkCreateImageView(
-                    vk_device.get(), &view_create_info, nullptr, &img_view));
-            swapchain_image_views.push_back(img_view);
-        }
-    }
+    planet::vk::swap_chain vk_swapchain{
+            vk_device, VkExtent2D{win_width, win_height}};
 
     // Build the pipeline
     VkPipelineLayout vk_pipeline_layout;
@@ -166,7 +124,7 @@ int main(int argc, const char **argv) {
         VkRect2D scissor = {};
         scissor.offset.x = 0;
         scissor.offset.y = 0;
-        scissor.extent = swapchain_extent;
+        scissor.extent = vk_swapchain.extents;
 
         VkPipelineViewportStateCreateInfo viewport_state_info = {};
         viewport_state_info.sType =
@@ -212,7 +170,7 @@ int main(int argc, const char **argv) {
                 vk_device.get(), &pipeline_info, nullptr, &vk_pipeline_layout));
 
         VkAttachmentDescription color_attachment = {};
-        color_attachment.format = swapchain_img_format;
+        color_attachment.format = vk_swapchain.image_format;
         color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
         color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -263,8 +221,8 @@ int main(int argc, const char **argv) {
 
     // Setup framebuffers
     std::vector<VkFramebuffer> framebuffers;
-    for (const auto &v : swapchain_image_views) {
-        std::array<VkImageView, 1> attachments = {v};
+    for (const auto &v : vk_swapchain.image_views) {
+        std::array<VkImageView, 1> attachments = {v.get()};
         VkFramebufferCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         create_info.renderPass = vk_render_pass;
@@ -317,7 +275,7 @@ int main(int argc, const char **argv) {
         render_pass_info.framebuffer = framebuffers[i];
         render_pass_info.renderArea.offset.x = 0;
         render_pass_info.renderArea.offset.y = 0;
-        render_pass_info.renderArea.extent = swapchain_extent;
+        render_pass_info.renderArea.extent = vk_swapchain.extents;
 
         VkClearValue clear_color = {0.f, 0.f, 0.f, 1.f};
         render_pass_info.clearValueCount = 1;
@@ -433,9 +391,6 @@ int main(int argc, const char **argv) {
     vkDestroyPipeline(vk_device.get(), vk_pipeline, nullptr);
     vkDestroyRenderPass(vk_device.get(), vk_render_pass, nullptr);
     vkDestroyPipelineLayout(vk_device.get(), vk_pipeline_layout, nullptr);
-    for (auto &v : swapchain_image_views) {
-        vkDestroyImageView(vk_device.get(), v, nullptr);
-    }
 
     return 0;
 }

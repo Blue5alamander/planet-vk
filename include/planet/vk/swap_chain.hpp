@@ -9,12 +9,13 @@ namespace planet::vk {
 
 
     class device;
+    class image_view;
 
 
     /// A swap chain
     class swap_chain final {
         using handle_type =
-                owned_handle<VkDevice, VkSwapchainKHR, vkDestroySwapchainKHR>;
+                device_handle<VkSwapchainKHR, vkDestroySwapchainKHR>;
         handle_type handle;
 
         /// (Re-)create the swap chain and its attendant items
@@ -41,7 +42,28 @@ namespace planet::vk {
 
         /// Calculate suitable extents to use for the swap chain given the
         /// current window size
-        static VkExtent2D extents(vk::device const &, affine::extents2d);
+        static VkExtent2D
+                calculate_extents(vk::device const &, affine::extents2d);
+        /// The extents the current swap chain has been created for
+        VkExtent2D extents;
+
+        /// The swap chain images, and their views
+        VkFormat image_format;
+        std::vector<VkImage> images;
+        std::vector<image_view> image_views;
+    };
+
+
+    /// The image views that live in the swap chain
+    class image_view final {
+        using handle_type = device_handle<VkImageView, vkDestroyImageView>;
+        handle_type handle;
+
+      public:
+        image_view(swap_chain const &, VkImage);
+
+        vk::device const &device;
+        VkImageView get() const noexcept { return handle.get(); }
     };
 
 

@@ -84,4 +84,9 @@ namespace planet::vk {
     };
 
 
+    /// Shorter names for common owners of handles
+    template<typename T, void (*D)(VkDevice, T, VkAllocationCallbacks const *)>
+    using device_handle = owned_handle<VkDevice, T, D>;
+
+
 }
