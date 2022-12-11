@@ -19,19 +19,10 @@ int main(int argc, const char **argv) {
 
     planet::vk::sdl::window window{sdl, "SDL2 + Vulkan", win_width, win_height};
 
-    {
-        auto extensions = planet::vk::fetch_vector<
-                vkEnumerateInstanceExtensionProperties, VkExtensionProperties>(
-                nullptr);
-        std::cout << "num extensions: " << extensions.size() << "\n";
-        std::cout << "Available extensions:\n";
-        for (const auto &e : extensions) {
-            std::cout << e.extensionName << "\n";
-        }
-    }
-
     planet::vk::extensions extensions{window};
+#ifdef NDEBUG
     extensions.validation_layers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
     std::cout << "Requested extensions\n";
     for (auto ex : extensions.vulkan_extensions) { std::cout << ex << '\n'; }
 

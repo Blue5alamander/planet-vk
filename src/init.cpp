@@ -6,6 +6,18 @@
 
 
 /**
+ * ## planet::vk::extensions
+ */
+
+
+planet::vk::extensions::extensions() {
+#ifndef NDEBUG
+    validation_layers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+}
+
+
+/**
  * ## planet::vk::instance
  */
 

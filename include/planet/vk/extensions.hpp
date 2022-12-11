@@ -22,7 +22,7 @@ namespace planet::vk {
 
         bool has_validation() const { return not validation_layers.empty(); }
 
-        extensions() {}
+        extensions();
         extensions(sdl::window &);
     };
 

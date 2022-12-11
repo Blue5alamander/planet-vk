@@ -137,10 +137,7 @@ class HelloTriangleApplication {
 
   public:
     HelloTriangleApplication(int const argc, char const *const argv[])
-    : am{argv[0]} {
-        extensions.validation_layers.push_back("VK_LAYER_KHRONOS_validation");
-        extensions.device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    }
+    : am{argv[0]} {}
 
     void run() {
         initVulkan();
