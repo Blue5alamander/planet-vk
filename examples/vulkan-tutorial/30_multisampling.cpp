@@ -415,8 +415,6 @@ class HelloTriangleApplication {
     }
 
     void createSwapChain() {
-        VkSurfaceFormatKHR surfaceFormat =
-                chooseSwapSurfaceFormat(instance.gpu().surface_formats);
         VkPresentModeKHR presentMode =
                 chooseSwapPresentMode(instance.gpu().present_modes);
         VkExtent2D extent =
@@ -434,8 +432,9 @@ class HelloTriangleApplication {
         createInfo.surface = instance.surface;
 
         createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = surfaceFormat.format;
-        createInfo.imageColorSpace = surfaceFormat.colorSpace;
+        createInfo.imageFormat = instance.gpu().best_surface_format.format;
+        createInfo.imageColorSpace =
+                instance.gpu().best_surface_format.colorSpace;
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -467,7 +466,7 @@ class HelloTriangleApplication {
         vkGetSwapchainImagesKHR(
                 device.get(), swapChain, &imageCount, swapChainImages.data());
 
-        swapChainImageFormat = surfaceFormat.format;
+        swapChainImageFormat = instance.gpu().best_surface_format.format;
         swapChainExtent = extent;
     }
 
@@ -1644,19 +1643,6 @@ class HelloTriangleApplication {
                 device.get(), &createInfo, nullptr, &shaderModule));
 
         return shaderModule;
-    }
-
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-            const std::vector<VkSurfaceFormatKHR> &availableFormats) {
-        for (const auto &availableFormat : availableFormats) {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
-                && availableFormat.colorSpace
-                        == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-                return availableFormat;
-            }
-        }
-
-        return availableFormats[0];
     }
 
     VkPresentModeKHR chooseSwapPresentMode(

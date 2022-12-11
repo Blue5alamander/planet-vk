@@ -122,14 +122,27 @@ planet::vk::physical_device::physical_device(
         ++index;
     }
 
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-            handle, surface, &surface_capabilities);
-    surface_formats = fetch_vector<
-            vkGetPhysicalDeviceSurfaceFormatsKHR, VkSurfaceFormatKHR>(
-            handle, surface);
-    present_modes = fetch_vector<
-            vkGetPhysicalDeviceSurfacePresentModesKHR, VkPresentModeKHR>(
-            handle, surface);
+    if (has_queue_families()) {
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+                handle, surface, &surface_capabilities);
+        surface_formats = fetch_vector<
+                vkGetPhysicalDeviceSurfaceFormatsKHR, VkSurfaceFormatKHR>(
+                handle, surface);
+        present_modes = fetch_vector<
+                vkGetPhysicalDeviceSurfacePresentModesKHR, VkPresentModeKHR>(
+                handle, surface);
+
+        if (not surface_formats.empty()) {
+            best_surface_format = surface_formats[0];
+            for (auto const &f : surface_formats) {
+                if (f.format == VK_FORMAT_B8G8R8A8_SRGB
+                    and f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+                    best_surface_format = f;
+                    break;
+                }
+            }
+        }
+    }
 }
 
 

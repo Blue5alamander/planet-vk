@@ -59,7 +59,8 @@ int main(int argc, const char **argv) {
     VkExtent2D swapchain_extent = {};
     swapchain_extent.width = win_width;
     swapchain_extent.height = win_height;
-    const VkFormat swapchain_img_format = VK_FORMAT_B8G8R8A8_UNORM;
+    VkFormat const swapchain_img_format =
+            vk_instance.gpu().best_surface_format.format;
 
     VkSwapchainKHR vk_swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> swapchain_images;
@@ -74,7 +75,6 @@ int main(int argc, const char **argv) {
         create_info.imageExtent = swapchain_extent;
         create_info.imageArrayLayers = 1;
         create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        // We only have 1 queue
         create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         create_info.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
         create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;

@@ -37,9 +37,14 @@ namespace planet::vk {
         }
 
         /// ### Swap chain support
+        /**
+         * These are only filled in if the physical device supports the required queues.
+         */
         VkSurfaceCapabilitiesKHR surface_capabilities;
         std::vector<VkSurfaceFormatKHR> surface_formats;
+        VkSurfaceFormatKHR best_surface_format = {};
         std::vector<VkPresentModeKHR> present_modes;
+
 
         bool has_adequate_swap_chain_support() const noexcept {
             return not surface_formats.empty() and not present_modes.empty();
