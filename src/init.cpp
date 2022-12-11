@@ -67,15 +67,19 @@ planet::vk::instance::instance(
             != pdevices.end();
 
     for (auto const &d : pdevices) {
-        if (has_discrete_gpu
+        bool const is_suitable =
+                d.has_queue_families() and d.has_adequate_swap_chain_support();
+        if (is_suitable and has_discrete_gpu
             and d.properties.deviceType
                     == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
             gpu_in_use = &d;
+            break;
         } else if (
-                not has_discrete_gpu
+                is_suitable and not has_discrete_gpu
                 and d.properties.deviceType
                         == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
             gpu_in_use = &d;
+            break;
         }
     }
     if (not gpu_in_use) {
