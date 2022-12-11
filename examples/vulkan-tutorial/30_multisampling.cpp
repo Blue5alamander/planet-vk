@@ -415,8 +415,6 @@ class HelloTriangleApplication {
     }
 
     void createSwapChain() {
-        VkPresentModeKHR presentMode =
-                chooseSwapPresentMode(instance.gpu().present_modes);
         VkExtent2D extent =
                 chooseSwapExtent(instance.gpu().surface_capabilities);
 
@@ -455,7 +453,7 @@ class HelloTriangleApplication {
         createInfo.preTransform =
                 instance.gpu().surface_capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = presentMode;
+        createInfo.presentMode = instance.gpu().best_present_mode;
         createInfo.clipped = VK_TRUE;
 
         planet::vk::worked(vkCreateSwapchainKHR(
@@ -1643,17 +1641,6 @@ class HelloTriangleApplication {
                 device.get(), &createInfo, nullptr, &shaderModule));
 
         return shaderModule;
-    }
-
-    VkPresentModeKHR chooseSwapPresentMode(
-            const std::vector<VkPresentModeKHR> &availablePresentModes) {
-        for (const auto &availablePresentMode : availablePresentModes) {
-            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-                return availablePresentMode;
-            }
-        }
-
-        return VK_PRESENT_MODE_FIFO_KHR;
     }
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {

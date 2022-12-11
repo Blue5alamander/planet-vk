@@ -142,6 +142,12 @@ planet::vk::physical_device::physical_device(
                 }
             }
         }
+        for (auto const &m : present_modes) {
+            if (m == VK_PRESENT_MODE_MAILBOX_KHR) {
+                best_present_mode = m;
+                break;
+            }
+        }
     }
 }
 

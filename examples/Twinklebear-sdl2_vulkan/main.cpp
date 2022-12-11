@@ -78,7 +78,7 @@ int main(int argc, const char **argv) {
         create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         create_info.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
         create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        create_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+        create_info.presentMode = vk_instance.gpu().best_present_mode;
         create_info.clipped = true;
         create_info.oldSwapchain = VK_NULL_HANDLE;
         planet::vk::worked(vkCreateSwapchainKHR(
