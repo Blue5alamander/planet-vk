@@ -137,17 +137,22 @@ planet::vk::device::device(
     VkPhysicalDeviceFeatures device_features = {};
     device_features.samplerAnisotropy = VK_TRUE;
 
-    VkDeviceCreateInfo create_info = {};
-    create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    create_info.queueCreateInfoCount = queue_create_infos.size();
-    create_info.pQueueCreateInfos = queue_create_infos.data();
-    create_info.enabledLayerCount = extensions.validation_layers.size();
-    create_info.ppEnabledLayerNames = extensions.validation_layers.data();
-    create_info.enabledExtensionCount = extensions.device_extensions.size();
-    create_info.ppEnabledExtensionNames = extensions.device_extensions.data();
-    create_info.pEnabledFeatures = &device_features;
-    planet::vk::worked(vkCreateDevice(
-            instance.gpu().get(), &create_info, nullptr, &handle));
+    VkDeviceCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    if (instance.surface.graphics_queue_index()
+        == instance.surface.presentation_queue_index()) {
+        info.queueCreateInfoCount = 1;
+    } else {
+        info.queueCreateInfoCount = queue_create_infos.size();
+    }
+    info.pQueueCreateInfos = queue_create_infos.data();
+    info.enabledLayerCount = extensions.validation_layers.size();
+    info.ppEnabledLayerNames = extensions.validation_layers.data();
+    info.enabledExtensionCount = extensions.device_extensions.size();
+    info.ppEnabledExtensionNames = extensions.device_extensions.data();
+    info.pEnabledFeatures = &device_features;
+    planet::vk::worked(
+            vkCreateDevice(instance.gpu().get(), &info, nullptr, &handle));
 
     vkGetDeviceQueue(
             handle, instance.surface.graphics_queue_index(), 0,
