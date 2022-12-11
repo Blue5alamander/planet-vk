@@ -47,18 +47,39 @@ namespace planet::vk {
         owned_handle(O o, T h, VkAllocationCallbacks const *a) noexcept
         : owner{o}, handle{h}, allocator{a} {}
 
-        void reset() noexcept {
-            if (owner and handle) { D(owner, handle, allocator); }
-        }
-
       public:
         owned_handle() noexcept {}
         owned_handle(owned_handle &&h) noexcept
         : owner{std::exchange(h.owner, VK_NULL_HANDLE)},
           handle{std::exchange(h.handle, VK_NULL_HANDLE)},
           allocator{std::exchange(h.allocator, nullptr)} {}
+        owned_handle(owned_handle const &) = delete;
         ~owned_handle() noexcept { reset(); }
 
+        owned_handle &operator=(owned_handle &&) = delete;
+        owned_handle &operator=(owned_handle const &) = delete;
+
+        T get() const noexcept { return handle; }
+
+        /// Remove the current content (if any)
+        void reset() noexcept {
+            if (owner and handle) {
+                D(std::exchange(owner, VK_NULL_HANDLE),
+                  std::exchange(handle, VK_NULL_HANDLE),
+                  std::exchange(allocator, nullptr));
+            }
+        }
+
+        template<auto C, typename I>
+        void
+                create(O h,
+                       I const &info,
+                       VkAllocationCallbacks const *alloc = nullptr) {
+            reset();
+            owner = h;
+            allocator = alloc;
+            worked(C(h, &info, alloc, &handle));
+        }
         static owned_handle bind(O o, T h) noexcept { return {o, h, nullptr}; }
     };
 

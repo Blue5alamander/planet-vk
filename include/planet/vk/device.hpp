@@ -30,6 +30,9 @@ namespace planet::vk {
         VkDevice get() const noexcept { return handle; }
 
         VkQueue graphics_queue = VK_NULL_HANDLE, present_queue = VK_NULL_HANDLE;
+
+        /// Wait for the device to become idle
+        void wait_idle() const { vkDeviceWaitIdle(handle); }
     };
 
 

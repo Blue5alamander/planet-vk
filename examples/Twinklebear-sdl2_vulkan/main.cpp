@@ -59,35 +59,17 @@ int main(int argc, const char **argv) {
     VkFormat const swapchain_img_format =
             vk_instance.surface.best_format.format;
 
-    VkSwapchainKHR vk_swapchain = VK_NULL_HANDLE;
+    planet::vk::swap_chain vk_swapchain{vk_device, swapchain_extent};
     std::vector<VkImage> swapchain_images;
     std::vector<VkImageView> swapchain_image_views;
     {
-        VkSwapchainCreateInfoKHR create_info = {};
-        create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        create_info.surface = vk_instance.surface.get();
-        create_info.minImageCount = 2;
-        create_info.imageFormat = swapchain_img_format;
-        create_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-        create_info.imageExtent = swapchain_extent;
-        create_info.imageArrayLayers = 1;
-        create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        create_info.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-        create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        create_info.presentMode = vk_instance.surface.best_present_mode;
-        create_info.clipped = true;
-        create_info.oldSwapchain = VK_NULL_HANDLE;
-        planet::vk::worked(vkCreateSwapchainKHR(
-                vk_device.get(), &create_info, nullptr, &vk_swapchain));
-
         // Get the swap chain images
         uint32_t num_swapchain_imgs = 0;
         vkGetSwapchainImagesKHR(
-                vk_device.get(), vk_swapchain, &num_swapchain_imgs, nullptr);
+                vk_device.get(), vk_swapchain.get(), &num_swapchain_imgs, nullptr);
         swapchain_images.resize(num_swapchain_imgs);
         vkGetSwapchainImagesKHR(
-                vk_device.get(), vk_swapchain, &num_swapchain_imgs,
+                vk_device.get(), vk_swapchain.get(), &num_swapchain_imgs,
                 swapchain_images.data());
 
         for (const auto &img : swapchain_images) {
@@ -396,7 +378,7 @@ int main(int argc, const char **argv) {
         // Get an image from the swap chain
         uint32_t img_index = 0;
         planet::vk::worked(vkAcquireNextImageKHR(
-                vk_device.get(), vk_swapchain,
+                vk_device.get(), vk_swapchain.get(),
                 std::numeric_limits<uint64_t>::max(), img_avail_semaphore,
                 VK_NULL_HANDLE, &img_index));
 
@@ -424,7 +406,7 @@ int main(int argc, const char **argv) {
                 vk_device.graphics_queue, 1, &submit_info, vk_fence));
 
         // Finally, present the updated image in the swap chain
-        std::array<VkSwapchainKHR, 1> present_chain = {vk_swapchain};
+        std::array<VkSwapchainKHR, 1> present_chain = {vk_swapchain.get()};
         VkPresentInfoKHR present_info = {};
         present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         present_info.waitSemaphoreCount = signal_semaphores.size();
@@ -445,7 +427,6 @@ int main(int argc, const char **argv) {
     vkDestroySemaphore(vk_device.get(), render_finished_semaphore, nullptr);
     vkDestroyFence(vk_device.get(), vk_fence, nullptr);
     vkDestroyCommandPool(vk_device.get(), vk_command_pool, nullptr);
-    vkDestroySwapchainKHR(vk_device.get(), vk_swapchain, nullptr);
     for (auto &fb : framebuffers) {
         vkDestroyFramebuffer(vk_device.get(), fb, nullptr);
     }

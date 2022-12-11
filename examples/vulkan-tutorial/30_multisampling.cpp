@@ -197,7 +197,7 @@ class HelloTriangleApplication {
         return planet::vk::device{instance, extensions};
     }();
 
-    VkSwapchainKHR swapChain;
+    planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
     std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
@@ -303,8 +303,6 @@ class HelloTriangleApplication {
         for (auto imageView : swapChainImageViews) {
             vkDestroyImageView(device.get(), imageView, nullptr);
         }
-
-        vkDestroySwapchainKHR(device.get(), swapChain, nullptr);
     }
 
     void cleanup() {
@@ -417,50 +415,14 @@ class HelloTriangleApplication {
     void createSwapChain() {
         instance.surface.refresh_characteristics(instance.gpu());
         VkExtent2D extent = chooseSwapExtent();
+        auto imageCount = swapChain.recreate(extent);
 
-        uint32_t imageCount = instance.surface.capabilities.minImageCount + 1;
-        if (instance.surface.capabilities.maxImageCount > 0
-            && imageCount > instance.surface.capabilities.maxImageCount) {
-            imageCount = instance.surface.capabilities.maxImageCount;
-        }
-
-        VkSwapchainCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = instance.surface.get();
-
-        createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = instance.surface.best_format.format;
-        createInfo.imageColorSpace = instance.surface.best_format.colorSpace;
-        createInfo.imageExtent = extent;
-        createInfo.imageArrayLayers = 1;
-        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-        uint32_t queueFamilyIndices[] = {
-                instance.surface.graphics_queue_index(),
-                instance.surface.presentation_queue_index()};
-
-        if (instance.surface.graphics_queue_index()
-            != instance.surface.presentation_queue_index()) {
-            createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            createInfo.queueFamilyIndexCount = 2;
-            createInfo.pQueueFamilyIndices = queueFamilyIndices;
-        } else {
-            createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        }
-
-        createInfo.preTransform =
-                instance.surface.capabilities.currentTransform;
-        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = instance.surface.best_present_mode;
-        createInfo.clipped = VK_TRUE;
-
-        planet::vk::worked(vkCreateSwapchainKHR(
-                device.get(), &createInfo, nullptr, &swapChain));
-
-        vkGetSwapchainImagesKHR(device.get(), swapChain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(
+                device.get(), swapChain.get(), &imageCount, nullptr);
         swapChainImages.resize(imageCount);
         vkGetSwapchainImagesKHR(
-                device.get(), swapChain, &imageCount, swapChainImages.data());
+                device.get(), swapChain.get(), &imageCount,
+                swapChainImages.data());
 
         swapChainImageFormat = instance.surface.best_format.format;
         swapChainExtent = extent;
@@ -1561,7 +1523,7 @@ class HelloTriangleApplication {
 
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(
-                device.get(), swapChain, UINT64_MAX,
+                device.get(), swapChain.get(), UINT64_MAX,
                 imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE,
                 &imageIndex);
 
@@ -1609,7 +1571,7 @@ class HelloTriangleApplication {
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
 
-        VkSwapchainKHR swapChains[] = {swapChain};
+        VkSwapchainKHR swapChains[] = {swapChain.get()};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
 
