@@ -68,17 +68,6 @@ if(NOT planet_POPULATED)
 endif()
 
 FetchContent_Declare(
-        planet-audio
-        GIT_REPOSITORY https://github.com/Blue5alamander/planet-audio.git
-        GIT_TAG main
-    )
-FetchContent_GetProperties(planet-audio)
-if(NOT planet-audio_POPULATED)
-    FetchContent_Populate(planet-audio)
-    add_subdirectory(${planet-audio_SOURCE_DIR} ${planet-audio_BINARY_DIR})
-endif()
-
-FetchContent_Declare(
         planet-sdl
         GIT_REPOSITORY https://github.com/Blue5alamander/planet-sdl.git
         GIT_TAG main
