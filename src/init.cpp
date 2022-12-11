@@ -117,6 +117,15 @@ planet::vk::physical_device::physical_device(
 
         ++index;
     }
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+            handle, surface, &surface_capabilities);
+    surface_formats = fetch_vector<
+            vkGetPhysicalDeviceSurfaceFormatsKHR, VkSurfaceFormatKHR>(
+            handle, surface);
+    present_modes = fetch_vector<
+            vkGetPhysicalDeviceSurfacePresentModesKHR, VkPresentModeKHR>(
+            handle, surface);
 }
 
 

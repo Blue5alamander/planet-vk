@@ -66,12 +66,6 @@ void DestroyDebugUtilsMessengerEXT(
     if (func != nullptr) { func(instance, debugMessenger, pAllocator); }
 }
 
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;
@@ -421,19 +415,18 @@ class HelloTriangleApplication {
     }
 
     void createSwapChain() {
-        SwapChainSupportDetails swapChainSupport =
-                querySwapChainSupport(instance.gpu());
-
         VkSurfaceFormatKHR surfaceFormat =
-                chooseSwapSurfaceFormat(swapChainSupport.formats);
+                chooseSwapSurfaceFormat(instance.gpu().surface_formats);
         VkPresentModeKHR presentMode =
-                chooseSwapPresentMode(swapChainSupport.presentModes);
-        VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+                chooseSwapPresentMode(instance.gpu().present_modes);
+        VkExtent2D extent =
+                chooseSwapExtent(instance.gpu().surface_capabilities);
 
-        uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-        if (swapChainSupport.capabilities.maxImageCount > 0
-            && imageCount > swapChainSupport.capabilities.maxImageCount) {
-            imageCount = swapChainSupport.capabilities.maxImageCount;
+        uint32_t imageCount =
+                instance.gpu().surface_capabilities.minImageCount + 1;
+        if (instance.gpu().surface_capabilities.maxImageCount > 0
+            && imageCount > instance.gpu().surface_capabilities.maxImageCount) {
+            imageCount = instance.gpu().surface_capabilities.maxImageCount;
         }
 
         VkSwapchainCreateInfoKHR createInfo{};
@@ -461,7 +454,7 @@ class HelloTriangleApplication {
         }
 
         createInfo.preTransform =
-                swapChainSupport.capabilities.currentTransform;
+                instance.gpu().surface_capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
@@ -1700,48 +1693,10 @@ class HelloTriangleApplication {
         }
     }
 
-    SwapChainSupportDetails
-            querySwapChainSupport(planet::vk::physical_device const &device) {
-        SwapChainSupportDetails details;
-
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-                device.get(), instance.surface, &details.capabilities);
-
-        uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(
-                device.get(), instance.surface, &formatCount, nullptr);
-
-        if (formatCount != 0) {
-            details.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(
-                    device.get(), instance.surface, &formatCount,
-                    details.formats.data());
-        }
-
-        uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(
-                device.get(), instance.surface, &presentModeCount, nullptr);
-
-        if (presentModeCount != 0) {
-            details.presentModes.resize(presentModeCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(
-                    device.get(), instance.surface, &presentModeCount,
-                    details.presentModes.data());
-        }
-
-        return details;
-    }
-
     bool isDeviceSuitable(planet::vk::physical_device const &device) {
         bool extensionsSupported = checkDeviceExtensionSupport(device);
 
-        bool swapChainAdequate = false;
-        if (extensionsSupported) {
-            SwapChainSupportDetails swapChainSupport =
-                    querySwapChainSupport(device);
-            swapChainAdequate = !swapChainSupport.formats.empty()
-                    && !swapChainSupport.presentModes.empty();
-        }
+        bool const swapChainAdequate = device.has_adequate_swap_chain_support();
 
         return device.has_queue_families() and extensionsSupported
                 and swapChainAdequate and device.features.samplerAnisotropy;
