@@ -415,8 +415,7 @@ class HelloTriangleApplication {
     }
 
     void createSwapChain() {
-        VkExtent2D extent =
-                chooseSwapExtent(instance.gpu().surface_capabilities);
+        VkExtent2D extent = chooseSwapExtent();
 
         uint32_t imageCount =
                 instance.gpu().surface_capabilities.minImageCount + 1;
@@ -1643,27 +1642,12 @@ class HelloTriangleApplication {
         return shaderModule;
     }
 
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
-        if (capabilities.currentExtent.width
-            != std::numeric_limits<uint32_t>::max()) {
-            return capabilities.currentExtent;
-        } else {
-            int width, height;
-            glfwGetFramebufferSize(window, &width, &height);
-
-            VkExtent2D actualExtent = {
-                    static_cast<uint32_t>(width),
-                    static_cast<uint32_t>(height)};
-
-            actualExtent.width = std::clamp(
-                    actualExtent.width, capabilities.minImageExtent.width,
-                    capabilities.maxImageExtent.width);
-            actualExtent.height = std::clamp(
-                    actualExtent.height, capabilities.minImageExtent.height,
-                    capabilities.maxImageExtent.height);
-
-            return actualExtent;
-        }
+    VkExtent2D chooseSwapExtent() {
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        return planet::vk::swap_chain::extents(
+                device,
+                {static_cast<float>(width), static_cast<float>(height)});
     }
 
     bool isDeviceSuitable(planet::vk::physical_device const &device) {

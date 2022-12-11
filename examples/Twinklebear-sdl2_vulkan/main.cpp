@@ -56,9 +56,8 @@ int main(int argc, const char **argv) {
 
     // Setup swapchain, assume a real GPU so don't bother querying the
     // capabilities, just get what we want
-    VkExtent2D swapchain_extent = {};
-    swapchain_extent.width = win_width;
-    swapchain_extent.height = win_height;
+    VkExtent2D swapchain_extent =
+            planet::vk::swap_chain::extents(vk_device, {win_width, win_height});
     VkFormat const swapchain_img_format =
             vk_instance.gpu().best_surface_format.format;
 
