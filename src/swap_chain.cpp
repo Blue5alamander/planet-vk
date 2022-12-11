@@ -5,22 +5,21 @@
 
 VkExtent2D planet::vk::swap_chain::extents(
         vk::device const &device, affine::extents2d const ex) {
-    if (device.instance.gpu().surface_capabilities.currentExtent.width
+    if (device.instance.surface.capabilities.currentExtent.width
         != std::numeric_limits<std::uint32_t>::max()) {
-        return device.instance.gpu().surface_capabilities.currentExtent;
+        return device.instance.surface.capabilities.currentExtent;
     } else {
         return VkExtent2D{
                 std::clamp<std::uint32_t>(
                         ex.width,
-                        device.instance.gpu()
-                                .surface_capabilities.minImageExtent.width,
-                        device.instance.gpu()
-                                .surface_capabilities.maxImageExtent.width),
+                        device.instance.surface.capabilities.minImageExtent.width,
+                        device.instance.surface.capabilities.maxImageExtent
+                                .width),
                 std::clamp<std::uint32_t>(
                         ex.height,
-                        device.instance.gpu()
-                                .surface_capabilities.minImageExtent.height,
-                        device.instance.gpu()
-                                .surface_capabilities.maxImageExtent.height)};
+                        device.instance.surface.capabilities.minImageExtent
+                                .height,
+                        device.instance.surface.capabilities.maxImageExtent
+                                .height)};
     }
 }

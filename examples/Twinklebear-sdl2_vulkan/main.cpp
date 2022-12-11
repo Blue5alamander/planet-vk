@@ -48,9 +48,9 @@ int main(int argc, const char **argv) {
               << " devices. Using " << vk_instance.gpu().properties.deviceName
               << "\n";
     std::cout << "Graphics queue is "
-              << vk_instance.gpu().graphics_queue_index()
+              << vk_instance.surface.graphics_queue_index()
               << " and presentation queue is "
-              << vk_instance.gpu().presentation_queue_index() << "\n";
+              << vk_instance.surface.presentation_queue_index() << "\n";
 
     planet::vk::device vk_device{vk_instance, extensions};
 
@@ -59,7 +59,7 @@ int main(int argc, const char **argv) {
     VkExtent2D swapchain_extent =
             planet::vk::swap_chain::extents(vk_device, {win_width, win_height});
     VkFormat const swapchain_img_format =
-            vk_instance.gpu().best_surface_format.format;
+            vk_instance.surface.best_format.format;
 
     VkSwapchainKHR vk_swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> swapchain_images;
@@ -67,7 +67,7 @@ int main(int argc, const char **argv) {
     {
         VkSwapchainCreateInfoKHR create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        create_info.surface = vk_instance.surface;
+        create_info.surface = vk_instance.surface.get();
         create_info.minImageCount = 2;
         create_info.imageFormat = swapchain_img_format;
         create_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
@@ -77,7 +77,7 @@ int main(int argc, const char **argv) {
         create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         create_info.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
         create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        create_info.presentMode = vk_instance.gpu().best_present_mode;
+        create_info.presentMode = vk_instance.surface.best_present_mode;
         create_info.clipped = true;
         create_info.oldSwapchain = VK_NULL_HANDLE;
         planet::vk::worked(vkCreateSwapchainKHR(
@@ -304,7 +304,8 @@ int main(int argc, const char **argv) {
     {
         VkCommandPoolCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        create_info.queueFamilyIndex = vk_instance.gpu().graphics_queue_index();
+        create_info.queueFamilyIndex =
+                vk_instance.surface.graphics_queue_index();
         planet::vk::worked(vkCreateCommandPool(
                 vk_device.get(), &create_info, nullptr, &vk_command_pool));
     }

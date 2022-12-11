@@ -415,33 +415,32 @@ class HelloTriangleApplication {
     }
 
     void createSwapChain() {
+        instance.surface.refresh_characteristics(instance.gpu());
         VkExtent2D extent = chooseSwapExtent();
 
-        uint32_t imageCount =
-                instance.gpu().surface_capabilities.minImageCount + 1;
-        if (instance.gpu().surface_capabilities.maxImageCount > 0
-            && imageCount > instance.gpu().surface_capabilities.maxImageCount) {
-            imageCount = instance.gpu().surface_capabilities.maxImageCount;
+        uint32_t imageCount = instance.surface.capabilities.minImageCount + 1;
+        if (instance.surface.capabilities.maxImageCount > 0
+            && imageCount > instance.surface.capabilities.maxImageCount) {
+            imageCount = instance.surface.capabilities.maxImageCount;
         }
 
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = instance.surface;
+        createInfo.surface = instance.surface.get();
 
         createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = instance.gpu().best_surface_format.format;
-        createInfo.imageColorSpace =
-                instance.gpu().best_surface_format.colorSpace;
+        createInfo.imageFormat = instance.surface.best_format.format;
+        createInfo.imageColorSpace = instance.surface.best_format.colorSpace;
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
         uint32_t queueFamilyIndices[] = {
-                instance.gpu().graphics_queue_index(),
-                instance.gpu().presentation_queue_index()};
+                instance.surface.graphics_queue_index(),
+                instance.surface.presentation_queue_index()};
 
-        if (instance.gpu().graphics_queue_index()
-            != instance.gpu().presentation_queue_index()) {
+        if (instance.surface.graphics_queue_index()
+            != instance.surface.presentation_queue_index()) {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             createInfo.queueFamilyIndexCount = 2;
             createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -450,9 +449,9 @@ class HelloTriangleApplication {
         }
 
         createInfo.preTransform =
-                instance.gpu().surface_capabilities.currentTransform;
+                instance.surface.capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = instance.gpu().best_present_mode;
+        createInfo.presentMode = instance.surface.best_present_mode;
         createInfo.clipped = VK_TRUE;
 
         planet::vk::worked(vkCreateSwapchainKHR(
@@ -463,7 +462,7 @@ class HelloTriangleApplication {
         vkGetSwapchainImagesKHR(
                 device.get(), swapChain, &imageCount, swapChainImages.data());
 
-        swapChainImageFormat = instance.gpu().best_surface_format.format;
+        swapChainImageFormat = instance.surface.best_format.format;
         swapChainExtent = extent;
     }
 
@@ -749,7 +748,7 @@ class HelloTriangleApplication {
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = instance.gpu().graphics_queue_index();
+        poolInfo.queueFamilyIndex = instance.surface.graphics_queue_index();
         planet::vk::worked(vkCreateCommandPool(
                 device.get(), &poolInfo, nullptr, &commandPool));
     }
@@ -1653,9 +1652,13 @@ class HelloTriangleApplication {
     bool isDeviceSuitable(planet::vk::physical_device const &device) {
         bool extensionsSupported = checkDeviceExtensionSupport(device);
 
-        bool const swapChainAdequate = device.has_adequate_swap_chain_support();
+        /// Make sure that the characteristics we're looking at are for this device
+        instance.surface.refresh_characteristics(device);
 
-        return device.has_queue_families() and extensionsSupported
+        bool const swapChainAdequate =
+                instance.surface.has_adequate_swap_chain_support();
+
+        return instance.surface.has_queue_families() and extensionsSupported
                 and swapChainAdequate and device.features.samplerAnisotropy;
     }
 

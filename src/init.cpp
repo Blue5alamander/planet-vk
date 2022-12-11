@@ -49,13 +49,17 @@ VkInstanceCreateInfo planet::vk::instance::info(
 
 planet::vk::instance::instance(
         VkInstanceCreateInfo const &info,
-        std::function<VkSurfaceKHR(VkInstance)> mksurface) {
-    planet::vk::worked(vkCreateInstance(&info, nullptr, &handle));
+        std::function<VkSurfaceKHR(VkInstance)> mksurface)
+: handle{[&]() {
+      VkInstance h = VK_NULL_HANDLE;
+      planet::vk::worked(vkCreateInstance(&info, nullptr, &h));
+      return h;
+  }()},
+  surface{*this, mksurface(handle.h)} {
     auto devices = planet::vk::fetch_vector<
-            vkEnumeratePhysicalDevices, VkPhysicalDevice>(handle);
+            vkEnumeratePhysicalDevices, VkPhysicalDevice>(handle.h);
     pdevices.reserve(devices.size());
-    surface = mksurface(handle);
-    for (auto dh : devices) { pdevices.emplace_back(dh, surface); }
+    for (auto dh : devices) { pdevices.emplace_back(dh, surface.get()); }
 
     bool const has_discrete_gpu =
             std::find_if(
@@ -67,8 +71,9 @@ planet::vk::instance::instance(
             != pdevices.end();
 
     for (auto const &d : pdevices) {
-        bool const is_suitable =
-                d.has_queue_families() and d.has_adequate_swap_chain_support();
+        surface.refresh_characteristics(d);
+        bool const is_suitable = surface.has_queue_families()
+                and surface.has_adequate_swap_chain_support();
         if (is_suitable and has_discrete_gpu
             and d.properties.deviceType
                     == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
@@ -89,11 +94,8 @@ planet::vk::instance::instance(
 }
 
 
-void planet::vk::instance::reset() noexcept {
-    if (handle) {
-        if (surface) { vkDestroySurfaceKHR(handle, surface, nullptr); }
-        vkDestroyInstance(handle, nullptr);
-    }
+planet::vk::instance::instance_handle::~instance_handle() {
+    if (h) { vkDestroyInstance(h, nullptr); }
 }
 
 
@@ -108,47 +110,6 @@ planet::vk::physical_device::physical_device(
     vkGetPhysicalDeviceProperties(handle, &properties);
     vkGetPhysicalDeviceFeatures(handle, &features);
     vkGetPhysicalDeviceMemoryProperties(handle, &memory_properties);
-    queue_family_properties = fetch_vector<
-            vkGetPhysicalDeviceQueueFamilyProperties, VkQueueFamilyProperties>(
-            handle);
-
-    for (std::uint32_t index = {}; const auto &qf : queue_family_properties) {
-        if (qf.queueFlags bitand VK_QUEUE_GRAPHICS_BIT) { graphics = index; }
-
-        VkBool32 presentf = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(handle, index, surface, &presentf);
-        if (presentf) { present = index; }
-
-        ++index;
-    }
-
-    if (has_queue_families()) {
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-                handle, surface, &surface_capabilities);
-        surface_formats = fetch_vector<
-                vkGetPhysicalDeviceSurfaceFormatsKHR, VkSurfaceFormatKHR>(
-                handle, surface);
-        present_modes = fetch_vector<
-                vkGetPhysicalDeviceSurfacePresentModesKHR, VkPresentModeKHR>(
-                handle, surface);
-
-        if (not surface_formats.empty()) {
-            best_surface_format = surface_formats[0];
-            for (auto const &f : surface_formats) {
-                if (f.format == VK_FORMAT_B8G8R8A8_SRGB
-                    and f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-                    best_surface_format = f;
-                    break;
-                }
-            }
-        }
-        for (auto const &m : present_modes) {
-            if (m == VK_PRESENT_MODE_MAILBOX_KHR) {
-                best_present_mode = m;
-                break;
-            }
-        }
-    }
 }
 
 
@@ -163,8 +124,8 @@ planet::vk::device::device(
     felspar::memory::small_vector<VkDeviceQueueCreateInfo, 2> queue_create_infos;
     const float queue_priority = 1.f;
     for (auto const q : std::array{
-                 instance.gpu().graphics_queue_index(),
-                 instance.gpu().presentation_queue_index()}) {
+                 instance.surface.graphics_queue_index(),
+                 instance.surface.presentation_queue_index()}) {
         queue_create_infos.emplace_back();
         queue_create_infos.back().sType =
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -189,9 +150,10 @@ planet::vk::device::device(
             instance.gpu().get(), &create_info, nullptr, &handle));
 
     vkGetDeviceQueue(
-            handle, instance.gpu().graphics_queue_index(), 0, &graphics_queue);
+            handle, instance.surface.graphics_queue_index(), 0,
+            &graphics_queue);
     vkGetDeviceQueue(
-            handle, instance.gpu().presentation_queue_index(), 0,
+            handle, instance.surface.presentation_queue_index(), 0,
             &present_queue);
 }
 
