@@ -9,16 +9,12 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     include(requirements.cmake)
 endif()
 
-if(NOT TARGET check)
-    add_custom_target(check)
-endif()
-
 
 macro(vk_shader target input)
-    add_custom_target(${target}-${input}.spirv
-        COMMAND glslc
-            ${CMAKE_CURRENT_SOURCE_DIR}/${input} -o ${input}.spirv
-        DEPENDS ${input})
+    add_custom_command(OUTPUT ${input}.spirv
+        COMMAND glslc ${CMAKE_CURRENT_SOURCE_DIR}/${input} -o ${input}.spirv
+        MAIN_DEPENDENCY ${input})
+    add_custom_target(${target}-${input}.spirv DEPENDS ${input}.spirv)
     add_dependencies(${target} ${target}-${input}.spirv)
 endmacro()
 
