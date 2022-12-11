@@ -54,8 +54,6 @@ int main(int argc, const char **argv) {
 
     planet::vk::device vk_device{vk_instance, extensions};
 
-    // Setup swapchain, assume a real GPU so don't bother querying the
-    // capabilities, just get what we want
     VkExtent2D swapchain_extent =
             planet::vk::swap_chain::extents(vk_device, {win_width, win_height});
     VkFormat const swapchain_img_format =
