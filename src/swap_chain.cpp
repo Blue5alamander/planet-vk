@@ -9,6 +9,7 @@
 
 
 std::uint32_t planet::vk::swap_chain::create(VkExtent2D const wsize) {
+    frame_buffers.clear();
     image_views.clear();
     images.clear();
 

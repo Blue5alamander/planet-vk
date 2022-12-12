@@ -198,9 +198,9 @@ class HelloTriangleApplication {
     }();
 
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
-    std::vector<VkFramebuffer> swapChainFramebuffers;
 
     VkDescriptorSetLayout descriptorSetLayout;
+
     planet::vk::graphics_pipeline graphicsPipeline{[this]() {
         createDescriptorSetLayout();
         planet::vk::shader_module vertShaderModule{
@@ -463,7 +463,8 @@ class HelloTriangleApplication {
         createCommandPool();
         createColorResources();
         createDepthResources();
-        createFramebuffers();
+        swapChain.create_frame_buffers(
+                graphicsPipeline.render_pass, colorImageView, depthImageView);
         createTextureImage();
         createTextureImageView();
         createTextureSampler();
@@ -494,10 +495,6 @@ class HelloTriangleApplication {
         vkDestroyImageView(device.get(), colorImageView, nullptr);
         vkDestroyImage(device.get(), colorImage, nullptr);
         vkFreeMemory(device.get(), colorImageMemory, nullptr);
-
-        for (auto framebuffer : swapChainFramebuffers) {
-            vkDestroyFramebuffer(device.get(), framebuffer, nullptr);
-        }
     }
 
     void cleanup() {
@@ -560,7 +557,8 @@ class HelloTriangleApplication {
         createSwapChain();
         createColorResources();
         createDepthResources();
-        createFramebuffers();
+        swapChain.create_frame_buffers(
+                graphicsPipeline.render_pass, colorImageView, depthImageView);
     }
 
     void populateDebugMessengerCreateInfo(
@@ -633,30 +631,6 @@ class HelloTriangleApplication {
 
         planet::vk::worked(vkCreateDescriptorSetLayout(
                 device.get(), &layoutInfo, nullptr, &descriptorSetLayout));
-    }
-
-    void createFramebuffers() {
-        swapChainFramebuffers.resize(swapChain.image_views.size());
-
-        for (size_t i = 0; i < swapChain.image_views.size(); i++) {
-            std::array<VkImageView, 3> attachments = {
-                    colorImageView, depthImageView,
-                    swapChain.image_views[i].get()};
-
-            VkFramebufferCreateInfo framebufferInfo{};
-            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            framebufferInfo.renderPass = graphicsPipeline.render_pass.get();
-            framebufferInfo.attachmentCount =
-                    static_cast<uint32_t>(attachments.size());
-            framebufferInfo.pAttachments = attachments.data();
-            framebufferInfo.width = swapChain.extents.width;
-            framebufferInfo.height = swapChain.extents.height;
-            framebufferInfo.layers = 1;
-
-            planet::vk::worked(vkCreateFramebuffer(
-                    device.get(), &framebufferInfo, nullptr,
-                    &swapChainFramebuffers[i]));
-        }
     }
 
     void createCommandPool() {
@@ -1361,7 +1335,7 @@ class HelloTriangleApplication {
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = graphicsPipeline.render_pass.get();
-        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+        renderPassInfo.framebuffer = swapChain.frame_buffers[imageIndex].get();
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapChain.extents;
 
