@@ -63,26 +63,13 @@ int main(int argc, const char **argv) {
     {
         planet::vk::shader_module vertex_shader_module{
                 vk_device, assets.file_data("vert.vert.spirv")};
-
-        VkPipelineShaderStageCreateInfo vertex_stage = {};
-        vertex_stage.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        vertex_stage.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertex_stage.module = vertex_shader_module.get();
-        vertex_stage.pName = "main";
-
         planet::vk::shader_module fragment_shader_module{
                 vk_device, assets.file_data("frag.frag.spirv")};
-
-        VkPipelineShaderStageCreateInfo fragment_stage = {};
-        fragment_stage.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        fragment_stage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragment_stage.module = fragment_shader_module.get();
-        fragment_stage.pName = "main";
-
-        std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages = {
-                vertex_stage, fragment_stage};
+        std::array shader_stages{
+                vertex_shader_module.shader_stage_info(
+                        VK_SHADER_STAGE_VERTEX_BIT, "main"),
+                fragment_shader_module.shader_stage_info(
+                        VK_SHADER_STAGE_FRAGMENT_BIT, "main")};
 
         // Vertex data hard-coded in vertex shader
         VkPipelineVertexInputStateCreateInfo vertex_input_info = {};

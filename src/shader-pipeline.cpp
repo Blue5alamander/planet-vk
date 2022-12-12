@@ -16,3 +16,14 @@ planet::vk::shader_module::shader_module(
     info.pCode = reinterpret_cast<std::uint32_t *>(spirv.data());
     handle.create<vkCreateShaderModule>(device.get(), info);
 }
+
+
+VkPipelineShaderStageCreateInfo planet::vk::shader_module::shader_stage_info(
+        VkShaderStageFlagBits const flags, char const *entry) {
+    VkPipelineShaderStageCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    info.stage = flags;
+    info.module = handle.get();
+    info.pName = entry;
+    return info;
+}
