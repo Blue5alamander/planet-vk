@@ -517,24 +517,23 @@ class HelloTriangleApplication {
     }
 
     void createGraphicsPipeline() {
-        auto vertShaderCode = am.file_data("27_shader_depth.vert.spirv");
-        auto fragShaderCode = am.file_data("27_shader_depth.frag.spirv");
-
-        VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+        planet::vk::shader_module vertShaderModule{
+                device, am.file_data("27_shader_depth.vert.spirv")};
+        planet::vk::shader_module fragShaderModule{
+                device, am.file_data("27_shader_depth.frag.spirv")};
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertShaderStageInfo.module = vertShaderModule;
+        vertShaderStageInfo.module = vertShaderModule.get();
         vertShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
         fragShaderStageInfo.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragShaderStageInfo.module = fragShaderModule;
+        fragShaderStageInfo.module = fragShaderModule.get();
         fragShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo shaderStages[] = {
@@ -648,9 +647,6 @@ class HelloTriangleApplication {
         planet::vk::worked(vkCreateGraphicsPipelines(
                 device.get(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
                 &graphicsPipeline));
-
-        vkDestroyShaderModule(device.get(), fragShaderModule, nullptr);
-        vkDestroyShaderModule(device.get(), vertShaderModule, nullptr);
     }
 
     void createFramebuffers() {
@@ -1559,19 +1555,6 @@ class HelloTriangleApplication {
         }
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-    }
-
-    VkShaderModule createShaderModule(std::vector<std::byte> const &code) {
-        VkShaderModuleCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
-
-        VkShaderModule shaderModule;
-        planet::vk::worked(vkCreateShaderModule(
-                device.get(), &createInfo, nullptr, &shaderModule));
-
-        return shaderModule;
     }
 
     VkExtent2D chooseSwapExtent() {

@@ -61,37 +61,24 @@ int main(int argc, const char **argv) {
     VkRenderPass vk_render_pass;
     VkPipeline vk_pipeline;
     {
-        auto vert_spv = assets.file_data("vert.vert.spirv");
-        auto frag_spv = assets.file_data("frag.frag.spirv");
-        VkShaderModule vertex_shader_module = VK_NULL_HANDLE;
-
-        VkShaderModuleCreateInfo create_info = {};
-        create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        create_info.codeSize = vert_spv.size();
-        create_info.pCode = reinterpret_cast<std::uint32_t *>(vert_spv.data());
-        planet::vk::worked(vkCreateShaderModule(
-                vk_device.get(), &create_info, nullptr, &vertex_shader_module));
+        planet::vk::shader_module vertex_shader_module{
+                vk_device, assets.file_data("vert.vert.spirv")};
 
         VkPipelineShaderStageCreateInfo vertex_stage = {};
         vertex_stage.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertex_stage.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertex_stage.module = vertex_shader_module;
+        vertex_stage.module = vertex_shader_module.get();
         vertex_stage.pName = "main";
 
-        VkShaderModule fragment_shader_module = VK_NULL_HANDLE;
-        create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        create_info.codeSize = frag_spv.size();
-        create_info.pCode = reinterpret_cast<std::uint32_t *>(frag_spv.data());
-        planet::vk::worked(vkCreateShaderModule(
-                vk_device.get(), &create_info, nullptr,
-                &fragment_shader_module));
+        planet::vk::shader_module fragment_shader_module{
+                vk_device, assets.file_data("frag.frag.spirv")};
 
         VkPipelineShaderStageCreateInfo fragment_stage = {};
         fragment_stage.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         fragment_stage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragment_stage.module = fragment_shader_module;
+        fragment_stage.module = fragment_shader_module.get();
         fragment_stage.pName = "main";
 
         std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages = {
@@ -214,9 +201,6 @@ int main(int argc, const char **argv) {
         planet::vk::worked(vkCreateGraphicsPipelines(
                 vk_device.get(), VK_NULL_HANDLE, 1, &graphics_pipeline_info,
                 nullptr, &vk_pipeline));
-
-        vkDestroyShaderModule(vk_device.get(), vertex_shader_module, nullptr);
-        vkDestroyShaderModule(vk_device.get(), fragment_shader_module, nullptr);
     }
 
     // Setup framebuffers
