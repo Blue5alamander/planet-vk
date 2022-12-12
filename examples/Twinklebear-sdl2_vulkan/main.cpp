@@ -57,10 +57,7 @@ int main(int argc, const char **argv) {
             vk_device, VkExtent2D{win_width, win_height}};
 
     // Build the pipeline
-    VkPipelineLayout vk_pipeline_layout;
-    VkRenderPass vk_render_pass;
-    VkPipeline vk_pipeline;
-    {
+    planet::vk::graphics_pipeline vk_pipeline{[&]() {
         planet::vk::shader_module vertex_shader_module{
                 vk_device, assets.file_data("vert.vert.spirv")};
         planet::vk::shader_module fragment_shader_module{
@@ -138,11 +135,6 @@ int main(int argc, const char **argv) {
         blend_info.attachmentCount = 1;
         blend_info.pAttachments = &blend_mode;
 
-        VkPipelineLayoutCreateInfo pipeline_info = {};
-        pipeline_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        planet::vk::worked(vkCreatePipelineLayout(
-                vk_device.get(), &pipeline_info, nullptr, &vk_pipeline_layout));
-
         VkAttachmentDescription color_attachment = {};
         color_attachment.format = vk_swapchain.image_format;
         color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -168,8 +160,7 @@ int main(int argc, const char **argv) {
         render_pass_info.pAttachments = &color_attachment;
         render_pass_info.subpassCount = 1;
         render_pass_info.pSubpasses = &subpass;
-        planet::vk::worked(vkCreateRenderPass(
-                vk_device.get(), &render_pass_info, nullptr, &vk_render_pass));
+        planet::vk::render_pass vk_render_pass{vk_device, render_pass_info};
 
         VkGraphicsPipelineCreateInfo graphics_pipeline_info = {};
         graphics_pipeline_info.sType =
@@ -182,13 +173,11 @@ int main(int argc, const char **argv) {
         graphics_pipeline_info.pRasterizationState = &rasterizer_info;
         graphics_pipeline_info.pMultisampleState = &multisampling;
         graphics_pipeline_info.pColorBlendState = &blend_info;
-        graphics_pipeline_info.layout = vk_pipeline_layout;
-        graphics_pipeline_info.renderPass = vk_render_pass;
         graphics_pipeline_info.subpass = 0;
-        planet::vk::worked(vkCreateGraphicsPipelines(
-                vk_device.get(), VK_NULL_HANDLE, 1, &graphics_pipeline_info,
-                nullptr, &vk_pipeline));
-    }
+        return planet::vk::graphics_pipeline{
+                vk_device, graphics_pipeline_info, std::move(vk_render_pass),
+                planet::vk::pipeline_layout{vk_device}};
+    }()};
 
     // Setup framebuffers
     std::vector<VkFramebuffer> framebuffers;
@@ -196,7 +185,7 @@ int main(int argc, const char **argv) {
         std::array<VkImageView, 1> attachments = {v.get()};
         VkFramebufferCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        create_info.renderPass = vk_render_pass;
+        create_info.renderPass = vk_pipeline.render_pass.get();
         create_info.attachmentCount = 1;
         create_info.pAttachments = attachments.data();
         create_info.width = win_width;
@@ -242,7 +231,7 @@ int main(int argc, const char **argv) {
 
         VkRenderPassBeginInfo render_pass_info = {};
         render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        render_pass_info.renderPass = vk_render_pass;
+        render_pass_info.renderPass = vk_pipeline.render_pass.get();
         render_pass_info.framebuffer = framebuffers[i];
         render_pass_info.renderArea.offset.x = 0;
         render_pass_info.renderArea.offset.y = 0;
@@ -256,7 +245,7 @@ int main(int argc, const char **argv) {
                 cmd_buf, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(
-                cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline);
+                cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get());
 
         // Draw our "triangle" embedded in the shader
         vkCmdDraw(cmd_buf, 3, 1, 0, 0);
@@ -359,9 +348,6 @@ int main(int argc, const char **argv) {
     for (auto &fb : framebuffers) {
         vkDestroyFramebuffer(vk_device.get(), fb, nullptr);
     }
-    vkDestroyPipeline(vk_device.get(), vk_pipeline, nullptr);
-    vkDestroyRenderPass(vk_device.get(), vk_render_pass, nullptr);
-    vkDestroyPipelineLayout(vk_device.get(), vk_pipeline_layout, nullptr);
 
     return 0;
 }

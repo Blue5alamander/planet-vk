@@ -56,7 +56,13 @@ namespace planet::vk {
         owned_handle(owned_handle const &) = delete;
         ~owned_handle() noexcept { reset(); }
 
-        owned_handle &operator=(owned_handle &&) = delete;
+        owned_handle &operator=(owned_handle &&h) {
+            reset();
+            owner = std::exchange(h.owner, VK_NULL_HANDLE);
+            handle = std::exchange(h.handle, VK_NULL_HANDLE);
+            allocator = std::exchange(h.allocator, nullptr);
+            return *this;
+        }
         owned_handle &operator=(owned_handle const &) = delete;
 
         T get() const noexcept { return handle; }

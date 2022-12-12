@@ -2,6 +2,8 @@ find_package (Vulkan REQUIRED)
 
 add_library(planet-vk
         init.cpp
+        pipeline.cpp
+        render_pass.cpp
         shader-pipeline.cpp
         surface.cpp
         swap_chain.cpp
