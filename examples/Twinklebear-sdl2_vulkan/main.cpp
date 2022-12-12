@@ -329,6 +329,9 @@ int main(int argc, const char **argv) {
     vkDestroySemaphore(vk_device.get(), img_avail_semaphore, nullptr);
     vkDestroySemaphore(vk_device.get(), render_finished_semaphore, nullptr);
     vkDestroyFence(vk_device.get(), vk_fence, nullptr);
+    vkFreeCommandBuffers(
+            vk_device.get(), vk_command_pool, command_buffers.size(),
+            command_buffers.data());
     vkDestroyCommandPool(vk_device.get(), vk_command_pool, nullptr);
 
     return 0;
