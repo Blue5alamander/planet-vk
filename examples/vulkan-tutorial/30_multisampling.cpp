@@ -444,9 +444,9 @@ class HelloTriangleApplication {
 
     std::vector<VkCommandBuffer> commandBuffers;
 
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
+    std::vector<planet::vk::semaphore> imageAvailableSemaphores;
+    std::vector<planet::vk::semaphore> renderFinishedSemaphores;
+    std::vector<planet::vk::fence> inFlightFences;
     uint32_t currentFrame = 0;
 
     bool framebufferResized = false;
@@ -521,14 +521,6 @@ class HelloTriangleApplication {
 
         vkDestroyBuffer(device.get(), vertexBuffer, nullptr);
         vkFreeMemory(device.get(), vertexBufferMemory, nullptr);
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(
-                    device.get(), renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(
-                    device.get(), imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(device.get(), inFlightFences[i], nullptr);
-        }
 
         vkDestroyCommandPool(device.get(), commandPool, nullptr);
 
@@ -1390,9 +1382,9 @@ class HelloTriangleApplication {
     }
 
     void createSyncObjects() {
-        imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+        imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+        renderFinishedSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+        inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
 
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1402,21 +1394,9 @@ class HelloTriangleApplication {
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (vkCreateSemaphore(
-                        device.get(), &semaphoreInfo, nullptr,
-                        &imageAvailableSemaphores[i])
-                        != VK_SUCCESS
-                || vkCreateSemaphore(
-                           device.get(), &semaphoreInfo, nullptr,
-                           &renderFinishedSemaphores[i])
-                        != VK_SUCCESS
-                || vkCreateFence(
-                           device.get(), &fenceInfo, nullptr, &inFlightFences[i])
-                        != VK_SUCCESS) {
-                throw std::runtime_error(
-                        "failed to create synchronization objects for a "
-                        "frame!");
-            }
+            imageAvailableSemaphores.emplace_back(device);
+            renderFinishedSemaphores.emplace_back(device);
+            inFlightFences.emplace_back(device);
         }
     }
 
@@ -1445,14 +1425,15 @@ class HelloTriangleApplication {
     }
 
     void drawFrame() {
-        vkWaitForFences(
-                device.get(), 1, &inFlightFences[currentFrame], VK_TRUE,
-                UINT64_MAX);
+        std::array fences{inFlightFences[currentFrame].get()};
+        planet::vk::worked(vkWaitForFences(
+                device.get(), fences.size(), fences.data(), VK_TRUE,
+                UINT64_MAX));
 
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(
                 device.get(), swapChain.get(), UINT64_MAX,
-                imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE,
+                imageAvailableSemaphores[currentFrame].get(), VK_NULL_HANDLE,
                 &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1464,7 +1445,7 @@ class HelloTriangleApplication {
 
         updateUniformBuffer(currentFrame);
 
-        vkResetFences(device.get(), 1, &inFlightFences[currentFrame]);
+        vkResetFences(device.get(), fences.size(), fences.data());
 
         vkResetCommandBuffer(
                 commandBuffers[currentFrame],
@@ -1474,34 +1455,34 @@ class HelloTriangleApplication {
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
+        std::array waitSemaphores{imageAvailableSemaphores[currentFrame].get()};
         VkPipelineStageFlags waitStages[] = {
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
+        submitInfo.waitSemaphoreCount = waitSemaphores.size();
+        submitInfo.pWaitSemaphores = waitSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 
-        VkSemaphore signalSemaphores[] = {
-                renderFinishedSemaphores[currentFrame]};
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
+        std::array signalSemaphores{
+                renderFinishedSemaphores[currentFrame].get()};
+        submitInfo.signalSemaphoreCount = signalSemaphores.size();
+        submitInfo.pSignalSemaphores = signalSemaphores.data();
 
         planet::vk::worked(vkQueueSubmit(
                 device.graphics_queue, 1, &submitInfo,
-                inFlightFences[currentFrame]));
+                inFlightFences[currentFrame].get()));
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
+        presentInfo.waitSemaphoreCount = signalSemaphores.size();
+        presentInfo.pWaitSemaphores = signalSemaphores.data();
 
-        VkSwapchainKHR swapChains[] = {swapChain.get()};
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains;
+        std::array swapChains{swapChain.get()};
+        presentInfo.swapchainCount = swapChains.size();
+        presentInfo.pSwapchains = swapChains.data();
 
         presentInfo.pImageIndices = &imageIndex;
 

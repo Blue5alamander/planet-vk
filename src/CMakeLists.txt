@@ -8,6 +8,7 @@ add_library(planet-vk
         shader-pipeline.cpp
         surface.cpp
         swap_chain.cpp
+        synchronisation.cpp
     )
 target_include_directories(planet-vk PUBLIC ../include)
 target_link_libraries(planet-vk PUBLIC

@@ -240,30 +240,14 @@ int main(int argc, const char **argv) {
         planet::vk::worked(vkEndCommandBuffer(cmd_buf));
     }
 
-    VkSemaphore img_avail_semaphore = VK_NULL_HANDLE;
-    VkSemaphore render_finished_semaphore = VK_NULL_HANDLE;
-    {
-        VkSemaphoreCreateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        planet::vk::worked(vkCreateSemaphore(
-                vk_device.get(), &info, nullptr, &img_avail_semaphore));
-        planet::vk::worked(vkCreateSemaphore(
-                vk_device.get(), &info, nullptr, &render_finished_semaphore));
-    }
-
+    planet::vk::semaphore img_avail_semaphore{vk_device},
+            render_finished_semaphore{vk_device};
     // We use a fence to wait for the rendering work to finish
-    VkFence vk_fence = VK_NULL_HANDLE;
-    {
-        VkFenceCreateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        planet::vk::worked(
-                vkCreateFence(vk_device.get(), &info, nullptr, &vk_fence));
-    }
+    planet::vk::fence vk_fence{vk_device};
 
     std::cout << "Running loop\n";
     bool done = false;
-    while (!done) {
+    while (not done) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) { done = true; }
@@ -282,19 +266,21 @@ int main(int argc, const char **argv) {
         uint32_t img_index = 0;
         planet::vk::worked(vkAcquireNextImageKHR(
                 vk_device.get(), vk_swapchain.get(),
-                std::numeric_limits<uint64_t>::max(), img_avail_semaphore,
+                std::numeric_limits<uint64_t>::max(), img_avail_semaphore.get(),
                 VK_NULL_HANDLE, &img_index));
 
         // We need to wait for the image before we can run the commands to draw
         // to it, and signal the render finished one when we're done
-        const std::array<VkSemaphore, 1> wait_semaphores = {
-                img_avail_semaphore};
-        const std::array<VkSemaphore, 1> signal_semaphores = {
-                render_finished_semaphore};
-        const std::array<VkPipelineStageFlags, 1> wait_stages = {
+        std::array<VkSemaphore, 1> const wait_semaphores = {
+                img_avail_semaphore.get()};
+        std::array<VkSemaphore, 1> const signal_semaphores = {
+                render_finished_semaphore.get()};
+        std::array<VkPipelineStageFlags, 1> const wait_stages = {
                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+        std::array const fences{vk_fence.get()};
 
-        planet::vk::worked(vkResetFences(vk_device.get(), 1, &vk_fence));
+        planet::vk::worked(
+                vkResetFences(vk_device.get(), fences.size(), fences.data()));
 
         VkSubmitInfo submit_info = {};
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -306,7 +292,7 @@ int main(int argc, const char **argv) {
         submit_info.signalSemaphoreCount = signal_semaphores.size();
         submit_info.pSignalSemaphores = signal_semaphores.data();
         planet::vk::worked(vkQueueSubmit(
-                vk_device.graphics_queue, 1, &submit_info, vk_fence));
+                vk_device.graphics_queue, 1, &submit_info, vk_fence.get()));
 
         // Finally, present the updated image in the swap chain
         std::array<VkSwapchainKHR, 1> present_chain = {vk_swapchain.get()};
@@ -322,13 +308,10 @@ int main(int argc, const char **argv) {
 
         // Wait for the frame to finish
         planet::vk::worked(vkWaitForFences(
-                vk_device.get(), 1, &vk_fence, true,
+                vk_device.get(), fences.size(), fences.data(), true,
                 std::numeric_limits<uint64_t>::max()));
     }
 
-    vkDestroySemaphore(vk_device.get(), img_avail_semaphore, nullptr);
-    vkDestroySemaphore(vk_device.get(), render_finished_semaphore, nullptr);
-    vkDestroyFence(vk_device.get(), vk_fence, nullptr);
     vkFreeCommandBuffers(
             vk_device.get(), vk_command_pool, command_buffers.size(),
             command_buffers.data());
