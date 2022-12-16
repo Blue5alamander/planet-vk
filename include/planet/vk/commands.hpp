@@ -23,10 +23,11 @@ namespace planet::vk {
          * flags tells the destructor which is which.
          */
         bool self_owned = false;
-
-        explicit command_buffer(vk::command_pool const &, VkCommandBuffer);
+        /// Used when the `command_buffers` instance owns the handles
+        command_buffer(vk::command_pool const &, VkCommandBuffer);
 
       public:
+        explicit command_buffer(vk::command_pool const &);
         command_buffer(command_buffer const &) = delete;
         command_buffer(command_buffer &&);
         ~command_buffer();

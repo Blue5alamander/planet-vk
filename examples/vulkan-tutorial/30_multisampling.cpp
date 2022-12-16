@@ -442,7 +442,7 @@ class HelloTriangleApplication {
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    std::vector<VkCommandBuffer> commandBuffers;
+    planet::vk::command_buffers commandBuffers{commandPool, MAX_FRAMES_IN_FLIGHT};
 
     std::vector<planet::vk::semaphore> imageAvailableSemaphores;
     std::vector<planet::vk::semaphore> renderFinishedSemaphores;
@@ -473,7 +473,6 @@ class HelloTriangleApplication {
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets();
-        createCommandBuffers();
         createSyncObjects();
     }
 
@@ -757,7 +756,7 @@ class HelloTriangleApplication {
                     "texture image format does not support linear blitting!");
         }
 
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        auto commandBuffer = beginSingleTimeCommands();
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -780,7 +779,7 @@ class HelloTriangleApplication {
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
             vkCmdPipelineBarrier(
-                    commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    commandBuffer.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
                     VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
                     1, &barrier);
 
@@ -801,7 +800,7 @@ class HelloTriangleApplication {
             blit.dstSubresource.layerCount = 1;
 
             vkCmdBlitImage(
-                    commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    commandBuffer.get(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
                     VK_FILTER_LINEAR);
 
@@ -811,7 +810,7 @@ class HelloTriangleApplication {
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
             vkCmdPipelineBarrier(
-                    commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    commandBuffer.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
                     nullptr, 1, &barrier);
 
@@ -826,11 +825,11 @@ class HelloTriangleApplication {
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
         vkCmdPipelineBarrier(
-                commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                commandBuffer.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
                 nullptr, 1, &barrier);
 
-        endSingleTimeCommands(commandBuffer);
+        endSingleTimeCommands(std::move(commandBuffer));
     }
 
     VkSampleCountFlagBits getMaxUsableSampleCount() {
@@ -950,7 +949,7 @@ class HelloTriangleApplication {
             VkImageLayout oldLayout,
             VkImageLayout newLayout,
             uint32_t mipLevels) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        auto commandBuffer = beginSingleTimeCommands();
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -988,15 +987,15 @@ class HelloTriangleApplication {
         }
 
         vkCmdPipelineBarrier(
-                commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0,
+                commandBuffer.get(), sourceStage, destinationStage, 0, 0, nullptr, 0,
                 nullptr, 1, &barrier);
 
-        endSingleTimeCommands(commandBuffer);
+        endSingleTimeCommands(std::move(commandBuffer));
     }
 
     void copyBufferToImage(
             VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        auto commandBuffer = beginSingleTimeCommands();
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -1010,10 +1009,10 @@ class HelloTriangleApplication {
         region.imageExtent = {width, height, 1};
 
         vkCmdCopyBufferToImage(
-                commandBuffer, buffer, image,
+                commandBuffer.get(), buffer, image,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        endSingleTimeCommands(commandBuffer);
+        endSingleTimeCommands(std::move(commandBuffer));
     }
 
     void loadModel() {
@@ -1235,48 +1234,39 @@ class HelloTriangleApplication {
         vkBindBufferMemory(device.get(), buffer, bufferMemory, 0);
     }
 
-    VkCommandBuffer beginSingleTimeCommands() {
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = commandPool.get();
-        allocInfo.commandBufferCount = 1;
-
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(device.get(), &allocInfo, &commandBuffer);
+    planet::vk::command_buffer beginSingleTimeCommands() {
+        planet::vk::command_buffer commandBuffer{commandPool};
 
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        vkBeginCommandBuffer(commandBuffer.get(), &beginInfo);
 
         return commandBuffer;
     }
 
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer) {
-        vkEndCommandBuffer(commandBuffer);
+    void endSingleTimeCommands(planet::vk::command_buffer commandBuffer) {
+        vkEndCommandBuffer(commandBuffer.get());
 
+        std::array buffers{commandBuffer.get()};
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
+        submitInfo.commandBufferCount = buffers.size();
+        submitInfo.pCommandBuffers = buffers.data();
 
         vkQueueSubmit(device.graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(device.graphics_queue);
-
-        vkFreeCommandBuffers(
-                device.get(), commandPool.get(), 1, &commandBuffer);
     }
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        auto commandBuffer = beginSingleTimeCommands();
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+        vkCmdCopyBuffer(commandBuffer.get(), srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(commandBuffer);
+        endSingleTimeCommands(std::move(commandBuffer));
     }
 
     uint32_t findMemoryType(
@@ -1292,19 +1282,6 @@ class HelloTriangleApplication {
         }
 
         throw std::runtime_error("failed to find suitable memory type!");
-    }
-
-    void createCommandBuffers() {
-        commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = commandPool.get();
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
-
-        planet::vk::worked(vkAllocateCommandBuffers(
-                device.get(), &allocInfo, commandBuffers.data()));
     }
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -1437,9 +1414,9 @@ class HelloTriangleApplication {
         vkResetFences(device.get(), fences.size(), fences.data());
 
         vkResetCommandBuffer(
-                commandBuffers[currentFrame],
+                commandBuffers[currentFrame].get(),
                 /*VkCommandBufferResetFlagBits*/ 0);
-        recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+        recordCommandBuffer(commandBuffers[currentFrame].get(), imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1451,8 +1428,9 @@ class HelloTriangleApplication {
         submitInfo.pWaitSemaphores = waitSemaphores.data();
         submitInfo.pWaitDstStageMask = waitStages;
 
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+        std::array frameCommandBuffers{commandBuffers[currentFrame].get()};
+        submitInfo.commandBufferCount = frameCommandBuffers.size();
+        submitInfo.pCommandBuffers = frameCommandBuffers.data();
 
         std::array signalSemaphores{
                 renderFinishedSemaphores[currentFrame].get()};

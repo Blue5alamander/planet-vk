@@ -55,6 +55,19 @@ planet::vk::command_buffers::~command_buffers() {
 
 
 planet::vk::command_buffer::command_buffer(
+        vk::command_pool const &cp)
+: self_owned{true}, device{cp.device}, command_pool{cp} {
+    VkCommandBufferAllocateInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    info.commandPool = command_pool.get();
+    info.commandBufferCount = 1;
+
+    worked(vkAllocateCommandBuffers(device.get(), &info, &handle));
+}
+
+
+planet::vk::command_buffer::command_buffer(
         vk::command_pool const &cp, VkCommandBuffer const h)
 : handle{h}, device{cp.device}, command_pool{cp} {}
 
