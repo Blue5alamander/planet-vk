@@ -412,7 +412,7 @@ class HelloTriangleApplication {
                 {device, pipelineLayoutInfo});
     }()};
 
-    VkCommandPool commandPool;
+    planet::vk::command_pool commandPool{device, instance.surface};
 
     VkImage colorImage;
     VkDeviceMemory colorImageMemory;
@@ -460,7 +460,6 @@ class HelloTriangleApplication {
 
     void initVulkan() {
         createSwapChain();
-        createCommandPool();
         createColorResources();
         createDepthResources();
         swapChain.create_frame_buffers(
@@ -521,8 +520,6 @@ class HelloTriangleApplication {
 
         vkDestroyBuffer(device.get(), vertexBuffer, nullptr);
         vkFreeMemory(device.get(), vertexBufferMemory, nullptr);
-
-        vkDestroyCommandPool(device.get(), commandPool, nullptr);
 
         if (enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(
@@ -623,15 +620,6 @@ class HelloTriangleApplication {
 
         planet::vk::worked(vkCreateDescriptorSetLayout(
                 device.get(), &layoutInfo, nullptr, &descriptorSetLayout));
-    }
-
-    void createCommandPool() {
-        VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = instance.surface.graphics_queue_index();
-        planet::vk::worked(vkCreateCommandPool(
-                device.get(), &poolInfo, nullptr, &commandPool));
     }
 
     void createColorResources() {
@@ -1251,7 +1239,7 @@ class HelloTriangleApplication {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = commandPool;
+        allocInfo.commandPool = commandPool.get();
         allocInfo.commandBufferCount = 1;
 
         VkCommandBuffer commandBuffer;
@@ -1277,7 +1265,8 @@ class HelloTriangleApplication {
         vkQueueSubmit(device.graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(device.graphics_queue);
 
-        vkFreeCommandBuffers(device.get(), commandPool, 1, &commandBuffer);
+        vkFreeCommandBuffers(
+                device.get(), commandPool.get(), 1, &commandBuffer);
     }
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
@@ -1310,7 +1299,7 @@ class HelloTriangleApplication {
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = commandPool;
+        allocInfo.commandPool = commandPool.get();
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 

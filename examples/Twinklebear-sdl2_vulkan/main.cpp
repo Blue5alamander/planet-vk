@@ -183,27 +183,9 @@ int main(int argc, const char **argv) {
     vk_swapchain.create_frame_buffers(vk_pipeline.render_pass);
 
     // Setup the command pool
-    VkCommandPool vk_command_pool;
-    {
-        VkCommandPoolCreateInfo create_info = {};
-        create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        create_info.queueFamilyIndex =
-                vk_instance.surface.graphics_queue_index();
-        planet::vk::worked(vkCreateCommandPool(
-                vk_device.get(), &create_info, nullptr, &vk_command_pool));
-    }
-
-    std::vector<VkCommandBuffer> command_buffers(
-            vk_swapchain.frame_buffers.size(), VkCommandBuffer{});
-    {
-        VkCommandBufferAllocateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        info.commandPool = vk_command_pool;
-        info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        info.commandBufferCount = command_buffers.size();
-        planet::vk::worked(vkAllocateCommandBuffers(
-                vk_device.get(), &info, command_buffers.data()));
-    }
+    planet::vk::command_pool vk_command_pool{vk_device, vk_instance.surface};
+    planet::vk::command_buffers command_buffers{
+            vk_command_pool, vk_swapchain.frame_buffers.size()};
 
     // Now record the rendering commands (TODO: Could also do this pre-recording
     // in the DXR backend of rtobj. Will there be much perf. difference?)
@@ -212,7 +194,7 @@ int main(int argc, const char **argv) {
 
         VkCommandBufferBeginInfo begin_info = {};
         begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        planet::vk::worked(vkBeginCommandBuffer(cmd_buf, &begin_info));
+        planet::vk::worked(vkBeginCommandBuffer(cmd_buf.get(), &begin_info));
 
         VkRenderPassBeginInfo render_pass_info = {};
         render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -227,17 +209,18 @@ int main(int argc, const char **argv) {
         render_pass_info.pClearValues = &clear_color;
 
         vkCmdBeginRenderPass(
-                cmd_buf, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+                cmd_buf.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(
-                cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline.get());
+                cmd_buf.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                vk_pipeline.get());
 
         // Draw our "triangle" embedded in the shader
-        vkCmdDraw(cmd_buf, 3, 1, 0, 0);
+        vkCmdDraw(cmd_buf.get(), 3, 1, 0, 0);
 
-        vkCmdEndRenderPass(cmd_buf);
+        vkCmdEndRenderPass(cmd_buf.get());
 
-        planet::vk::worked(vkEndCommandBuffer(cmd_buf));
+        planet::vk::worked(vkEndCommandBuffer(cmd_buf.get()));
     }
 
     planet::vk::semaphore img_avail_semaphore{vk_device},
@@ -282,13 +265,14 @@ int main(int argc, const char **argv) {
         planet::vk::worked(
                 vkResetFences(vk_device.get(), fences.size(), fences.data()));
 
+        std::array command_buffer{command_buffers[img_index].get()};
         VkSubmitInfo submit_info = {};
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit_info.waitSemaphoreCount = wait_semaphores.size();
         submit_info.pWaitSemaphores = wait_semaphores.data();
         submit_info.pWaitDstStageMask = wait_stages.data();
-        submit_info.commandBufferCount = 1;
-        submit_info.pCommandBuffers = &command_buffers[img_index];
+        submit_info.commandBufferCount = command_buffer.size();
+        submit_info.pCommandBuffers = command_buffer.data();
         submit_info.signalSemaphoreCount = signal_semaphores.size();
         submit_info.pSignalSemaphores = signal_semaphores.data();
         planet::vk::worked(vkQueueSubmit(
@@ -311,11 +295,5 @@ int main(int argc, const char **argv) {
                 vk_device.get(), fences.size(), fences.data(), true,
                 std::numeric_limits<uint64_t>::max()));
     }
-
-    vkFreeCommandBuffers(
-            vk_device.get(), vk_command_pool, command_buffers.size(),
-            command_buffers.data());
-    vkDestroyCommandPool(vk_device.get(), vk_command_pool, nullptr);
-
     return 0;
 }

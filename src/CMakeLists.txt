@@ -1,6 +1,7 @@
 find_package (Vulkan REQUIRED)
 
 add_library(planet-vk
+        commands.cpp
         frame_buffer.cpp
         init.cpp
         pipeline.cpp
