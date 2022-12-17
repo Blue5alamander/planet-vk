@@ -1,7 +1,41 @@
 #include <planet/vk/engine2d/renderer.hpp>
 
 
-planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {}
+planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {
+    /// These render commands will end up being put inside the render loop
+    for (std::size_t index{}; auto &cmd_buf : command_buffers.buffers) {
+        VkCommandBufferBeginInfo begin_info = {};
+        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        planet::vk::worked(vkBeginCommandBuffer(cmd_buf.get(), &begin_info));
+
+        VkRenderPassBeginInfo render_pass_info = {};
+        render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        render_pass_info.renderPass = pipeline.render_pass.get();
+        render_pass_info.framebuffer = swapchain.frame_buffers[index].get();
+        render_pass_info.renderArea.offset.x = 0;
+        render_pass_info.renderArea.offset.y = 0;
+        render_pass_info.renderArea.extent = swapchain.extents;
+
+        VkClearValue clear_color = {0.f, 0.f, 0.f, 1.f};
+        render_pass_info.clearValueCount = 1;
+        render_pass_info.pClearValues = &clear_color;
+
+        vkCmdBeginRenderPass(
+                cmd_buf.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(
+                cmd_buf.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+
+        // Draw our "triangle" embedded in the shader
+        vkCmdDraw(cmd_buf.get(), 3, 1, 0, 0);
+
+        vkCmdEndRenderPass(cmd_buf.get());
+
+        planet::vk::worked(vkEndCommandBuffer(cmd_buf.get()));
+
+        ++index;
+    }
+}
 
 
 planet::vk::graphics_pipeline planet::vk::engine2d::renderer::create_pipeline() {
