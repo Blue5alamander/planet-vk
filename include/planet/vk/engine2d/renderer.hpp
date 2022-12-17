@@ -21,6 +21,10 @@ namespace planet::vk::engine2d {
         vk::command_pool command_pool{app.device, app.instance.surface};
         vk::command_buffers command_buffers{
                 command_pool, swapchain.frame_buffers.size()};
+
+        planet::vk::semaphore img_avail_semaphore{app.device},
+                render_finished_semaphore{app.device};
+        planet::vk::fence fence{app.device};
     };
 
 
