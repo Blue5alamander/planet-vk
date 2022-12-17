@@ -17,6 +17,10 @@ namespace planet::vk::engine2d {
 
         vk::swap_chain swapchain{app.device, app.window.extents()};
         vk::graphics_pipeline pipeline{create_pipeline()};
+
+        vk::command_pool command_pool{app.device, app.instance.surface};
+        vk::command_buffers command_buffers{
+                command_pool, swapchain.frame_buffers.size()};
     };
 
 
