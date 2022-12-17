@@ -26,7 +26,7 @@ namespace planet::vk::sdl {
                const char *name,
                std::size_t width,
                std::size_t height);
-        window(planet::sdl::init &, const char *name, std::uint32_t flags);
+        window(planet::sdl::init &, const char *name, std::uint32_t flags = {});
 
         SDL_Window *get() const noexcept { return pw.get(); }
 
