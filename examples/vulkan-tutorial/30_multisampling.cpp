@@ -686,9 +686,11 @@ class HelloTriangleApplication {
 
     void createTextureImage() {
         int texWidth, texHeight, texChannels;
-        stbi_uc *pixels = stbi_load(
-                am.find_path(TEXTURE_PATH).c_str(), &texWidth, &texHeight,
-                &texChannels, STBI_rgb_alpha);
+        auto const texdata = am.file_data(TEXTURE_PATH);
+        stbi_uc *pixels = stbi_load_from_memory(
+                reinterpret_cast<stbi_uc const *>(texdata.data()),
+                texdata.size(), &texWidth, &texHeight, &texChannels,
+                STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         mipLevels = static_cast<uint32_t>(std::floor(
                             std::log2(std::max(texWidth, texHeight))))
@@ -1022,10 +1024,12 @@ class HelloTriangleApplication {
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
         std::string warn, err;
+        auto const objdata = am.file_data(MODEL_PATH);
+        std::istringstream stream{std::string{
+                reinterpret_cast<char const *>(objdata.data()), objdata.size()}};
 
         if (!tinyobj::LoadObj(
-                    &attrib, &shapes, &materials, &warn, &err,
-                    am.find_path(MODEL_PATH).c_str())) {
+                    &attrib, &shapes, &materials, &warn, &err, &stream)) {
             throw std::runtime_error(warn + err);
         }
 
