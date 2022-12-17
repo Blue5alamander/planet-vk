@@ -54,8 +54,7 @@ planet::vk::command_buffers::~command_buffers() {
  */
 
 
-planet::vk::command_buffer::command_buffer(
-        vk::command_pool const &cp)
+planet::vk::command_buffer::command_buffer(vk::command_pool const &cp)
 : self_owned{true}, device{cp.device}, command_pool{cp} {
     VkCommandBufferAllocateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

@@ -442,7 +442,8 @@ class HelloTriangleApplication {
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    planet::vk::command_buffers commandBuffers{commandPool, MAX_FRAMES_IN_FLIGHT};
+    planet::vk::command_buffers commandBuffers{
+            commandPool, MAX_FRAMES_IN_FLIGHT};
 
     std::vector<planet::vk::semaphore> imageAvailableSemaphores;
     std::vector<planet::vk::semaphore> renderFinishedSemaphores;
@@ -800,8 +801,9 @@ class HelloTriangleApplication {
             blit.dstSubresource.layerCount = 1;
 
             vkCmdBlitImage(
-                    commandBuffer.get(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
+                    commandBuffer.get(), image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
                     VK_FILTER_LINEAR);
 
             barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -987,8 +989,8 @@ class HelloTriangleApplication {
         }
 
         vkCmdPipelineBarrier(
-                commandBuffer.get(), sourceStage, destinationStage, 0, 0, nullptr, 0,
-                nullptr, 1, &barrier);
+                commandBuffer.get(), sourceStage, destinationStage, 0, 0,
+                nullptr, 0, nullptr, 1, &barrier);
 
         endSingleTimeCommands(std::move(commandBuffer));
     }
@@ -1264,7 +1266,8 @@ class HelloTriangleApplication {
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer.get(), srcBuffer, dstBuffer, 1, &copyRegion);
+        vkCmdCopyBuffer(
+                commandBuffer.get(), srcBuffer, dstBuffer, 1, &copyRegion);
 
         endSingleTimeCommands(std::move(commandBuffer));
     }
