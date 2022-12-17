@@ -21,3 +21,9 @@ add_library(planet-vk-sdl
         sdl.cpp
     )
 target_link_libraries(planet-vk-sdl planet-vk)
+
+
+add_library(planet-vk-engine2d
+        app.engine2d.cpp
+    )
+target_link_libraries(planet-vk-engine2d planet-vk-sdl)
