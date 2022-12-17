@@ -19,6 +19,7 @@ namespace planet::vk::engine2d {
         planet::vk::sdl::window window;
         planet::vk::extensions extensions{window};
         vk::instance instance;
+        vk::device device{instance, extensions};
     };
 
 
