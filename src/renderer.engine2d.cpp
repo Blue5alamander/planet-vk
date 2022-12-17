@@ -1,9 +1,7 @@
 #include <planet/vk/engine2d/renderer.hpp>
 
 
-planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {
-    swapchain.create_frame_buffers(pipeline.render_pass);
-}
+planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {}
 
 
 planet::vk::graphics_pipeline planet::vk::engine2d::renderer::create_pipeline() {
@@ -109,6 +107,7 @@ planet::vk::graphics_pipeline planet::vk::engine2d::renderer::create_pipeline() 
     render_pass_info.subpassCount = 1;
     render_pass_info.pSubpasses = &subpass;
     planet::vk::render_pass render_pass{app.device, render_pass_info};
+    swapchain.create_frame_buffers(render_pass);
 
     VkGraphicsPipelineCreateInfo graphics_pipeline_info = {};
     graphics_pipeline_info.sType =
