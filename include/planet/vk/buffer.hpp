@@ -11,6 +11,8 @@ namespace planet::vk {
     /// Vertex buffer
     template<typename Vertex>
     class buffer {
+        vk::device const *pdevice = nullptr;
+
         using buffer_handle_type = device_handle<VkBuffer, vkDestroyBuffer>;
         buffer_handle_type buffer_handle;
 
@@ -42,11 +44,12 @@ namespace planet::vk {
         };
 
       public:
-        buffer(vk::device const &d,
+        buffer() {}
+        buffer(vk::device const &device,
                std::size_t const c,
                VkBufferUsageFlags const usage,
                VkMemoryPropertyFlags const properties)
-        : count{c}, device{d} {
+        : pdevice(&device), count{c} {
             VkBufferCreateInfo buffer{};
             buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
             buffer.size = byte_count();
@@ -63,18 +66,17 @@ namespace planet::vk {
             worked(vkBindBufferMemory(
                     device.get(), buffer_handle.get(), memory_handle.get(), {}));
         }
-        buffer(vk::device const &d,
+        buffer(vk::device const &device,
                std::span<Vertex const> const vertices,
                VkBufferUsageFlags const usage,
                VkMemoryPropertyFlags const properties)
-        : buffer{d, vertices.size(), usage, properties} {
+        : buffer{device, vertices.size(), usage, properties} {
             mapped_memory data{device, memory_handle, {}, byte_count()};
             std::span<Vertex> gpumemory{
                     reinterpret_cast<Vertex *>(data.pointer), vertices.size()};
             std::copy(vertices.begin(), vertices.end(), gpumemory.begin());
         }
 
-        vk::device const &device;
         VkBuffer get() const noexcept { return buffer_handle.get(); }
 
         /// Number of items in the buffer
@@ -87,13 +89,13 @@ namespace planet::vk {
         VkMemoryRequirements memory_requirements() const noexcept {
             VkMemoryRequirements mr{};
             vkGetBufferMemoryRequirements(
-                    device.get(), buffer_handle.get(), &mr);
+                    buffer_handle.owner(), buffer_handle.get(), &mr);
             return mr;
         }
         /// Searches for a memory index that matches the requested properties
         std::uint32_t find_memory_type(VkMemoryPropertyFlags properties) const {
             auto const mr = memory_requirements();
-            auto const &gpump = device.instance.gpu().memory_properties;
+            auto const &gpump = pdevice->instance.gpu().memory_properties;
             for (std::uint32_t index{}; index < gpump.memoryTypeCount;
                  ++index) {
                 bool const type_is_correct =
