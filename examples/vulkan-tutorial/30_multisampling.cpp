@@ -383,11 +383,9 @@ class HelloTriangleApplication {
     VkSampler textureSampler;
 
     std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
+    std::vector<std::uint32_t> indices;
+    planet::vk::buffer<Vertex> vertexBuffer;
+    planet::vk::buffer<std::uint32_t> indexBuffer;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -468,12 +466,6 @@ class HelloTriangleApplication {
 
         vkDestroyDescriptorSetLayout(
                 device.get(), descriptorSetLayout, nullptr);
-
-        vkDestroyBuffer(device.get(), indexBuffer, nullptr);
-        vkFreeMemory(device.get(), indexBufferMemory, nullptr);
-
-        vkDestroyBuffer(device.get(), vertexBuffer, nullptr);
-        vkFreeMemory(device.get(), vertexBufferMemory, nullptr);
 
         glfwDestroyWindow(window);
 
@@ -1001,14 +993,13 @@ class HelloTriangleApplication {
         memcpy(data, vertices.data(), (size_t)bufferSize);
         vkUnmapMemory(device.get(), stagingBufferMemory);
 
-        createBuffer(
-                bufferSize,
+        vertexBuffer = {
+                device, vertices.size(),
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT
                         | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer,
-                vertexBufferMemory);
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
-        copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+        copyBuffer(stagingBuffer, vertexBuffer.get(), bufferSize);
 
         vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
         vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
@@ -1030,14 +1021,13 @@ class HelloTriangleApplication {
         memcpy(data, indices.data(), (size_t)bufferSize);
         vkUnmapMemory(device.get(), stagingBufferMemory);
 
-        createBuffer(
-                bufferSize,
+        indexBuffer = {
+                device, indices.size(),
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT
                         | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer,
-                indexBufferMemory);
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
-        copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+        copyBuffer(stagingBuffer, indexBuffer.get(), bufferSize);
 
         vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
         vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
@@ -1257,12 +1247,12 @@ class HelloTriangleApplication {
         scissor.extent = swapChain.extents;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        VkBuffer vertexBuffers[] = {vertexBuffer};
+        VkBuffer vertexBuffers[] = {vertexBuffer.get()};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
         vkCmdBindIndexBuffer(
-                commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+                commandBuffer, indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(
                 commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
