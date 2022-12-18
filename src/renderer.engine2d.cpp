@@ -1,6 +1,45 @@
 #include <planet/vk/engine2d/renderer.hpp>
 
 
+namespace {
+    template<typename V>
+    auto binding_description();
+
+    template<typename V>
+    auto attribute_description();
+
+    template<>
+    auto binding_description<planet::vk::engine2d::vertex>() {
+        VkVertexInputBindingDescription description{};
+
+        description.binding = 0;
+        description.stride = sizeof(planet::vk::engine2d::vertex);
+        description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        return std::array{description};
+    }
+
+    template<>
+    auto attribute_description<planet::vk::engine2d::vertex>() {
+        std::array<VkVertexInputAttributeDescription, 2> attrs{};
+
+        attrs[0].binding = 0;
+        attrs[0].location = 0;
+        attrs[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attrs[0].offset = offsetof(planet::vk::engine2d::vertex, p);
+
+        attrs[1].binding = 0;
+        attrs[1].location = 1;
+        attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attrs[1].offset = offsetof(planet::vk::engine2d::vertex, c);
+
+        return attrs;
+    }
+
+
+}
+
+
 planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {
     /// These render commands will end up being put inside the render loop
     for (std::size_t index{}; auto &cmd_buf : command_buffers.buffers) {
@@ -26,8 +65,12 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {
         vkCmdBindPipeline(
                 cmd_buf.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
 
+        std::array buffers{vertex_buffer.get()};
+        std::array offset{VkDeviceSize{}};
         // Draw our "triangle" embedded in the shader
-        vkCmdDraw(cmd_buf.get(), 3, 1, 0, 0);
+        vkCmdBindVertexBuffers(
+                cmd_buf.get(), 0, 1, buffers.data(), offset.data());
+        vkCmdDraw(cmd_buf.get(), vertex_buffer.size(), 1, 0, 0);
 
         vkCmdEndRenderPass(cmd_buf.get());
 
@@ -49,12 +92,15 @@ planet::vk::graphics_pipeline planet::vk::engine2d::renderer::create_pipeline() 
             fragment_shader_module.shader_stage_info(
                     VK_SHADER_STAGE_FRAGMENT_BIT, "main")};
 
-    // Vertex data hard-coded in vertex shader
+    auto const binding = binding_description<vertex>();
+    auto const attrs = attribute_description<vertex>();
     VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
     vertex_input_info.sType =
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_info.vertexBindingDescriptionCount = 0;
-    vertex_input_info.vertexAttributeDescriptionCount = 0;
+    vertex_input_info.vertexBindingDescriptionCount = binding.size();
+    vertex_input_info.pVertexBindingDescriptions = binding.data();
+    vertex_input_info.vertexAttributeDescriptionCount = attrs.size();
+    vertex_input_info.pVertexAttributeDescriptions = attrs.data();
 
     // Primitive type
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
