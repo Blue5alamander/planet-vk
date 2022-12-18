@@ -57,7 +57,7 @@ namespace planet::vk {
         std::vector<VkSurfaceFormatKHR> formats;
         VkSurfaceFormatKHR best_format = {};
         std::vector<VkPresentModeKHR> present_modes;
-        VkPresentModeKHR best_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+        VkPresentModeKHR best_present_mode = {};
 
         bool has_adequate_swap_chain_support() const noexcept {
             return not formats.empty() and not present_modes.empty();
