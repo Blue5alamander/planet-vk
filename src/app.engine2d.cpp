@@ -10,15 +10,15 @@ planet::vk::engine2d::app::app(int argc, char const *argv[], char const *name)
       auto app_info = planet::vk::application_info();
       app_info.pApplicationName = name;
       app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+      auto info = planet::vk::instance::info(extensions, app_info);
       return planet::vk::instance{
-              planet::vk::instance::info(extensions, app_info),
-              [&](VkInstance h) {
-                  VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
+              extensions, info, [&](VkInstance instance_handle) {
+                  VkSurfaceKHR surface_handle = VK_NULL_HANDLE;
                   if (not SDL_Vulkan_CreateSurface(
-                              window.get(), h, &vk_surface)) {
+                              window.get(), instance_handle, &surface_handle)) {
                       throw felspar::stdexcept::runtime_error{
                               "SDL_Vulkan_CreateSurface failed"};
                   }
-                  return vk_surface;
+                  return surface_handle;
               }};
   }()} {}

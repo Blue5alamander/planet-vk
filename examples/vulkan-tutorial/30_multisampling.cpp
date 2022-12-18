@@ -37,34 +37,6 @@ const std::string TEXTURE_PATH = "viking_room.png";
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
-
-VkResult CreateDebugUtilsMessengerEXT(
-        VkInstance instance,
-        const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-        const VkAllocationCallbacks *pAllocator,
-        VkDebugUtilsMessengerEXT *pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-            instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void DestroyDebugUtilsMessengerEXT(
-        VkInstance instance,
-        VkDebugUtilsMessengerEXT debugMessenger,
-        const VkAllocationCallbacks *pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-            instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) { func(instance, debugMessenger, pAllocator); }
-}
 
 struct Vertex {
     glm::vec3 pos;
@@ -152,11 +124,6 @@ class HelloTriangleApplication {
     planet::vk::extensions extensions;
 
     planet::vk::instance instance = [this]() {
-        if (enableValidationLayers && !checkValidationLayerSupport()) {
-            throw std::runtime_error(
-                    "validation layers requested, but not available!");
-        }
-
         auto appInfo = planet::vk::application_info();
         appInfo.pApplicationName = "Hello Triangle";
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -164,23 +131,13 @@ class HelloTriangleApplication {
         getRequiredExtensions();
         auto createInfo = planet::vk::instance::info(extensions, appInfo);
 
-        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-        if (enableValidationLayers) {
-            createInfo.enabledLayerCount =
-                    static_cast<uint32_t>(extensions.validation_layers.size());
-            createInfo.ppEnabledLayerNames =
-                    extensions.validation_layers.data();
-
-            populateDebugMessengerCreateInfo(debugCreateInfo);
-            createInfo.pNext =
-                    (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
-        } else {
-            createInfo.enabledLayerCount = 0;
-            createInfo.pNext = nullptr;
+        if (not checkValidationLayerSupport()) {
+            throw std::runtime_error(
+                    "validation layers requested, but not available!");
         }
 
         return planet::vk::instance{
-                createInfo, [this](VkInstance h) {
+                extensions, createInfo, [this](VkInstance h) {
                     VkSurfaceKHR surface = VK_NULL_HANDLE;
                     planet::vk::worked(glfwCreateWindowSurface(
                             h, window, nullptr, &surface));
@@ -188,11 +145,8 @@ class HelloTriangleApplication {
                 }};
     }();
 
-    VkDebugUtilsMessengerEXT debugMessenger;
-
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     planet::vk::device device = [this]() {
-        setupDebugMessenger();
         pickPhysicalDevice();
         return planet::vk::device{instance, extensions};
     }();
@@ -521,11 +475,6 @@ class HelloTriangleApplication {
         vkDestroyBuffer(device.get(), vertexBuffer, nullptr);
         vkFreeMemory(device.get(), vertexBufferMemory, nullptr);
 
-        if (enableValidationLayers) {
-            DestroyDebugUtilsMessengerEXT(
-                    instance.get(), debugMessenger, nullptr);
-        }
-
         glfwDestroyWindow(window);
 
         glfwTerminate();
@@ -548,31 +497,6 @@ class HelloTriangleApplication {
         createDepthResources();
         swapChain.create_frame_buffers(
                 graphicsPipeline.render_pass, colorImageView, depthImageView);
-    }
-
-    void populateDebugMessengerCreateInfo(
-            VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
-        createInfo = {};
-        createInfo.sType =
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        createInfo.messageSeverity =
-                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-                | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-                | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-                | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-                | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        createInfo.pfnUserCallback = debugCallback;
-    }
-
-    void setupDebugMessenger() {
-        if (!enableValidationLayers) return;
-
-        VkDebugUtilsMessengerCreateInfoEXT createInfo;
-        populateDebugMessengerCreateInfo(createInfo);
-
-        planet::vk::worked(CreateDebugUtilsMessengerEXT(
-                instance.get(), &createInfo, nullptr, &debugMessenger));
     }
 
     void pickPhysicalDevice() {
@@ -1518,11 +1442,6 @@ class HelloTriangleApplication {
         extensions.vulkan_extensions.insert(
                 extensions.vulkan_extensions.end(), glfwExtensions,
                 glfwExtensions + glfwExtensionCount);
-
-        if (enableValidationLayers) {
-            extensions.vulkan_extensions.push_back(
-                    VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }
     }
 
     bool checkValidationLayerSupport() {

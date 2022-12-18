@@ -59,7 +59,7 @@ planet::vk::sdl::window::window(
  */
 
 
-planet::vk::extensions::extensions(sdl::window &w) {
+planet::vk::extensions::extensions(vk::sdl::window &w) : extensions{} {
     unsigned int count;
     if (not SDL_Vulkan_GetInstanceExtensions(w.get(), &count, nullptr)) {
         throw felspar::stdexcept::runtime_error{SDL_GetError()};

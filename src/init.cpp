@@ -4,6 +4,20 @@
 
 #include <felspar/memory/small_vector.hpp>
 
+#include <iostream>
+
+
+namespace {
+    VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
+            VkDebugUtilsMessageSeverityFlagBitsEXT,
+            VkDebugUtilsMessageTypeFlagsEXT,
+            VkDebugUtilsMessengerCallbackDataEXT const *data,
+            void *) {
+        std::cerr << "Validation message: " << data->pMessage << '\n';
+        return VK_FALSE;
+    }
+}
+
 
 /**
  * ## planet::vk::extensions
@@ -35,7 +49,10 @@ VkApplicationInfo planet::vk::application_info() {
 
 
 VkInstanceCreateInfo planet::vk::instance::info(
-        extensions const &exts, VkApplicationInfo const &app_info) {
+        extensions &exts, VkApplicationInfo const &app_info) {
+    if (not exts.validation_layers.empty()) {
+        exts.vulkan_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
     VkInstanceCreateInfo i = {};
     i.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     i.pApplicationInfo = &app_info;
@@ -48,14 +65,20 @@ VkInstanceCreateInfo planet::vk::instance::info(
 
 
 planet::vk::instance::instance(
-        VkInstanceCreateInfo const &info,
+        extensions const &exts,
+        VkInstanceCreateInfo &info,
         std::function<VkSurfaceKHR(VkInstance)> mksurface)
 : handle{[&]() {
       VkInstance h = VK_NULL_HANDLE;
+      auto debug_info = debug_messenger::create_info(debug_callback);
+      info.pNext = &debug_info;
       planet::vk::worked(vkCreateInstance(&info, nullptr, &h));
       return h;
   }()},
   surface{*this, mksurface(handle.h)} {
+    if (not exts.validation_layers.empty()) {
+        debug_messenger = {*this, debug_callback};
+    }
     auto devices = planet::vk::fetch_vector<
             vkEnumeratePhysicalDevices, VkPhysicalDevice>(handle.h);
     pdevices.reserve(devices.size());
@@ -167,5 +190,54 @@ planet::vk::device::~device() {
     if (handle) {
         vkDeviceWaitIdle(handle);
         vkDestroyDevice(handle, nullptr);
+    }
+}
+
+
+/**
+ * planet::vk::debug_messenger
+ */
+
+
+VkDebugUtilsMessengerCreateInfoEXT planet::vk::debug_messenger::create_info(
+        PFN_vkDebugUtilsMessengerCallbackEXT cb, void *ud) {
+    VkDebugUtilsMessengerCreateInfoEXT info{};
+    info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    info.pfnUserCallback = cb;
+    info.pUserData = ud;
+    return info;
+}
+
+
+planet::vk::debug_messenger::debug_messenger(
+        instance const &i, PFN_vkDebugUtilsMessengerCallbackEXT cb, void *ud)
+: instance_handle{i.get()} {
+    auto info = create_info(cb, ud);
+    if (auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+                vkGetInstanceProcAddr(
+                        instance_handle, "vkCreateDebugUtilsMessengerEXT"));
+        func) {
+        worked(func(instance_handle, &info, nullptr, &handle));
+    } else {
+        throw felspar::stdexcept::runtime_error{
+                "vkCreateDebugUtilsMessengerEXT extension is not present"};
+    }
+}
+
+
+planet::vk::debug_messenger::~debug_messenger() {
+    if (instance_handle and handle) {
+        if (auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+                    vkGetInstanceProcAddr(
+                            instance_handle, "vkDestroyDebugUtilsMessengerEXT"));
+            func) {
+            func(instance_handle, handle, nullptr);
+        }
     }
 }

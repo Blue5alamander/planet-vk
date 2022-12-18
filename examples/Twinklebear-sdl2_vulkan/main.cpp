@@ -23,17 +23,24 @@ int main(int argc, const char **argv) {
 #ifdef NDEBUG
     extensions.validation_layers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
-    std::cout << "Requested extensions\n";
-    for (auto ex : extensions.vulkan_extensions) { std::cout << ex << '\n'; }
 
     // Make the Vulkan Instance
     planet::vk::instance vk_instance = [&]() {
         auto app_info = planet::vk::application_info();
         app_info.pApplicationName = "SDL2 + Vulkan";
         app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+        auto info = planet::vk::instance::info(extensions, app_info);
         return planet::vk::instance{
-                planet::vk::instance::info(extensions, app_info),
-                [&window](VkInstance h) {
+                extensions, info, [&](VkInstance h) {
+                    std::cout << "Requested extensions\n";
+                    for (auto ex : extensions.vulkan_extensions) {
+                        std::cout << ex << '\n';
+                    }
+                    std::cout << "Requested validation layers\n";
+                    for (auto ex : extensions.validation_layers) {
+                        std::cout << ex << '\n';
+                    }
+
                     VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
                     if (not SDL_Vulkan_CreateSurface(
                                 window.get(), h, &vk_surface)) {
