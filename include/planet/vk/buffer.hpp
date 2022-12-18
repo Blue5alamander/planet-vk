@@ -14,6 +14,8 @@ namespace planet::vk {
         using buffer_handle_type = device_handle<VkBuffer, vkDestroyBuffer>;
         buffer_handle_type buffer_handle;
 
+        /// TODO Have the memory managed by a separate allocator that splits a
+        /// large allocation
         using memory_handle_type = device_handle<VkDeviceMemory, vkFreeMemory>;
         memory_handle_type memory_handle;
 
@@ -41,15 +43,14 @@ namespace planet::vk {
 
       public:
         buffer(vk::device const &d,
-               std::span<Vertex const> const vertices,
-               VkMemoryPropertyFlags const properties =
-                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                       | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-        : count{vertices.size()}, device{d} {
+               std::size_t const c,
+               VkBufferUsageFlags const usage,
+               VkMemoryPropertyFlags const properties)
+        : count{c}, device{d} {
             VkBufferCreateInfo buffer{};
             buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            buffer.size = sizeof(Vertex) * vertices.size();
-            buffer.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            buffer.size = byte_count();
+            buffer.usage = usage;
             buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
             buffer_handle.create<vkCreateBuffer>(device.get(), buffer);
 
@@ -61,8 +62,13 @@ namespace planet::vk {
 
             worked(vkBindBufferMemory(
                     device.get(), buffer_handle.get(), memory_handle.get(), {}));
-
-            mapped_memory data{device, memory_handle, {}, buffer.size};
+        }
+        buffer(vk::device const &d,
+               std::span<Vertex const> const vertices,
+               VkBufferUsageFlags const usage,
+               VkMemoryPropertyFlags const properties)
+        : buffer{d, vertices.size(), usage, properties} {
+            mapped_memory data{device, memory_handle, {}, byte_count()};
             std::span<Vertex> gpumemory{
                     reinterpret_cast<Vertex *>(data.pointer), vertices.size()};
             std::copy(vertices.begin(), vertices.end(), gpumemory.begin());
@@ -73,6 +79,9 @@ namespace planet::vk {
 
         /// Number of items in the buffer
         std::size_t size() const noexcept { return count; }
+        std::size_t byte_count() const noexcept {
+            return count * sizeof(Vertex);
+        }
 
         /// Return the memory requirements for the buffer
         VkMemoryRequirements memory_requirements() const noexcept {

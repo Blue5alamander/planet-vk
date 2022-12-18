@@ -69,8 +69,13 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {
         std::array offset{VkDeviceSize{}};
         // Draw our "triangle" embedded in the shader
         vkCmdBindVertexBuffers(
-                cmd_buf.get(), 0, 1, buffers.data(), offset.data());
-        vkCmdDraw(cmd_buf.get(), vertex_buffer.size(), 1, 0, 0);
+                cmd_buf.get(), 0, buffers.size(), buffers.data(),
+                offset.data());
+        vkCmdBindIndexBuffer(
+                cmd_buf.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT16);
+        vkCmdDrawIndexed(
+                cmd_buf.get(), static_cast<uint32_t>(indices.size()), 1, 0, 0,
+                0);
 
         vkCmdEndRenderPass(cmd_buf.get());
 

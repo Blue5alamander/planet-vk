@@ -19,9 +19,11 @@ namespace planet::vk::engine2d {
     };
 
     constexpr std::array vertices{
-            vertex{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-            vertex{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-            vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+            vertex{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+            vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+            vertex{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+            vertex{{-0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}}};
+    constexpr std::array<std::uint16_t, 6> indices{0, 1, 2, 2, 3, 0};
 
 
     class renderer final {
@@ -39,7 +41,14 @@ namespace planet::vk::engine2d {
         vk::command_buffers command_buffers{
                 command_pool, swapchain.frame_buffers.size()};
 
-        vk::buffer<vertex> vertex_buffer{app.device, vertices};
+        vk::buffer<vertex> vertex_buffer{
+                app.device, vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+        vk::buffer<std::uint16_t> index_buffer{
+                app.device, indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 
         planet::vk::semaphore img_avail_semaphore{app.device},
                 render_finished_semaphore{app.device};
