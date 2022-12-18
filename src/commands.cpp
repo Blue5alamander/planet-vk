@@ -85,3 +85,24 @@ planet::vk::command_buffer::~command_buffer() {
                 handles.data());
     }
 }
+
+
+void planet::vk::command_buffer::begin(VkCommandBufferUsageFlags const flags) {
+    VkCommandBufferBeginInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    info.flags = flags;
+    worked(vkBeginCommandBuffer(handle, &info));
+}
+
+
+void planet::vk::command_buffer::end() { worked(vkEndCommandBuffer(handle)); }
+
+
+void planet::vk::command_buffer::submit(VkQueue const queue) {
+    std::array buffers{handle};
+    VkSubmitInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    info.commandBufferCount = buffers.size();
+    info.pCommandBuffers = buffers.data();
+    vkQueueSubmit(queue, 1, &info, VK_NULL_HANDLE);
+}

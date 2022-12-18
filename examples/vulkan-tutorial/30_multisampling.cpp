@@ -1156,26 +1156,13 @@ class HelloTriangleApplication {
 
     planet::vk::command_buffer beginSingleTimeCommands() {
         planet::vk::command_buffer commandBuffer{commandPool};
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(commandBuffer.get(), &beginInfo);
-
+        commandBuffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         return commandBuffer;
     }
 
     void endSingleTimeCommands(planet::vk::command_buffer commandBuffer) {
-        vkEndCommandBuffer(commandBuffer.get());
-
-        std::array buffers{commandBuffer.get()};
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = buffers.size();
-        submitInfo.pCommandBuffers = buffers.data();
-
-        vkQueueSubmit(device.graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
+        commandBuffer.end();
+        commandBuffer.submit(device.graphics_queue);
         vkQueueWaitIdle(device.graphics_queue);
     }
 
@@ -1205,11 +1192,9 @@ class HelloTriangleApplication {
         throw std::runtime_error("failed to find suitable memory type!");
     }
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        planet::vk::worked(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+    void recordCommandBuffer(
+            planet::vk::command_buffer &commandBuffer, uint32_t imageIndex) {
+        commandBuffer.begin();
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1227,10 +1212,11 @@ class HelloTriangleApplication {
         renderPassInfo.pClearValues = clearValues.data();
 
         vkCmdBeginRenderPass(
-                commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+                commandBuffer.get(), &renderPassInfo,
+                VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(
-                commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                commandBuffer.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                 graphicsPipeline.get());
 
         VkViewport viewport{};
@@ -1240,32 +1226,34 @@ class HelloTriangleApplication {
         viewport.height = (float)swapChain.extents.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetViewport(commandBuffer.get(), 0, 1, &viewport);
 
         VkRect2D scissor{};
         scissor.offset = {0, 0};
         scissor.extent = swapChain.extents;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        vkCmdSetScissor(commandBuffer.get(), 0, 1, &scissor);
 
         VkBuffer vertexBuffers[] = {vertexBuffer.get()};
         VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        vkCmdBindVertexBuffers(
+                commandBuffer.get(), 0, 1, vertexBuffers, offsets);
 
         vkCmdBindIndexBuffer(
-                commandBuffer, indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
+                commandBuffer.get(), indexBuffer.get(), 0,
+                VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(
-                commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                commandBuffer.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                 graphicsPipeline.layout.get(), 0, 1,
                 &descriptorSets[currentFrame], 0, nullptr);
 
         vkCmdDrawIndexed(
-                commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0,
-                0);
+                commandBuffer.get(), static_cast<uint32_t>(indices.size()), 1,
+                0, 0, 0);
 
-        vkCmdEndRenderPass(commandBuffer);
+        vkCmdEndRenderPass(commandBuffer.get());
 
-        planet::vk::worked(vkEndCommandBuffer(commandBuffer));
+        commandBuffer.end();
     }
 
     void createSyncObjects() {
@@ -1337,7 +1325,7 @@ class HelloTriangleApplication {
         vkResetCommandBuffer(
                 commandBuffers[currentFrame].get(),
                 /*VkCommandBufferResetFlagBits*/ 0);
-        recordCommandBuffer(commandBuffers[currentFrame].get(), imageIndex);
+        recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

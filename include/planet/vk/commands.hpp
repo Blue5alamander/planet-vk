@@ -38,6 +38,13 @@ namespace planet::vk {
         vk::device const &device;
         vk::command_pool const &command_pool;
         VkCommandBuffer get() const noexcept { return handle; }
+
+        /// `vkBeginCommandBuffer`
+        void begin(VkCommandBufferUsageFlags = {});
+        /// `vkEndCommandBuffer`
+        void end();
+        /// `vkQueueSubmit`
+        void submit(VkQueue);
     };
 
 
