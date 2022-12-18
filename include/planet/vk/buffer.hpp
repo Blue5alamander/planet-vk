@@ -40,7 +40,11 @@ namespace planet::vk {
         };
 
       public:
-        buffer(vk::device const &d, std::span<Vertex const> const vertices)
+        buffer(vk::device const &d,
+               std::span<Vertex const> const vertices,
+               VkMemoryPropertyFlags const properties =
+                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                       | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
         : count{vertices.size()}, device{d} {
             VkBufferCreateInfo buffer{};
             buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -52,9 +56,7 @@ namespace planet::vk {
             VkMemoryAllocateInfo alloc{};
             alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             alloc.allocationSize = memory_requirements().size;
-            alloc.memoryTypeIndex = find_memory_type(
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            alloc.memoryTypeIndex = find_memory_type(properties);
             memory_handle.create<vkAllocateMemory>(device.get(), alloc);
 
             worked(vkBindBufferMemory(
