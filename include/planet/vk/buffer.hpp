@@ -3,47 +3,28 @@
 
 #include <planet/vk/device.hpp>
 #include <planet/vk/instance.hpp>
+#include <planet/vk/memory.hpp>
 
 
 namespace planet::vk {
 
 
-    /// Vertex buffer
-    template<typename Vertex>
+    /// A buffer of multiple items
+    template<typename T>
     class buffer {
         vk::device const *pdevice = nullptr;
 
         using buffer_handle_type = device_handle<VkBuffer, vkDestroyBuffer>;
         buffer_handle_type buffer_handle;
 
-        /// TODO Have the memory managed by a separate allocator that splits a
-        /// large allocation
-        using memory_handle_type = device_handle<VkDeviceMemory, vkFreeMemory>;
-        memory_handle_type memory_handle;
+        device_memory memory;
 
+        /// The number of T items in the buffer
         std::size_t count;
 
-        struct mapped_memory {
-            vk::device const &device;
-            memory_handle_type const &memory;
-            void *pointer = nullptr;
-            mapped_memory(
-                    vk::device const &d,
-                    memory_handle_type const &m,
-                    VkDeviceSize const offset,
-                    VkDeviceSize const size,
-                    VkMemoryMapFlags flags = {})
-            : device{d}, memory{m} {
-                worked(vkMapMemory(
-                        device.get(), memory.get(), offset, size, flags,
-                        &pointer));
-            }
-            ~mapped_memory() {
-                if (pointer) { vkUnmapMemory(device.get(), memory.get()); }
-            }
-        };
-
       public:
+        using value_type = T;
+
         buffer() {}
         buffer(vk::device const &device,
                std::size_t const c,
@@ -57,23 +38,22 @@ namespace planet::vk {
             buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
             buffer_handle.create<vkCreateBuffer>(device.get(), buffer);
 
-            VkMemoryAllocateInfo alloc{};
-            alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            alloc.allocationSize = memory_requirements().size;
-            alloc.memoryTypeIndex = find_memory_type(properties);
-            memory_handle.create<vkAllocateMemory>(device.get(), alloc);
+            memory = device_memory{
+                    device, memory_requirements().size,
+                    find_memory_type(properties)};
 
             worked(vkBindBufferMemory(
-                    device.get(), buffer_handle.get(), memory_handle.get(), {}));
+                    device.get(), buffer_handle.get(), memory.get(), {}));
         }
         buffer(vk::device const &device,
-               std::span<Vertex const> const vertices,
+               std::span<T const> const vertices,
                VkBufferUsageFlags const usage,
                VkMemoryPropertyFlags const properties)
         : buffer{device, vertices.size(), usage, properties} {
-            mapped_memory data{device, memory_handle, {}, byte_count()};
-            std::span<Vertex> gpumemory{
-                    reinterpret_cast<Vertex *>(data.pointer), vertices.size()};
+            auto data = memory.map_memory({}, byte_count());
+            std::span<value_type> gpumemory{
+                    reinterpret_cast<value_type *>(data.pointer),
+                    vertices.size()};
             std::copy(vertices.begin(), vertices.end(), gpumemory.begin());
         }
 
@@ -81,9 +61,7 @@ namespace planet::vk {
 
         /// Number of items in the buffer
         std::size_t size() const noexcept { return count; }
-        std::size_t byte_count() const noexcept {
-            return count * sizeof(Vertex);
-        }
+        std::size_t byte_count() const noexcept { return count * sizeof(T); }
 
         /// Return the memory requirements for the buffer
         VkMemoryRequirements memory_requirements() const noexcept {
