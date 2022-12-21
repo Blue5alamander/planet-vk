@@ -27,7 +27,9 @@ namespace planet::vk {
         command_buffer(vk::command_pool const &, VkCommandBuffer);
 
       public:
-        explicit command_buffer(vk::command_pool const &);
+        explicit command_buffer(
+                vk::command_pool const &,
+                VkCommandBufferLevel = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
         command_buffer(command_buffer const &) = delete;
         command_buffer(command_buffer &&);
         ~command_buffer();
@@ -52,7 +54,10 @@ namespace planet::vk {
         std::vector<VkCommandBuffer> handles;
 
       public:
-        command_buffers(vk::command_pool const &, std::size_t number_of_buffers);
+        command_buffers(
+                vk::command_pool const &,
+                std::size_t number_of_buffers,
+                VkCommandBufferLevel = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
         command_buffers(command_buffers const &) = delete;
         command_buffers(command_buffers &&) = delete;
         ~command_buffers();
