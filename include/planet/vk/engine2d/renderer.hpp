@@ -53,6 +53,23 @@ namespace planet::vk::engine2d {
         planet::vk::semaphore img_avail_semaphore{app.device},
                 render_finished_semaphore{app.device};
         planet::vk::fence fence{app.device};
+
+        /// ## Drawing API
+
+        /// Data we need to track whilst in the render loop
+        std::uint32_t image_index = {};
+        std::array<VkSemaphore, 1> const wait_semaphores = {
+                img_avail_semaphore.get()};
+        std::array<VkSemaphore, 1> const signal_semaphores = {
+                render_finished_semaphore.get()};
+        std::array<VkPipelineStageFlags, 1> const wait_stages = {
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+        std::array<VkFence, 1> const fences{fence.get()};
+
+        /// Start the render cycle
+        std::uint32_t start();
+        /// Submit and present the frame. This blocks until the frame is complete
+        void submit_and_present();
     };
 
 

@@ -211,3 +211,51 @@ planet::vk::graphics_pipeline planet::vk::engine2d::renderer::create_pipeline() 
             app.device, graphics_pipeline_info, std::move(render_pass),
             planet::vk::pipeline_layout{app.device}};
 }
+
+
+std::uint32_t planet::vk::engine2d::renderer::start() {
+    // Get an image from the swap chain
+    image_index = 0;
+    planet::vk::worked(vkAcquireNextImageKHR(
+            app.device.get(), swapchain.get(),
+            std::numeric_limits<uint64_t>::max(), img_avail_semaphore.get(),
+            VK_NULL_HANDLE, &image_index));
+    // We need to wait for the image before we can run the commands to draw
+    // to it, and signal the render finished one when we're done
+    planet::vk::worked(
+            vkResetFences(app.device.get(), fences.size(), fences.data()));
+    return image_index;
+}
+
+
+void planet::vk::engine2d::renderer::submit_and_present() {
+    std::array command_buffer{command_buffers[image_index].get()};
+    VkSubmitInfo submit_info = {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.waitSemaphoreCount = wait_semaphores.size();
+    submit_info.pWaitSemaphores = wait_semaphores.data();
+    submit_info.pWaitDstStageMask = wait_stages.data();
+    submit_info.commandBufferCount = command_buffer.size();
+    submit_info.pCommandBuffers = command_buffer.data();
+    submit_info.signalSemaphoreCount = signal_semaphores.size();
+    submit_info.pSignalSemaphores = signal_semaphores.data();
+    planet::vk::worked(vkQueueSubmit(
+            app.device.graphics_queue, 1, &submit_info, fence.get()));
+
+    // Finally, present the updated image in the swap chain
+    std::array<VkSwapchainKHR, 1> present_chain = {swapchain.get()};
+    VkPresentInfoKHR present_info = {};
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    present_info.waitSemaphoreCount = signal_semaphores.size();
+    present_info.pWaitSemaphores = signal_semaphores.data();
+    present_info.swapchainCount = present_chain.size();
+    present_info.pSwapchains = present_chain.data();
+    present_info.pImageIndices = &image_index;
+    planet::vk::worked(
+            vkQueuePresentKHR(app.device.present_queue, &present_info));
+
+    // Wait for the frame to finish
+    planet::vk::worked(vkWaitForFences(
+            app.device.get(), fences.size(), fences.data(), true,
+            std::numeric_limits<uint64_t>::max()));
+}
