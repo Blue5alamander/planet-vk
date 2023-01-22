@@ -37,19 +37,17 @@ int main(int const argc, char const *argv[]) {
             }
         }
 
-        auto &cmd_buf = renderer.start({0.f, 0.f, 0.f, 1.f});
+        auto &cb = renderer.start({0.f, 0.f, 0.f, 1.f});
 
         std::array buffers{vertex_buffer.get()};
         std::array offset{VkDeviceSize{}};
 
         vkCmdBindVertexBuffers(
-                cmd_buf.get(), 0, buffers.size(), buffers.data(),
-                offset.data());
+                cb.get(), 0, buffers.size(), buffers.data(), offset.data());
         vkCmdBindIndexBuffer(
-                cmd_buf.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT16);
+                cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT16);
         vkCmdDrawIndexed(
-                cmd_buf.get(), static_cast<uint32_t>(indices.size()), 1, 0, 0,
-                0);
+                cb.get(), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
         renderer.submit_and_present();
     }
