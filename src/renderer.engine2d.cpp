@@ -40,50 +40,7 @@ namespace {
 }
 
 
-planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {
-    /// These render commands will end up being put inside the render loop
-    for (std::size_t index{}; auto &cmd_buf : command_buffers.buffers) {
-        VkCommandBufferBeginInfo begin_info = {};
-        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        planet::vk::worked(vkBeginCommandBuffer(cmd_buf.get(), &begin_info));
-
-        VkRenderPassBeginInfo render_pass_info = {};
-        render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        render_pass_info.renderPass = pipeline.render_pass.get();
-        render_pass_info.framebuffer = swapchain.frame_buffers[index].get();
-        render_pass_info.renderArea.offset.x = 0;
-        render_pass_info.renderArea.offset.y = 0;
-        render_pass_info.renderArea.extent = swapchain.extents;
-
-        VkClearValue clear_color = {0.f, 0.f, 0.f, 1.f};
-        render_pass_info.clearValueCount = 1;
-        render_pass_info.pClearValues = &clear_color;
-
-        vkCmdBeginRenderPass(
-                cmd_buf.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-
-        vkCmdBindPipeline(
-                cmd_buf.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
-
-        std::array buffers{vertex_buffer.get()};
-        std::array offset{VkDeviceSize{}};
-        // Draw our "triangle" embedded in the shader
-        vkCmdBindVertexBuffers(
-                cmd_buf.get(), 0, buffers.size(), buffers.data(),
-                offset.data());
-        vkCmdBindIndexBuffer(
-                cmd_buf.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT16);
-        vkCmdDrawIndexed(
-                cmd_buf.get(), static_cast<uint32_t>(indices.size()), 1, 0, 0,
-                0);
-
-        vkCmdEndRenderPass(cmd_buf.get());
-
-        planet::vk::worked(vkEndCommandBuffer(cmd_buf.get()));
-
-        ++index;
-    }
-}
+planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {}
 
 
 planet::vk::graphics_pipeline planet::vk::engine2d::renderer::create_pipeline() {
@@ -213,7 +170,8 @@ planet::vk::graphics_pipeline planet::vk::engine2d::renderer::create_pipeline() 
 }
 
 
-std::uint32_t planet::vk::engine2d::renderer::start() {
+planet::vk::command_buffer &
+        planet::vk::engine2d::renderer::start(VkClearValue const colour) {
     // Get an image from the swap chain
     image_index = 0;
     planet::vk::worked(vkAcquireNextImageKHR(
@@ -224,12 +182,41 @@ std::uint32_t planet::vk::engine2d::renderer::start() {
     // to it, and signal the render finished one when we're done
     planet::vk::worked(
             vkResetFences(app.device.get(), fences.size(), fences.data()));
-    return image_index;
+
+    // Start to record command buffers
+    auto &cb = command_buffers.buffers[image_index];
+
+    VkCommandBufferBeginInfo begin_info = {};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    planet::vk::worked(vkBeginCommandBuffer(cb.get(), &begin_info));
+
+    VkRenderPassBeginInfo render_pass_info = {};
+    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    render_pass_info.renderPass = pipeline.render_pass.get();
+    render_pass_info.framebuffer = swapchain.frame_buffers[image_index].get();
+    render_pass_info.renderArea.offset.x = 0;
+    render_pass_info.renderArea.offset.y = 0;
+    render_pass_info.renderArea.extent = swapchain.extents;
+
+    render_pass_info.clearValueCount = 1;
+    render_pass_info.pClearValues = &colour;
+
+    vkCmdBeginRenderPass(
+            cb.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(
+            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+
+    return cb;
 }
 
 
 void planet::vk::engine2d::renderer::submit_and_present() {
-    std::array command_buffer{command_buffers[image_index].get()};
+    auto &cb = command_buffers.buffers[image_index];
+    vkCmdEndRenderPass(cb.get());
+    planet::vk::worked(vkEndCommandBuffer(cb.get()));
+
+    std::array command_buffer{cb.get()};
     VkSubmitInfo submit_info = {};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit_info.waitSemaphoreCount = wait_semaphores.size();
