@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/affine/matrix3d.hpp>
 #include <planet/vk/engine2d/app.hpp>
 
 #include <planet/affine/matrix3d.hpp>
@@ -50,6 +51,9 @@ namespace planet::vk::engine2d {
         vk::semaphore img_avail_semaphore{app.device},
                 render_finished_semaphore{app.device};
         vk::fence fence{app.device};
+
+        affine::matrix3d space = affine::matrix3d::scale_xy(
+                10.0f / app.window.width(), 10.0f / app.window.height());
 
         /// ### Drawing API
 
