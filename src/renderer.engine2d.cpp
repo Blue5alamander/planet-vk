@@ -43,7 +43,8 @@ namespace {
 planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {}
 
 
-planet::vk::graphics_pipeline planet::vk::engine2d::renderer::create_pipeline() {
+planet::vk::graphics_pipeline
+        planet::vk::engine2d::renderer::create_mesh_pipeline() {
     planet::vk::shader_module vertex_shader_module{
             app.device, app.asset_manager.file_data("2d-example.vert.spirv")};
     planet::vk::shader_module fragment_shader_module{
@@ -192,7 +193,7 @@ planet::vk::command_buffer &
 
     VkRenderPassBeginInfo render_pass_info = {};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_info.renderPass = pipeline.render_pass.get();
+    render_pass_info.renderPass = mesh_pipeline.render_pass.get();
     render_pass_info.framebuffer = swapchain.frame_buffers[image_index].get();
     render_pass_info.renderArea.offset.x = 0;
     render_pass_info.renderArea.offset.y = 0;
@@ -204,15 +205,45 @@ planet::vk::command_buffer &
     vkCmdBeginRenderPass(
             cb.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(
-            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+    mesh2d_triangles.clear();
+    mesh2d_indexes.clear();
 
     return cb;
 }
 
 
+void planet::vk::engine2d::renderer::draw_2dmesh(
+        std::span<vertex const> const vertices,
+        std::span<std::uint16_t const> const indices) {
+    auto const start_index = mesh2d_triangles.size();
+    for (auto const &v : vertices) { mesh2d_triangles.push_back(v); }
+    for (auto const &i : indices) { mesh2d_indexes.push_back(start_index + i); }
+}
+
+
 void planet::vk::engine2d::renderer::submit_and_present() {
     auto &cb = command_buffers.buffers[image_index];
+
+    planet::vk::buffer<planet::vk::engine2d::vertex> vertex_buffer{
+            app.device, mesh2d_triangles, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+    planet::vk::buffer<std::uint16_t> index_buffer{
+            app.device, mesh2d_indexes, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+
+    std::array buffers{vertex_buffer.get()};
+    std::array offset{VkDeviceSize{}};
+
+    vkCmdBindPipeline(
+            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, mesh_pipeline.get());
+    vkCmdBindVertexBuffers(
+            cb.get(), 0, buffers.size(), buffers.data(), offset.data());
+    vkCmdBindIndexBuffer(cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT16);
+    vkCmdDrawIndexed(
+            cb.get(), static_cast<uint32_t>(mesh2d_indexes.size()), 1, 0, 0, 0);
+
     vkCmdEndRenderPass(cb.get());
     planet::vk::worked(vkEndCommandBuffer(cb.get()));
 

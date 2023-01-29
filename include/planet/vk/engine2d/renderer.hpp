@@ -19,8 +19,11 @@ namespace planet::vk::engine2d {
     };
 
 
+    /// ## Renderer
     class renderer final {
-        vk::graphics_pipeline create_pipeline();
+        vk::graphics_pipeline create_mesh_pipeline();
+        std::vector<vertex> mesh2d_triangles;
+        std::vector<std::uint16_t> mesh2d_indexes;
 
       public:
         renderer(engine2d::app &);
@@ -28,7 +31,7 @@ namespace planet::vk::engine2d {
         engine2d::app &app;
 
         vk::swap_chain swapchain{app.device, app.window.extents()};
-        vk::graphics_pipeline pipeline{create_pipeline()};
+        vk::graphics_pipeline mesh_pipeline{create_mesh_pipeline()};
 
         vk::command_pool command_pool{app.device, app.instance.surface};
         vk::command_buffers command_buffers{
@@ -38,7 +41,7 @@ namespace planet::vk::engine2d {
                 render_finished_semaphore{app.device};
         planet::vk::fence fence{app.device};
 
-        /// ## Drawing API
+        /// ### Drawing API
 
         /// Data we need to track whilst in the render loop
         std::uint32_t image_index = {};
@@ -52,6 +55,10 @@ namespace planet::vk::engine2d {
 
         /// Start the render cycle
         [[nodiscard]] vk::command_buffer &start(VkClearValue);
+
+        /// Draw a 2D triangle mesh
+        void draw_2dmesh(
+                std::span<vertex const>, std::span<std::uint16_t const>);
 
         /// Submit and present the frame. This blocks until the frame is complete
         void submit_and_present();
