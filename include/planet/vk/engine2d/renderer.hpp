@@ -47,9 +47,9 @@ namespace planet::vk::engine2d {
         vk::command_buffers command_buffers{
                 command_pool, swapchain.frame_buffers.size()};
 
-        planet::vk::semaphore img_avail_semaphore{app.device},
+        vk::semaphore img_avail_semaphore{app.device},
                 render_finished_semaphore{app.device};
-        planet::vk::fence fence{app.device};
+        vk::fence fence{app.device};
 
         /// ### Drawing API
 
