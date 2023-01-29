@@ -17,7 +17,6 @@ namespace planet::vk::sdl {
 
 
     class window final {
-        planet::sdl::init &sdl;
         planet::sdl::handle<SDL_Window, SDL_DestroyWindow> pw;
         affine::extents2d size;
 
