@@ -127,8 +127,7 @@ planet::vk::instance::instance_handle::~instance_handle() {
  */
 
 
-planet::vk::physical_device::physical_device(
-        VkPhysicalDevice h, VkSurfaceKHR surface)
+planet::vk::physical_device::physical_device(VkPhysicalDevice h, VkSurfaceKHR)
 : handle{h} {
     vkGetPhysicalDeviceProperties(handle, &properties);
     vkGetPhysicalDeviceFeatures(handle, &features);
