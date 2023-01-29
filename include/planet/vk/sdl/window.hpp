@@ -32,7 +32,7 @@ namespace planet::vk::sdl {
 
         /// Current inner window size
         affine::extents2d const &extents() const noexcept { return size; }
-        affine::rectangle rectangle() const noexcept { return {{0, 0}, size}; }
+        affine::rectangle2d rectangle() const noexcept { return {{0, 0}, size}; }
         std::size_t zwidth() const noexcept { return size.zwidth(); }
         std::size_t zheight() const noexcept { return size.zheight(); }
         float width() const noexcept { return size.width; }
