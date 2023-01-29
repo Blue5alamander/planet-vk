@@ -46,9 +46,13 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {}
 planet::vk::graphics_pipeline
         planet::vk::engine2d::renderer::create_mesh_pipeline() {
     planet::vk::shader_module vertex_shader_module{
-            app.device, app.asset_manager.file_data("planet-vk-engine2d/2dmesh.vert.spirv")};
+            app.device,
+            app.asset_manager.file_data(
+                    "planet-vk-engine2d/2dmesh.vert.spirv")};
     planet::vk::shader_module fragment_shader_module{
-            app.device, app.asset_manager.file_data("planet-vk-engine2d/2dmesh.frag.spirv")};
+            app.device,
+            app.asset_manager.file_data(
+                    "planet-vk-engine2d/2dmesh.frag.spirv")};
     std::array shader_stages{
             vertex_shader_module.shader_stage_info(
                     VK_SHADER_STAGE_VERTEX_BIT, "main"),
@@ -217,6 +221,16 @@ void planet::vk::engine2d::renderer::draw_2dmesh(
         std::span<std::uint16_t const> const indices) {
     auto const start_index = mesh2d_triangles.size();
     for (auto const &v : vertices) { mesh2d_triangles.push_back(v); }
+    for (auto const &i : indices) { mesh2d_indexes.push_back(start_index + i); }
+}
+void planet::vk::engine2d::renderer::draw_2dmesh(
+        std::span<vertex const> const vertices,
+        std::span<std::uint16_t const> const indices,
+        pos const p) {
+    auto const start_index = mesh2d_triangles.size();
+    for (auto const &v : vertices) {
+        mesh2d_triangles.push_back({v.p + p, v.c});
+    }
     for (auto const &i : indices) { mesh2d_indexes.push_back(start_index + i); }
 }
 

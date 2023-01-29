@@ -9,6 +9,10 @@ namespace planet::vk::engine2d {
 
     struct pos {
         float x, y;
+
+        friend constexpr pos operator+(pos const l, pos const r) {
+            return {l.x + r.x, l.y + r.y};
+        }
     };
     struct colour {
         float r, g, b;
@@ -59,6 +63,8 @@ namespace planet::vk::engine2d {
         /// Draw a 2D triangle mesh
         void draw_2dmesh(
                 std::span<vertex const>, std::span<std::uint16_t const>);
+        void draw_2dmesh(
+                std::span<vertex const>, std::span<std::uint16_t const>, pos);
 
         /// Submit and present the frame. This blocks until the frame is complete
         void submit_and_present();
