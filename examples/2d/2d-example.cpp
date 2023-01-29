@@ -10,7 +10,7 @@ int main(int const argc, char const *argv[]) {
             planet::vk::engine2d::vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
             planet::vk::engine2d::vertex{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
             planet::vk::engine2d::vertex{{-0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}}};
-    constexpr std::array<std::uint16_t, 6> indices{0, 1, 2, 2, 3, 0};
+    constexpr std::array<std::uint32_t, 6> indices{0, 1, 2, 2, 3, 0};
 
     for (bool done = false; not done;) {
         SDL_Event event;

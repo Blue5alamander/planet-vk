@@ -27,7 +27,7 @@ namespace planet::vk::engine2d {
     class renderer final {
         vk::graphics_pipeline create_mesh_pipeline();
         std::vector<vertex> mesh2d_triangles;
-        std::vector<std::uint16_t> mesh2d_indexes;
+        std::vector<std::uint32_t> mesh2d_indexes;
 
       public:
         renderer(engine2d::app &);
@@ -62,9 +62,9 @@ namespace planet::vk::engine2d {
 
         /// Draw a 2D triangle mesh
         void draw_2dmesh(
-                std::span<vertex const>, std::span<std::uint16_t const>);
+                std::span<vertex const>, std::span<std::uint32_t const>);
         void draw_2dmesh(
-                std::span<vertex const>, std::span<std::uint16_t const>, pos);
+                std::span<vertex const>, std::span<std::uint32_t const>, pos);
 
         /// Submit and present the frame. This blocks until the frame is complete
         void submit_and_present();
