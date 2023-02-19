@@ -84,7 +84,12 @@ planet::vk::graphics_pipeline
     vertex_input_info.pVertexAttributeDescriptions = attrs.data();
 
     /// UBO binding
-    ubo_descriptor(app.device);
+    viewport_buffer = {
+            app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+    viewport_mapping = viewport_buffer.map();
+    auto ubo_description = ubo_descriptor(app.device);
 
     // Primitive type
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {};

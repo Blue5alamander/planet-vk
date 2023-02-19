@@ -31,6 +31,10 @@ namespace planet::vk::engine2d {
         std::vector<vertex> mesh2d_triangles;
         std::vector<std::uint32_t> mesh2d_indexes;
 
+        affine::matrix3d viewport;
+        buffer<affine::matrix3d> viewport_buffer;
+        device_memory::mapping viewport_mapping;
+
       public:
         renderer(engine2d::app &);
 
@@ -48,8 +52,6 @@ namespace planet::vk::engine2d {
         planet::vk::fence fence{app.device};
 
         /// ### Drawing API
-
-        affine::matrix3d viewport;
 
         /// Data we need to track whilst in the render loop
         std::uint32_t image_index = {};

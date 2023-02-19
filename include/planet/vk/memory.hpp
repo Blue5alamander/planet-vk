@@ -10,12 +10,10 @@ namespace planet::vk {
     class device;
 
 
-    /// A raw allocation of GPU memory
-    /**
-     */
+    /// ## Allocated GPU memory
     /// TODO Have the memory managed by a separate allocator that splits a
     /// large allocation
-    class device_memory {
+    class device_memory final {
         using handle_type = device_handle<VkDeviceMemory, vkFreeMemory>;
         handle_type handle;
 
@@ -32,36 +30,38 @@ namespace planet::vk {
         VkDeviceMemory get() const noexcept { return handle.get(); }
 
         /// Map all/some of the memory to system RAM
-        auto map_memory(
+        class mapping;
+        friend class device_memory::mapping;
+        mapping map_memory(
                 VkDeviceSize const offset,
                 VkDeviceSize const size,
-                VkMemoryMapFlags flags = {}) {
-            struct mapped_memory {
-                VkDevice const device_handle;
-                VkDeviceMemory const memory_handle;
-                void *const pointer;
-                mapped_memory(
-                        VkDevice const d,
-                        VkDeviceMemory const m,
-                        VkDeviceSize const offset,
-                        VkDeviceSize const size,
-                        VkMemoryMapFlags flags = {})
-                : device_handle{d}, memory_handle{m}, pointer{[&]() {
-                      void *p = nullptr;
-                      worked(vkMapMemory(
-                              device_handle, memory_handle, offset, size, flags,
-                              &p));
-                      return p;
-                  }()} {}
-                ~mapped_memory() {
-                    if (pointer) {
-                        vkUnmapMemory(device_handle, memory_handle);
-                    }
-                }
-            };
-            return mapped_memory{
-                    handle.owner(), handle.get(), offset, size, flags};
-        }
+                VkMemoryMapFlags flags = {});
+    };
+
+
+    /// ## CPU memory mapped to GPU memory
+    class device_memory::mapping final {
+        VkDevice device_handle;
+        VkDeviceMemory memory_handle;
+        void *pointer = nullptr;
+
+        void unsafe_reset();
+
+      public:
+        mapping();
+        mapping(mapping const &) = delete;
+        mapping(mapping &&);
+        mapping(VkDevice const d,
+                VkDeviceMemory const m,
+                VkDeviceSize const offset,
+                VkDeviceSize const size,
+                VkMemoryMapFlags flags = {});
+        ~mapping() { unsafe_reset(); }
+
+        mapping &operator=(mapping const &) = delete;
+        mapping &operator=(mapping &&);
+
+        void *get() const noexcept { return pointer; }
     };
 
 

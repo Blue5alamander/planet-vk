@@ -25,7 +25,10 @@ namespace planet::vk {
       public:
         using value_type = T;
 
+        /// ### Constructors
+
         buffer() {}
+        /// Allocate space for a number of items
         buffer(vk::device const &device,
                std::size_t const c,
                VkBufferUsageFlags const usage,
@@ -45,6 +48,7 @@ namespace planet::vk {
             worked(vkBindBufferMemory(
                     device.get(), buffer_handle.get(), memory.get(), {}));
         }
+        /// Allocate memory for a number of items, and copy them into GPU memory
         buffer(vk::device const &device,
                std::span<T const> const vertices,
                VkBufferUsageFlags const usage,
@@ -52,11 +56,13 @@ namespace planet::vk {
         : buffer{device, vertices.size(), usage, properties} {
             auto data = memory.map_memory({}, byte_count());
             std::span<value_type> gpumemory{
-                    reinterpret_cast<value_type *>(data.pointer),
+                    reinterpret_cast<value_type *>(data.get()),
                     vertices.size()};
             std::copy(vertices.begin(), vertices.end(), gpumemory.begin());
         }
 
+
+        /// ### Queries
         VkBuffer get() const noexcept { return buffer_handle.get(); }
 
         /// Number of items in the buffer
@@ -86,6 +92,9 @@ namespace planet::vk {
             throw felspar::stdexcept::runtime_error{
                     "No matching GPU memory was found for allocation"};
         }
+
+        /// ### Map GPU memory to host
+        auto map() { return memory.map_memory({}, byte_count()); }
     };
 
 
