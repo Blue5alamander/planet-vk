@@ -28,7 +28,7 @@ int main(int const argc, char const *argv[]) {
             }
         }
 
-        auto &cb = renderer.start({0.f, 0.f, 0.f, 1.f});
+        [[maybe_unused]] auto &cb = renderer.start({{{0.f, 0.f, 0.f, 1.f}}});
 
         renderer.draw_2dmesh(vertices, indices);
         renderer.draw_2dmesh(vertices, indices, {0.75f, 0.75f});

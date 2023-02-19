@@ -211,7 +211,7 @@ int main(int, const char **argv) {
         render_pass_info.renderArea.offset.y = 0;
         render_pass_info.renderArea.extent = vk_swapchain.extents;
 
-        VkClearValue clear_color = {0.f, 0.f, 0.f, 1.f};
+        VkClearValue clear_color = {{{0.f, 0.f, 0.f, 1.f}}};
         render_pass_info.clearValueCount = 1;
         render_pass_info.pClearValues = &clear_color;
 
