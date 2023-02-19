@@ -102,7 +102,7 @@ class HelloTriangleApplication {
     planet::asset_manager am;
 
   public:
-    HelloTriangleApplication(int const argc, char const *const argv[])
+    HelloTriangleApplication(int const, char const *const argv[])
     : am{argv[0]} {}
 
     void run() {
@@ -405,7 +405,7 @@ class HelloTriangleApplication {
     bool framebufferResized = false;
 
     static void framebufferResizeCallback(
-            GLFWwindow *window, int width, int height) {
+            GLFWwindow *window, int /*width*/, int /*height*/) {
         auto app = reinterpret_cast<HelloTriangleApplication *>(
                 glfwGetWindowUserPointer(window));
         app->framebufferResized = true;
@@ -508,7 +508,7 @@ class HelloTriangleApplication {
     void createSwapChain() {
         instance.surface.refresh_characteristics(instance.gpu());
         VkExtent2D extent = chooseSwapExtent();
-        auto imageCount = swapChain.recreate(extent);
+        swapChain.recreate(extent);
     }
 
     void createDescriptorSetLayout() {
@@ -865,7 +865,7 @@ class HelloTriangleApplication {
 
     void transitionImageLayout(
             VkImage image,
-            VkFormat format,
+            VkFormat,
             VkImageLayout oldLayout,
             VkImageLayout newLayout,
             uint32_t mipLevels) {
@@ -1443,10 +1443,10 @@ class HelloTriangleApplication {
     }
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-            VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-            VkDebugUtilsMessageTypeFlagsEXT messageType,
+            VkDebugUtilsMessageSeverityFlagBitsEXT,
+            VkDebugUtilsMessageTypeFlagsEXT,
             const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-            void *pUserData) {
+            void *) {
         std::cerr << "validation layer: " << pCallbackData->pMessage
                   << std::endl;
 

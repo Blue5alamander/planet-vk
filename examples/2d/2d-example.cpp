@@ -2,7 +2,8 @@
 
 
 int main(int const argc, char const *argv[]) {
-    planet::vk::engine2d::app app{argc, argv, "2d example"};
+    planet::vk::engine2d::app app{
+            argc, argv, "blue5alamander/planet-vk/2d-example"};
     planet::vk::engine2d::renderer renderer{app};
 
     constexpr std::array vertices{

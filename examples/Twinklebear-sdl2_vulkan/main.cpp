@@ -12,7 +12,7 @@ constexpr int win_width = 1280;
 constexpr int win_height = 720;
 
 
-int main(int argc, const char **argv) {
+int main(int, const char **argv) {
     planet::asset_manager assets{argv[0]};
     felspar::io::poll_warden poll;
     planet::sdl::init sdl{poll};
