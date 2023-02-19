@@ -4,6 +4,7 @@
 #include <planet/vk/buffer.hpp>
 #include <planet/vk/commands.hpp>
 #include <planet/vk/debug_messenger.hpp>
+#include <planet/vk/descriptors.hpp>
 #include <planet/vk/device.hpp>
 #include <planet/vk/extensions.hpp>
 #include <planet/vk/frame_buffer.hpp>

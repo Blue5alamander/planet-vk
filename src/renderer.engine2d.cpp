@@ -2,6 +2,8 @@
 
 
 namespace {
+
+
     template<typename V>
     auto binding_description();
 
@@ -37,6 +39,17 @@ namespace {
     }
 
 
+    planet::vk::descriptor_set_layout
+            ubo_descriptor(planet::vk::device const &device) {
+        VkDescriptorSetLayoutBinding ubo_binding{};
+        ubo_binding.binding = 0;
+        ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        ubo_binding.descriptorCount = 1;
+        ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        return {device, ubo_binding};
+    }
+
+
 }
 
 
@@ -59,6 +72,7 @@ planet::vk::graphics_pipeline
             fragment_shader_module.shader_stage_info(
                     VK_SHADER_STAGE_FRAGMENT_BIT, "main")};
 
+    /// Vertex bindings and attributes
     auto const binding = binding_description<vertex>();
     auto const attrs = attribute_description<vertex>();
     VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
@@ -68,6 +82,9 @@ planet::vk::graphics_pipeline
     vertex_input_info.pVertexBindingDescriptions = binding.data();
     vertex_input_info.vertexAttributeDescriptionCount = attrs.size();
     vertex_input_info.pVertexAttributeDescriptions = attrs.data();
+
+    /// UBO binding
+    ubo_descriptor(app.device);
 
     // Primitive type
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {};

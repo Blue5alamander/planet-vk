@@ -2,6 +2,7 @@ find_package (Vulkan REQUIRED)
 
 add_library(planet-vk
         commands.cpp
+        descriptors.cpp
         frame_buffer.cpp
         init.cpp
         memory.cpp
