@@ -52,9 +52,6 @@ namespace planet::vk::engine2d {
                 render_finished_semaphore{app.device};
         vk::fence fence{app.device};
 
-        affine::matrix3d space = affine::matrix3d::scale_xy(
-                10.0f / app.window.width(), 10.0f / app.window.height());
-
         /// ### Drawing API
 
         /// Data we need to track whilst in the render loop

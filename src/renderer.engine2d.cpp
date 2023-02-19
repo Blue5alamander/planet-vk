@@ -44,7 +44,10 @@ namespace {
 }
 
 
-planet::vk::engine2d::renderer::renderer(engine2d::app &a) : app{a} {}
+planet::vk::engine2d::renderer::renderer(engine2d::app &a)
+: viewport{affine::matrix3d::scale_xy(
+        10.0f / a.window.width(), 10.0f / a.window.height())},
+  app{a} {}
 
 
 planet::vk::graphics_pipeline
