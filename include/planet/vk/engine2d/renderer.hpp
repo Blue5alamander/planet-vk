@@ -62,9 +62,9 @@ namespace planet::vk::engine2d {
         std::array<VkFence, 1> const fences{fence.get()};
 
         /// Start the render cycle
-        [[nodiscard]] vk::command_buffer &start(VkClearValue);
+        vk::command_buffer &start(VkClearValue);
 
-        /// Draw a 2D triangle mesh
+        /// Draw a 2D triangle mesh with an optional positional offset
         void draw_2dmesh(
                 std::span<vertex const>, std::span<std::uint32_t const>);
         void draw_2dmesh(
