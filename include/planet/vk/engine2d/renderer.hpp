@@ -3,6 +3,8 @@
 
 #include <planet/vk/engine2d/app.hpp>
 
+#include <planet/affine/matrix3d.hpp>
+
 
 namespace planet::vk::engine2d {
 
@@ -46,6 +48,8 @@ namespace planet::vk::engine2d {
         planet::vk::fence fence{app.device};
 
         /// ### Drawing API
+
+        affine::matrix3d viewport;
 
         /// Data we need to track whilst in the render loop
         std::uint32_t image_index = {};
