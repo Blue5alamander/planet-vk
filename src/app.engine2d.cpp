@@ -5,6 +5,7 @@
 planet::vk::engine2d::app::app(int, char const *argv[], char const *name)
 : warden{std::make_unique<felspar::io::poll_warden>()},
   asset_manager{argv[0]},
+  sdl{*warden, name},
   window{sdl, name, SDL_WINDOW_FULLSCREEN_DESKTOP},
   instance{[&]() {
       auto app_info = planet::vk::application_info();
