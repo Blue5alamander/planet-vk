@@ -1,5 +1,7 @@
 #include <planet/vk/engine2d/renderer.hpp>
 
+#include <cstring>
+
 
 namespace {
 
@@ -36,17 +38,6 @@ namespace {
         attrs[1].offset = offsetof(planet::vk::engine2d::vertex, c);
 
         return attrs;
-    }
-
-
-    planet::vk::descriptor_set_layout
-            ubo_descriptor(planet::vk::device const &device) {
-        VkDescriptorSetLayoutBinding ubo_binding{};
-        ubo_binding.binding = 0;
-        ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        ubo_binding.descriptorCount = 1;
-        ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        return {device, ubo_binding};
     }
 
 
@@ -89,7 +80,15 @@ planet::vk::graphics_pipeline
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     viewport_mapping = viewport_buffer.map();
-    auto ubo_description = ubo_descriptor(app.device);
+    std::memcpy(viewport_mapping.get(), &viewport, sizeof(affine::matrix3d));
+    auto ubo_description = [&]() -> planet::vk::descriptor_set_layout {
+        VkDescriptorSetLayoutBinding ubo_binding{};
+        ubo_binding.binding = 0;
+        ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        ubo_binding.descriptorCount = 1;
+        ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        return {app.device, ubo_binding};
+    }();
 
     // Primitive type
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
