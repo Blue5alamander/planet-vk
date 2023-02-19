@@ -57,6 +57,17 @@ if(NOT felspar-memory_POPULATED)
 endif()
 
 FetchContent_Declare(
+        felspar-parse
+        GIT_REPOSITORY https://github.com/Felspar/parse.git
+        GIT_TAG main
+    )
+FetchContent_GetProperties(felspar-parse)
+if(NOT felspar-parse_POPULATED)
+    FetchContent_Populate(felspar-parse)
+    add_subdirectory(${felspar-parse_SOURCE_DIR} ${felspar-parse_BINARY_DIR})
+endif()
+
+FetchContent_Declare(
         planet
         GIT_REPOSITORY https://github.com/Blue5alamander/planet.git
         GIT_TAG main
