@@ -2,9 +2,7 @@
 #include <planet/vk/frame_buffer.hpp>
 
 
-/**
- * planet::vk::frame_buffer
- */
+/// ## `planet::vk::frame_buffer`
 
 
 planet::vk::frame_buffer::frame_buffer(

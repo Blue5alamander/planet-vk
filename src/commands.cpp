@@ -3,9 +3,7 @@
 #include <planet/vk/surface.hpp>
 
 
-/**
- * ## planet::vk::command_pool
- */
+/// ## `planet::vk::command_pool`
 
 
 planet::vk::command_pool::command_pool(vk::device const &d, vk::surface const &s)
@@ -18,9 +16,7 @@ planet::vk::command_pool::command_pool(vk::device const &d, vk::surface const &s
 }
 
 
-/**
- * ## planet::vk::command_buffers
- */
+/// ## `planet::vk::command_buffers`
 
 
 planet::vk::command_buffers::command_buffers(
@@ -49,9 +45,7 @@ planet::vk::command_buffers::~command_buffers() {
 }
 
 
-/**
- * ## planet::vk::command_buffer
- */
+/// ## `planet::vk::command_buffer`
 
 
 planet::vk::command_buffer::command_buffer(

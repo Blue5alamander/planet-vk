@@ -12,9 +12,7 @@
 using namespace std::literals;
 
 
-/**
- * ## planet::vk::sdl::window
- */
+/// ## `planet::vk::sdl::window`
 
 
 planet::vk::sdl::window::window(
@@ -54,9 +52,7 @@ planet::vk::sdl::window::window(
 }
 
 
-/**
- * ## planet::vk::extensions
- */
+/// ## `planet::vk::extensions`
 
 
 planet::vk::extensions::extensions(sdl::window &w) {

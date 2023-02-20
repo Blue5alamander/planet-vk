@@ -5,9 +5,7 @@
 #include <felspar/memory/small_vector.hpp>
 
 
-/**
- * ## planet::vk::extensions
- */
+/// ## `planet::vk::extensions`
 
 
 planet::vk::extensions::extensions() {
@@ -17,9 +15,7 @@ planet::vk::extensions::extensions() {
 }
 
 
-/**
- * ## planet::vk::instance
- */
+/// ## `planet::vk::instance`
 
 
 VkApplicationInfo planet::vk::application_info() {
@@ -99,9 +95,7 @@ planet::vk::instance::instance_handle::~instance_handle() {
 }
 
 
-/**
- * ## planet::vk::physical_device
- */
+/// ## `planet::vk::physical_device`
 
 
 planet::vk::physical_device::physical_device(
@@ -113,9 +107,7 @@ planet::vk::physical_device::physical_device(
 }
 
 
-/**
- * ## planet::vk::device
- */
+/// ## `planet::vk::device`
 
 
 planet::vk::device::device(

@@ -2,9 +2,7 @@
 #include <planet/vk/pipeline.hpp>
 
 
-/**
- * planet::vk::pipeline_layout
- */
+/// ## `planet::vk::pipeline_layout`
 
 
 planet::vk::pipeline_layout::pipeline_layout(vk::device const &d) : device{d} {
@@ -21,9 +19,7 @@ planet::vk::pipeline_layout::pipeline_layout(
 }
 
 
-/**
- * planet::vk::graphics_pipeline
- */
+/// ## `planet::vk::graphics_pipeline`
 
 
 planet::vk::graphics_pipeline::graphics_pipeline(

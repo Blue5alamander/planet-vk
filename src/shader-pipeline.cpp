@@ -2,9 +2,7 @@
 #include <planet/vk/shader_module.hpp>
 
 
-/**
- * ## planet::vk::shader_module
- */
+/// ## `planet::vk::shader_module`
 
 
 planet::vk::shader_module::shader_module(

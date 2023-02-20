@@ -3,9 +3,7 @@
 #include <planet/vk/swap_chain.hpp>
 
 
-/**
- * ## planet::vk::swap_chain
- */
+/// ## `planet::vk::swap_chain`
 
 
 std::uint32_t planet::vk::swap_chain::create(VkExtent2D const wsize) {
@@ -86,9 +84,7 @@ VkExtent2D planet::vk::swap_chain::calculate_extents(
 }
 
 
-/**
- * ## planet::vk::image_view
- */
+/// ## `planet::vk::image_view`
 
 
 planet::vk::image_view::image_view(swap_chain const &sc, VkImage image)

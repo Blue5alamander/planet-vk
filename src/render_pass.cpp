@@ -2,9 +2,7 @@
 #include <planet/vk/render_pass.hpp>
 
 
-/**
- * planet::vk::render_pass
- */
+/// ## `planet::vk::render_pass`
 
 
 planet::vk::render_pass::render_pass(

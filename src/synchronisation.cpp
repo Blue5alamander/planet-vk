@@ -2,9 +2,7 @@
 #include <planet/vk/synchronisation.hpp>
 
 
-/**
- * planet::vk::fence
- */
+/// ## `planet::vk::fence`
 
 
 planet::vk::fence::fence(vk::device const &d) : device{d} {
@@ -15,9 +13,7 @@ planet::vk::fence::fence(vk::device const &d) : device{d} {
 }
 
 
-/**
- * planet::vk::semaphore
- */
+/// ## `planet::vk::semaphore`
 
 
 planet::vk::semaphore::semaphore(vk::device const &d) : device{d} {
