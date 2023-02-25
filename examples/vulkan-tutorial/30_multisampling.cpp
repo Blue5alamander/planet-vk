@@ -414,7 +414,18 @@ class HelloTriangleApplication {
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void *> uniformBuffersMapped;
 
-    VkDescriptorPool descriptorPool;
+    planet::vk::descriptor_pool descriptorPool = [this]() {
+        std::array<VkDescriptorPoolSize, 2> poolSizes{};
+        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[0].descriptorCount =
+                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[1].descriptorCount =
+                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+        return planet::vk::descriptor_pool{
+                device, poolSizes, MAX_FRAMES_IN_FLIGHT};
+    }();
     std::vector<VkDescriptorSet> descriptorSets;
 
     planet::vk::command_buffers commandBuffers{
@@ -447,7 +458,6 @@ class HelloTriangleApplication {
         createVertexBuffer();
         createIndexBuffer();
         createUniformBuffers();
-        createDescriptorPool();
         createDescriptorSets();
         createSyncObjects();
     }
@@ -478,8 +488,6 @@ class HelloTriangleApplication {
             vkDestroyBuffer(device.get(), uniformBuffers[i], nullptr);
             vkFreeMemory(device.get(), uniformBuffersMemory[i], nullptr);
         }
-
-        vkDestroyDescriptorPool(device.get(), descriptorPool, nullptr);
 
         vkDestroySampler(device.get(), textureSampler, nullptr);
         vkDestroyImageView(device.get(), textureImageView, nullptr);
@@ -1046,31 +1054,12 @@ class HelloTriangleApplication {
         }
     }
 
-    void createDescriptorPool() {
-        std::array<VkDescriptorPoolSize, 2> poolSizes{};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount =
-                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount =
-                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-        VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-        planet::vk::worked(vkCreateDescriptorPool(
-                device.get(), &poolInfo, nullptr, &descriptorPool));
-    }
-
     void createDescriptorSets() {
         std::vector<VkDescriptorSetLayout> layouts(
                 MAX_FRAMES_IN_FLIGHT, descriptorSetLayout.get());
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorPool = descriptorPool.get();
         allocInfo.descriptorSetCount =
                 static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
         allocInfo.pSetLayouts = layouts.data();
