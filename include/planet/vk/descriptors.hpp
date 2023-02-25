@@ -69,6 +69,9 @@ namespace planet::vk {
                 std::uint32_t count = 1);
 
         /// ### Access to individual sets
+        auto &operator[](std::uint32_t const index) {
+            return sets.at(index);
+        }
         auto const &operator[](std::uint32_t const index) const {
             return sets.at(index);
         }
