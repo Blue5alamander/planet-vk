@@ -3,6 +3,8 @@
 
 #include <planet/vk/helpers.hpp>
 
+#include <span>
+
 
 namespace planet::vk {
 
@@ -17,6 +19,10 @@ namespace planet::vk {
         handle_type handle;
 
       public:
+        descriptor_pool(
+                vk::device const &,
+                std::span<VkDescriptorPoolSize const>,
+                std::uint32_t max_sets);
         descriptor_pool(vk::device const &, std::uint32_t count);
 
         VkDescriptorPool get() const noexcept { return handle.get(); }
