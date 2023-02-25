@@ -47,7 +47,14 @@ namespace {
 planet::vk::engine2d::renderer::renderer(engine2d::app &a)
 : app{a},
   viewport{affine::matrix3d::scale_xy(
-          10.0f / a.window.width(), 10.0f / a.window.height())} {
+          100.0f / a.window.width(), 100.0f / a.window.height())},
+  viewport_buffer{
+          app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
+  viewport_mapping{viewport_buffer.map()} {
+    std::memcpy(viewport_mapping.get(), &viewport, sizeof(affine::matrix3d));
+
     VkDescriptorBufferInfo info{};
     info.buffer = viewport_buffer.get();
     info.offset = 0;
@@ -92,14 +99,6 @@ planet::vk::graphics_pipeline
     vertex_input_info.pVertexBindingDescriptions = binding.data();
     vertex_input_info.vertexAttributeDescriptionCount = attrs.size();
     vertex_input_info.pVertexAttributeDescriptions = attrs.data();
-
-    /// UBO binding
-    viewport_buffer = {
-            app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-    viewport_mapping = viewport_buffer.map();
-    std::memcpy(viewport_mapping.get(), &viewport, sizeof(affine::matrix3d));
 
     // Primitive type
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
