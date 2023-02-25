@@ -153,10 +153,33 @@ class HelloTriangleApplication {
 
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
 
-    VkDescriptorSetLayout descriptorSetLayout;
+    planet::vk::descriptor_set_layout descriptorSetLayout = [this]() {
+        VkDescriptorSetLayoutBinding uboLayoutBinding{};
+        uboLayoutBinding.binding = 0;
+        uboLayoutBinding.descriptorCount = 1;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.pImmutableSamplers = nullptr;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+        samplerLayoutBinding.binding = 1;
+        samplerLayoutBinding.descriptorCount = 1;
+        samplerLayoutBinding.descriptorType =
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerLayoutBinding.pImmutableSamplers = nullptr;
+        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
+                uboLayoutBinding, samplerLayoutBinding};
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        return planet::vk::descriptor_set_layout{device, layoutInfo};
+    }();
 
     planet::vk::graphics_pipeline graphicsPipeline{[this]() {
-        createDescriptorSetLayout();
         planet::vk::shader_module vertShaderModule{
                 device, am.file_data("27_shader_depth.vert.spirv")};
         planet::vk::shader_module fragShaderModule{
@@ -250,7 +273,7 @@ class HelloTriangleApplication {
         pipelineLayoutInfo.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pSetLayouts = descriptorSetLayout.address();
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -464,9 +487,6 @@ class HelloTriangleApplication {
         vkDestroyImage(device.get(), textureImage, nullptr);
         vkFreeMemory(device.get(), textureImageMemory, nullptr);
 
-        vkDestroyDescriptorSetLayout(
-                device.get(), descriptorSetLayout, nullptr);
-
         glfwDestroyWindow(window);
 
         glfwTerminate();
@@ -509,33 +529,6 @@ class HelloTriangleApplication {
         instance.surface.refresh_characteristics(instance.gpu());
         VkExtent2D extent = chooseSwapExtent();
         swapChain.recreate(extent);
-    }
-
-    void createDescriptorSetLayout() {
-        VkDescriptorSetLayoutBinding uboLayoutBinding{};
-        uboLayoutBinding.binding = 0;
-        uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.pImmutableSamplers = nullptr;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType =
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-                uboLayoutBinding, samplerLayoutBinding};
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-
-        planet::vk::worked(vkCreateDescriptorSetLayout(
-                device.get(), &layoutInfo, nullptr, &descriptorSetLayout));
     }
 
     void createColorResources() {
@@ -1074,7 +1067,7 @@ class HelloTriangleApplication {
 
     void createDescriptorSets() {
         std::vector<VkDescriptorSetLayout> layouts(
-                MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+                MAX_FRAMES_IN_FLIGHT, descriptorSetLayout.get());
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
