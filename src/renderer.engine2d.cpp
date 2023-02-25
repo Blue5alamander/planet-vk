@@ -84,14 +84,6 @@ planet::vk::graphics_pipeline
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     viewport_mapping = viewport_buffer.map();
     std::memcpy(viewport_mapping.get(), &viewport, sizeof(affine::matrix3d));
-    auto ubo_description = [&]() -> planet::vk::descriptor_set_layout {
-        VkDescriptorSetLayoutBinding ubo_binding{};
-        ubo_binding.binding = 0;
-        ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        ubo_binding.descriptorCount = 1;
-        ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        return {app.device, ubo_binding};
-    }();
 
     // Primitive type
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {};

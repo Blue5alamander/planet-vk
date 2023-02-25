@@ -75,6 +75,13 @@ namespace planet::vk::engine2d {
 
         /// Submit and present the frame. This blocks until the frame is complete
         void submit_and_present();
+
+      private:
+        vk::descriptor_set_layout ubo_layout{
+                vk::descriptor_set_layout::for_uniform_buffer_object(
+                        app.device)};
+        vk::descriptor_pool ubo_pool{app.device};
+        vk::descriptor_sets ubo_sets{ubo_pool, ubo_layout};
     };
 
 
