@@ -1,15 +1,23 @@
+#include <planet/vk/descriptors.hpp>
 #include <planet/vk/device.hpp>
 #include <planet/vk/pipeline.hpp>
 
 
-/**
- * planet::vk::pipeline_layout
- */
+/// ## `planet::vk::pipeline_layout`
 
 
 planet::vk::pipeline_layout::pipeline_layout(vk::device const &d) : device{d} {
     VkPipelineLayoutCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    handle.create<vkCreatePipelineLayout>(device.get(), info);
+}
+
+
+planet::vk::pipeline_layout::pipeline_layout(vk::device const &d, descriptor_set_layout const &dsl) : device{d} {
+    VkPipelineLayoutCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    info.setLayoutCount = 1;
+    info.pSetLayouts = dsl.address();
     handle.create<vkCreatePipelineLayout>(device.get(), info);
 }
 
@@ -21,9 +29,7 @@ planet::vk::pipeline_layout::pipeline_layout(
 }
 
 
-/**
- * planet::vk::graphics_pipeline
- */
+/// ## `planet::vk::graphics_pipeline`
 
 
 planet::vk::graphics_pipeline::graphics_pipeline(

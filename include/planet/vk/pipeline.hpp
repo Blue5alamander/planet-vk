@@ -7,6 +7,9 @@
 namespace planet::vk {
 
 
+  class descriptor_set_layout;
+
+
     class pipeline_layout final {
         using handle_type =
                 device_handle<VkPipelineLayout, vkDestroyPipelineLayout>;
@@ -14,6 +17,7 @@ namespace planet::vk {
 
       public:
         pipeline_layout(vk::device const &);
+        pipeline_layout(vk::device const &, descriptor_set_layout const &);
         pipeline_layout(vk::device const &, VkPipelineLayoutCreateInfo const &);
 
         vk::device const &device;
