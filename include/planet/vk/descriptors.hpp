@@ -19,7 +19,6 @@ namespace planet::vk {
       public:
         descriptor_pool(vk::device const &, std::uint32_t count);
 
-        vk::device const &device;
         VkDescriptorPool get() const noexcept { return handle.get(); }
     };
 
@@ -32,10 +31,14 @@ namespace planet::vk {
 
       public:
         descriptor_set_layout(
+                vk::device const &, VkDescriptorSetLayoutCreateInfo const &);
+        descriptor_set_layout(
                 vk::device const &, VkDescriptorSetLayoutBinding const &);
 
-        vk::device const &device;
         VkDescriptorSetLayout get() const noexcept { return handle.get(); }
+        VkDescriptorSetLayout const *address() const noexcept {
+            return handle.address();
+        }
     };
 
 
