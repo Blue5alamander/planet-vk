@@ -426,7 +426,8 @@ class HelloTriangleApplication {
         return planet::vk::descriptor_pool{
                 device, poolSizes, MAX_FRAMES_IN_FLIGHT};
     }();
-    std::vector<VkDescriptorSet> descriptorSets;
+    planet::vk::descriptor_sets descriptorSets{
+            descriptorPool, descriptorSetLayout, MAX_FRAMES_IN_FLIGHT};
 
     planet::vk::command_buffers commandBuffers{
             commandPool, MAX_FRAMES_IN_FLIGHT};
@@ -1055,19 +1056,6 @@ class HelloTriangleApplication {
     }
 
     void createDescriptorSets() {
-        std::vector<VkDescriptorSetLayout> layouts(
-                MAX_FRAMES_IN_FLIGHT, descriptorSetLayout.get());
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool.get();
-        allocInfo.descriptorSetCount =
-                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        allocInfo.pSetLayouts = layouts.data();
-
-        descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-        planet::vk::worked(vkAllocateDescriptorSets(
-                device.get(), &allocInfo, descriptorSets.data()));
-
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = uniformBuffers[i];
