@@ -45,9 +45,25 @@ namespace {
 
 
 planet::vk::engine2d::renderer::renderer(engine2d::app &a)
-: viewport{affine::matrix3d::scale_xy(
-        10.0f / a.window.width(), 10.0f / a.window.height())},
-  app{a} {}
+: app{a},
+  viewport{affine::matrix3d::scale_xy(
+          10.0f / a.window.width(), 10.0f / a.window.height())} {
+    VkDescriptorBufferInfo info{};
+    info.buffer = viewport_buffer.get();
+    info.offset = 0;
+    info.range = sizeof(affine::matrix3d);
+
+    VkWriteDescriptorSet set{};
+    set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    set.dstSet = ubo_sets[0];
+    set.dstBinding = 0;
+    set.dstArrayElement = 0;
+    set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    set.descriptorCount = 1;
+    set.pBufferInfo = &info;
+
+    vkUpdateDescriptorSets(app.device.get(), 1, &set, 0, nullptr);
+}
 
 
 planet::vk::graphics_pipeline
@@ -187,7 +203,7 @@ planet::vk::graphics_pipeline
 
     return planet::vk::graphics_pipeline{
             app.device, graphics_pipeline_info, std::move(render_pass),
-            planet::vk::pipeline_layout{app.device}};
+            planet::vk::pipeline_layout{app.device, ubo_layout}};
 }
 
 
@@ -271,6 +287,9 @@ void planet::vk::engine2d::renderer::submit_and_present() {
     vkCmdBindVertexBuffers(
             cb.get(), 0, buffers.size(), buffers.data(), offset.data());
     vkCmdBindIndexBuffer(cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindDescriptorSets(
+            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+            mesh_pipeline.layout.get(), 0, 1, &ubo_sets[0], 0, nullptr);
     vkCmdDrawIndexed(
             cb.get(), static_cast<uint32_t>(mesh2d_indexes.size()), 1, 0, 0, 0);
 

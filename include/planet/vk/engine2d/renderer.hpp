@@ -29,12 +29,9 @@ namespace planet::vk::engine2d {
     /// ## Renderer
     class renderer final {
         vk::graphics_pipeline create_mesh_pipeline();
+
         std::vector<vertex> mesh2d_triangles;
         std::vector<std::uint32_t> mesh2d_indexes;
-
-        affine::matrix3d viewport;
-        buffer<affine::matrix3d> viewport_buffer;
-        device_memory::mapping viewport_mapping;
 
       public:
         renderer(engine2d::app &);
@@ -42,6 +39,9 @@ namespace planet::vk::engine2d {
         engine2d::app &app;
 
         vk::swap_chain swapchain{app.device, app.window.extents()};
+        vk::descriptor_set_layout ubo_layout{
+                vk::descriptor_set_layout::for_uniform_buffer_object(
+                        app.device)};
         vk::graphics_pipeline mesh_pipeline{create_mesh_pipeline()};
 
         vk::command_pool command_pool{app.device, app.instance.surface};
@@ -77,9 +77,10 @@ namespace planet::vk::engine2d {
         void submit_and_present();
 
       private:
-        vk::descriptor_set_layout ubo_layout{
-                vk::descriptor_set_layout::for_uniform_buffer_object(
-                        app.device)};
+        affine::matrix3d viewport;
+        buffer<affine::matrix3d> viewport_buffer;
+        device_memory::mapping viewport_mapping;
+
         vk::descriptor_pool ubo_pool{app.device};
         vk::descriptor_sets ubo_sets{ubo_pool, ubo_layout};
     };
