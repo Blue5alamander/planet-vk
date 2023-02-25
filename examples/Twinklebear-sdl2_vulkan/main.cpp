@@ -12,10 +12,10 @@ constexpr int win_width = 1280;
 constexpr int win_height = 720;
 
 
-int main(int argc, const char **argv) {
+int main(int, const char **argv) {
     planet::asset_manager assets{argv[0]};
     felspar::io::poll_warden poll;
-    planet::sdl::init sdl{poll};
+    planet::sdl::init sdl{poll, "Twinklebear/sdl2_vulkan"};
 
     planet::vk::sdl::window window{sdl, "SDL2 + Vulkan", win_width, win_height};
 
@@ -23,17 +23,24 @@ int main(int argc, const char **argv) {
 #ifdef NDEBUG
     extensions.validation_layers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
-    std::cout << "Requested extensions\n";
-    for (auto ex : extensions.vulkan_extensions) { std::cout << ex << '\n'; }
 
     // Make the Vulkan Instance
     planet::vk::instance vk_instance = [&]() {
         auto app_info = planet::vk::application_info();
         app_info.pApplicationName = "SDL2 + Vulkan";
         app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+        auto info = planet::vk::instance::info(extensions, app_info);
         return planet::vk::instance{
-                planet::vk::instance::info(extensions, app_info),
-                [&window](VkInstance h) {
+                extensions, info, [&](VkInstance h) {
+                    std::cout << "Requested extensions\n";
+                    for (auto ex : extensions.vulkan_extensions) {
+                        std::cout << ex << '\n';
+                    }
+                    std::cout << "Requested validation layers\n";
+                    for (auto ex : extensions.validation_layers) {
+                        std::cout << ex << '\n';
+                    }
+
                     VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
                     if (not SDL_Vulkan_CreateSurface(
                                 window.get(), h, &vk_surface)) {
@@ -204,7 +211,7 @@ int main(int argc, const char **argv) {
         render_pass_info.renderArea.offset.y = 0;
         render_pass_info.renderArea.extent = vk_swapchain.extents;
 
-        VkClearValue clear_color = {0.f, 0.f, 0.f, 1.f};
+        VkClearValue clear_color = {{{0.f, 0.f, 0.f, 1.f}}};
         render_pass_info.clearValueCount = 1;
         render_pass_info.pClearValues = &clear_color;
 

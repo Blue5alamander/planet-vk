@@ -16,31 +16,29 @@ using namespace std::literals;
 
 
 planet::vk::sdl::window::window(
-        planet::sdl::init &s,
+        planet::sdl::init &,
         const char *const name,
         std::size_t const width,
         std::size_t const height)
-: sdl{s},
-  pw{SDL_CreateWindow(
-          name,
-          SDL_WINDOWPOS_UNDEFINED,
-          SDL_WINDOWPOS_UNDEFINED,
-          width,
-          height,
-          SDL_WINDOW_VULKAN)},
+: pw{SDL_CreateWindow(
+        name,
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        width,
+        height,
+        SDL_WINDOW_VULKAN)},
   size{float(width), float(height)} {}
 
 
 planet::vk::sdl::window::window(
-        planet::sdl::init &s, const char *const name, std::uint32_t flags)
-: sdl{s},
-  pw{SDL_CreateWindow(
-          name,
-          SDL_WINDOWPOS_CENTERED,
-          SDL_WINDOWPOS_CENTERED,
-          640,
-          480,
-          flags | SDL_WINDOW_VULKAN)},
+        planet::sdl::init &, const char *const name, std::uint32_t flags)
+: pw{SDL_CreateWindow(
+        name,
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        640,
+        480,
+        flags | SDL_WINDOW_VULKAN)},
   size{640, 480} {
     if (not pw.get()) {
         throw felspar::stdexcept::runtime_error{"SDL_CreateWindow failed"};
@@ -55,7 +53,7 @@ planet::vk::sdl::window::window(
 /// ## `planet::vk::extensions`
 
 
-planet::vk::extensions::extensions(sdl::window &w) {
+planet::vk::extensions::extensions(vk::sdl::window &w) : extensions{} {
     unsigned int count;
     if (not SDL_Vulkan_GetInstanceExtensions(w.get(), &count, nullptr)) {
         throw felspar::stdexcept::runtime_error{SDL_GetError()};

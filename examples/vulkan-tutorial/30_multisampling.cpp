@@ -37,34 +37,6 @@ const std::string TEXTURE_PATH = "viking_room.png";
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
-
-VkResult CreateDebugUtilsMessengerEXT(
-        VkInstance instance,
-        const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-        const VkAllocationCallbacks *pAllocator,
-        VkDebugUtilsMessengerEXT *pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-            instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void DestroyDebugUtilsMessengerEXT(
-        VkInstance instance,
-        VkDebugUtilsMessengerEXT debugMessenger,
-        const VkAllocationCallbacks *pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-            instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) { func(instance, debugMessenger, pAllocator); }
-}
 
 struct Vertex {
     glm::vec3 pos;
@@ -130,7 +102,7 @@ class HelloTriangleApplication {
     planet::asset_manager am;
 
   public:
-    HelloTriangleApplication(int const argc, char const *const argv[])
+    HelloTriangleApplication(int const, char const *const argv[])
     : am{argv[0]} {}
 
     void run() {
@@ -152,11 +124,6 @@ class HelloTriangleApplication {
     planet::vk::extensions extensions;
 
     planet::vk::instance instance = [this]() {
-        if (enableValidationLayers && !checkValidationLayerSupport()) {
-            throw std::runtime_error(
-                    "validation layers requested, but not available!");
-        }
-
         auto appInfo = planet::vk::application_info();
         appInfo.pApplicationName = "Hello Triangle";
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -164,23 +131,13 @@ class HelloTriangleApplication {
         getRequiredExtensions();
         auto createInfo = planet::vk::instance::info(extensions, appInfo);
 
-        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-        if (enableValidationLayers) {
-            createInfo.enabledLayerCount =
-                    static_cast<uint32_t>(extensions.validation_layers.size());
-            createInfo.ppEnabledLayerNames =
-                    extensions.validation_layers.data();
-
-            populateDebugMessengerCreateInfo(debugCreateInfo);
-            createInfo.pNext =
-                    (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
-        } else {
-            createInfo.enabledLayerCount = 0;
-            createInfo.pNext = nullptr;
+        if (not checkValidationLayerSupport()) {
+            throw std::runtime_error(
+                    "validation layers requested, but not available!");
         }
 
         return planet::vk::instance{
-                createInfo, [this](VkInstance h) {
+                extensions, createInfo, [this](VkInstance h) {
                     VkSurfaceKHR surface = VK_NULL_HANDLE;
                     planet::vk::worked(glfwCreateWindowSurface(
                             h, window, nullptr, &surface));
@@ -188,21 +145,41 @@ class HelloTriangleApplication {
                 }};
     }();
 
-    VkDebugUtilsMessengerEXT debugMessenger;
-
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     planet::vk::device device = [this]() {
-        setupDebugMessenger();
         pickPhysicalDevice();
         return planet::vk::device{instance, extensions};
     }();
 
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
 
-    VkDescriptorSetLayout descriptorSetLayout;
+    planet::vk::descriptor_set_layout descriptorSetLayout = [this]() {
+        VkDescriptorSetLayoutBinding uboLayoutBinding{};
+        uboLayoutBinding.binding = 0;
+        uboLayoutBinding.descriptorCount = 1;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.pImmutableSamplers = nullptr;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+        samplerLayoutBinding.binding = 1;
+        samplerLayoutBinding.descriptorCount = 1;
+        samplerLayoutBinding.descriptorType =
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerLayoutBinding.pImmutableSamplers = nullptr;
+        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
+                uboLayoutBinding, samplerLayoutBinding};
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        return planet::vk::descriptor_set_layout{device, layoutInfo};
+    }();
 
     planet::vk::graphics_pipeline graphicsPipeline{[this]() {
-        createDescriptorSetLayout();
         planet::vk::shader_module vertShaderModule{
                 device, am.file_data("27_shader_depth.vert.spirv")};
         planet::vk::shader_module fragShaderModule{
@@ -296,7 +273,7 @@ class HelloTriangleApplication {
         pipelineLayoutInfo.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pSetLayouts = descriptorSetLayout.address();
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -429,20 +406,31 @@ class HelloTriangleApplication {
     VkSampler textureSampler;
 
     std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
+    std::vector<std::uint32_t> indices;
+    planet::vk::buffer<Vertex> vertexBuffer;
+    planet::vk::buffer<std::uint32_t> indexBuffer;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void *> uniformBuffersMapped;
 
-    VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
+    planet::vk::descriptor_pool descriptorPool = [this]() {
+        std::array<VkDescriptorPoolSize, 2> poolSizes{};
+        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[0].descriptorCount =
+                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[1].descriptorCount =
+                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-    planet::vk::command_buffers commandBuffers{commandPool, MAX_FRAMES_IN_FLIGHT};
+        return planet::vk::descriptor_pool{
+                device, poolSizes, MAX_FRAMES_IN_FLIGHT};
+    }();
+    planet::vk::descriptor_sets descriptorSets{
+            descriptorPool, descriptorSetLayout, MAX_FRAMES_IN_FLIGHT};
+
+    planet::vk::command_buffers commandBuffers{
+            commandPool, MAX_FRAMES_IN_FLIGHT};
 
     std::vector<planet::vk::semaphore> imageAvailableSemaphores;
     std::vector<planet::vk::semaphore> renderFinishedSemaphores;
@@ -452,7 +440,7 @@ class HelloTriangleApplication {
     bool framebufferResized = false;
 
     static void framebufferResizeCallback(
-            GLFWwindow *window, int width, int height) {
+            GLFWwindow *window, int /*width*/, int /*height*/) {
         auto app = reinterpret_cast<HelloTriangleApplication *>(
                 glfwGetWindowUserPointer(window));
         app->framebufferResized = true;
@@ -471,7 +459,6 @@ class HelloTriangleApplication {
         createVertexBuffer();
         createIndexBuffer();
         createUniformBuffers();
-        createDescriptorPool();
         createDescriptorSets();
         createSyncObjects();
     }
@@ -503,27 +490,11 @@ class HelloTriangleApplication {
             vkFreeMemory(device.get(), uniformBuffersMemory[i], nullptr);
         }
 
-        vkDestroyDescriptorPool(device.get(), descriptorPool, nullptr);
-
         vkDestroySampler(device.get(), textureSampler, nullptr);
         vkDestroyImageView(device.get(), textureImageView, nullptr);
 
         vkDestroyImage(device.get(), textureImage, nullptr);
         vkFreeMemory(device.get(), textureImageMemory, nullptr);
-
-        vkDestroyDescriptorSetLayout(
-                device.get(), descriptorSetLayout, nullptr);
-
-        vkDestroyBuffer(device.get(), indexBuffer, nullptr);
-        vkFreeMemory(device.get(), indexBufferMemory, nullptr);
-
-        vkDestroyBuffer(device.get(), vertexBuffer, nullptr);
-        vkFreeMemory(device.get(), vertexBufferMemory, nullptr);
-
-        if (enableValidationLayers) {
-            DestroyDebugUtilsMessengerEXT(
-                    instance.get(), debugMessenger, nullptr);
-        }
 
         glfwDestroyWindow(window);
 
@@ -549,31 +520,6 @@ class HelloTriangleApplication {
                 graphicsPipeline.render_pass, colorImageView, depthImageView);
     }
 
-    void populateDebugMessengerCreateInfo(
-            VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
-        createInfo = {};
-        createInfo.sType =
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        createInfo.messageSeverity =
-                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-                | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-                | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-                | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-                | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        createInfo.pfnUserCallback = debugCallback;
-    }
-
-    void setupDebugMessenger() {
-        if (!enableValidationLayers) return;
-
-        VkDebugUtilsMessengerCreateInfoEXT createInfo;
-        populateDebugMessengerCreateInfo(createInfo);
-
-        planet::vk::worked(CreateDebugUtilsMessengerEXT(
-                instance.get(), &createInfo, nullptr, &debugMessenger));
-    }
-
     void pickPhysicalDevice() {
         auto const devices = instance.physical_devices();
 
@@ -591,34 +537,7 @@ class HelloTriangleApplication {
     void createSwapChain() {
         instance.surface.refresh_characteristics(instance.gpu());
         VkExtent2D extent = chooseSwapExtent();
-        auto imageCount = swapChain.recreate(extent);
-    }
-
-    void createDescriptorSetLayout() {
-        VkDescriptorSetLayoutBinding uboLayoutBinding{};
-        uboLayoutBinding.binding = 0;
-        uboLayoutBinding.descriptorCount = 1;
-        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.pImmutableSamplers = nullptr;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
-        samplerLayoutBinding.descriptorCount = 1;
-        samplerLayoutBinding.descriptorType =
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
-        samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-                uboLayoutBinding, samplerLayoutBinding};
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-
-        planet::vk::worked(vkCreateDescriptorSetLayout(
-                device.get(), &layoutInfo, nullptr, &descriptorSetLayout));
+        swapChain.recreate(extent);
     }
 
     void createColorResources() {
@@ -685,9 +604,11 @@ class HelloTriangleApplication {
 
     void createTextureImage() {
         int texWidth, texHeight, texChannels;
-        stbi_uc *pixels = stbi_load(
-                am.find_path(TEXTURE_PATH).c_str(), &texWidth, &texHeight,
-                &texChannels, STBI_rgb_alpha);
+        auto const texdata = am.file_data(TEXTURE_PATH);
+        stbi_uc *pixels = stbi_load_from_memory(
+                reinterpret_cast<stbi_uc const *>(texdata.data()),
+                texdata.size(), &texWidth, &texHeight, &texChannels,
+                STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         mipLevels = static_cast<uint32_t>(std::floor(
                             std::log2(std::max(texWidth, texHeight))))
@@ -800,8 +721,9 @@ class HelloTriangleApplication {
             blit.dstSubresource.layerCount = 1;
 
             vkCmdBlitImage(
-                    commandBuffer.get(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
+                    commandBuffer.get(), image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
                     VK_FILTER_LINEAR);
 
             barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -945,7 +867,7 @@ class HelloTriangleApplication {
 
     void transitionImageLayout(
             VkImage image,
-            VkFormat format,
+            VkFormat,
             VkImageLayout oldLayout,
             VkImageLayout newLayout,
             uint32_t mipLevels) {
@@ -987,8 +909,8 @@ class HelloTriangleApplication {
         }
 
         vkCmdPipelineBarrier(
-                commandBuffer.get(), sourceStage, destinationStage, 0, 0, nullptr, 0,
-                nullptr, 1, &barrier);
+                commandBuffer.get(), sourceStage, destinationStage, 0, 0,
+                nullptr, 0, nullptr, 1, &barrier);
 
         endSingleTimeCommands(std::move(commandBuffer));
     }
@@ -1020,10 +942,12 @@ class HelloTriangleApplication {
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
         std::string warn, err;
+        auto const objdata = am.file_data(MODEL_PATH);
+        std::istringstream stream{std::string{
+                reinterpret_cast<char const *>(objdata.data()), objdata.size()}};
 
         if (!tinyobj::LoadObj(
-                    &attrib, &shapes, &materials, &warn, &err,
-                    am.find_path(MODEL_PATH).c_str())) {
+                    &attrib, &shapes, &materials, &warn, &err, &stream)) {
             throw std::runtime_error(warn + err);
         }
 
@@ -1071,14 +995,13 @@ class HelloTriangleApplication {
         memcpy(data, vertices.data(), (size_t)bufferSize);
         vkUnmapMemory(device.get(), stagingBufferMemory);
 
-        createBuffer(
-                bufferSize,
+        vertexBuffer = {
+                device, vertices.size(),
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT
                         | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer,
-                vertexBufferMemory);
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
-        copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+        copyBuffer(stagingBuffer, vertexBuffer.get(), bufferSize);
 
         vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
         vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
@@ -1100,14 +1023,13 @@ class HelloTriangleApplication {
         memcpy(data, indices.data(), (size_t)bufferSize);
         vkUnmapMemory(device.get(), stagingBufferMemory);
 
-        createBuffer(
-                bufferSize,
+        indexBuffer = {
+                device, indices.size(),
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT
                         | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer,
-                indexBufferMemory);
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
-        copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+        copyBuffer(stagingBuffer, indexBuffer.get(), bufferSize);
 
         vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
         vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
@@ -1133,39 +1055,7 @@ class HelloTriangleApplication {
         }
     }
 
-    void createDescriptorPool() {
-        std::array<VkDescriptorPoolSize, 2> poolSizes{};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount =
-                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount =
-                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-        VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
-        planet::vk::worked(vkCreateDescriptorPool(
-                device.get(), &poolInfo, nullptr, &descriptorPool));
-    }
-
     void createDescriptorSets() {
-        std::vector<VkDescriptorSetLayout> layouts(
-                MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount =
-                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        allocInfo.pSetLayouts = layouts.data();
-
-        descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-        planet::vk::worked(vkAllocateDescriptorSets(
-                device.get(), &allocInfo, descriptorSets.data()));
-
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = uniformBuffers[i];
@@ -1236,26 +1126,13 @@ class HelloTriangleApplication {
 
     planet::vk::command_buffer beginSingleTimeCommands() {
         planet::vk::command_buffer commandBuffer{commandPool};
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(commandBuffer.get(), &beginInfo);
-
+        commandBuffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         return commandBuffer;
     }
 
     void endSingleTimeCommands(planet::vk::command_buffer commandBuffer) {
-        vkEndCommandBuffer(commandBuffer.get());
-
-        std::array buffers{commandBuffer.get()};
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = buffers.size();
-        submitInfo.pCommandBuffers = buffers.data();
-
-        vkQueueSubmit(device.graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
+        commandBuffer.end();
+        commandBuffer.submit(device.graphics_queue);
         vkQueueWaitIdle(device.graphics_queue);
     }
 
@@ -1264,7 +1141,8 @@ class HelloTriangleApplication {
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer.get(), srcBuffer, dstBuffer, 1, &copyRegion);
+        vkCmdCopyBuffer(
+                commandBuffer.get(), srcBuffer, dstBuffer, 1, &copyRegion);
 
         endSingleTimeCommands(std::move(commandBuffer));
     }
@@ -1284,11 +1162,9 @@ class HelloTriangleApplication {
         throw std::runtime_error("failed to find suitable memory type!");
     }
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        planet::vk::worked(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+    void recordCommandBuffer(
+            planet::vk::command_buffer &commandBuffer, uint32_t imageIndex) {
+        commandBuffer.begin();
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1306,10 +1182,11 @@ class HelloTriangleApplication {
         renderPassInfo.pClearValues = clearValues.data();
 
         vkCmdBeginRenderPass(
-                commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+                commandBuffer.get(), &renderPassInfo,
+                VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(
-                commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                commandBuffer.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                 graphicsPipeline.get());
 
         VkViewport viewport{};
@@ -1319,45 +1196,40 @@ class HelloTriangleApplication {
         viewport.height = (float)swapChain.extents.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetViewport(commandBuffer.get(), 0, 1, &viewport);
 
         VkRect2D scissor{};
         scissor.offset = {0, 0};
         scissor.extent = swapChain.extents;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        vkCmdSetScissor(commandBuffer.get(), 0, 1, &scissor);
 
-        VkBuffer vertexBuffers[] = {vertexBuffer};
+        VkBuffer vertexBuffers[] = {vertexBuffer.get()};
         VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        vkCmdBindVertexBuffers(
+                commandBuffer.get(), 0, 1, vertexBuffers, offsets);
 
         vkCmdBindIndexBuffer(
-                commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+                commandBuffer.get(), indexBuffer.get(), 0,
+                VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(
-                commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                commandBuffer.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                 graphicsPipeline.layout.get(), 0, 1,
                 &descriptorSets[currentFrame], 0, nullptr);
 
         vkCmdDrawIndexed(
-                commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0,
-                0);
+                commandBuffer.get(), static_cast<uint32_t>(indices.size()), 1,
+                0, 0, 0);
 
-        vkCmdEndRenderPass(commandBuffer);
+        vkCmdEndRenderPass(commandBuffer.get());
 
-        planet::vk::worked(vkEndCommandBuffer(commandBuffer));
+        commandBuffer.end();
     }
 
     void createSyncObjects() {
         imageAvailableSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
         renderFinishedSemaphores.reserve(MAX_FRAMES_IN_FLIGHT);
         inFlightFences.reserve(MAX_FRAMES_IN_FLIGHT);
-
-        VkSemaphoreCreateInfo semaphoreInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             imageAvailableSemaphores.emplace_back(device);
@@ -1416,7 +1288,7 @@ class HelloTriangleApplication {
         vkResetCommandBuffer(
                 commandBuffers[currentFrame].get(),
                 /*VkCommandBufferResetFlagBits*/ 0);
-        recordCommandBuffer(commandBuffers[currentFrame].get(), imageIndex);
+        recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1511,11 +1383,6 @@ class HelloTriangleApplication {
         extensions.vulkan_extensions.insert(
                 extensions.vulkan_extensions.end(), glfwExtensions,
                 glfwExtensions + glfwExtensionCount);
-
-        if (enableValidationLayers) {
-            extensions.vulkan_extensions.push_back(
-                    VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }
     }
 
     bool checkValidationLayerSupport() {
@@ -1539,10 +1406,10 @@ class HelloTriangleApplication {
     }
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-            VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-            VkDebugUtilsMessageTypeFlagsEXT messageType,
+            VkDebugUtilsMessageSeverityFlagBitsEXT,
+            VkDebugUtilsMessageTypeFlagsEXT,
             const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-            void *pUserData) {
+            void *) {
         std::cerr << "validation layer: " << pCallbackData->pMessage
                   << std::endl;
 

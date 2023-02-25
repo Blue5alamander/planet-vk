@@ -40,37 +40,39 @@ namespace planet::vk {
      */
     template<typename O, typename T, void (*D)(O, T, VkAllocationCallbacks const *)>
     class owned_handle final {
-        O owner = VK_NULL_HANDLE;
+        O owner_handle = VK_NULL_HANDLE;
         T handle = VK_NULL_HANDLE;
         VkAllocationCallbacks const *allocator = nullptr;
 
         owned_handle(O o, T h, VkAllocationCallbacks const *a) noexcept
-        : owner{o}, handle{h}, allocator{a} {}
+        : owner_handle{o}, handle{h}, allocator{a} {}
 
       public:
         owned_handle() noexcept {}
+        owned_handle(owned_handle const &) = delete;
         owned_handle(owned_handle &&h) noexcept
-        : owner{std::exchange(h.owner, VK_NULL_HANDLE)},
+        : owner_handle{std::exchange(h.owner_handle, VK_NULL_HANDLE)},
           handle{std::exchange(h.handle, VK_NULL_HANDLE)},
           allocator{std::exchange(h.allocator, nullptr)} {}
-        owned_handle(owned_handle const &) = delete;
         ~owned_handle() noexcept { reset(); }
 
+        owned_handle &operator=(owned_handle const &) = delete;
         owned_handle &operator=(owned_handle &&h) {
             reset();
-            owner = std::exchange(h.owner, VK_NULL_HANDLE);
+            owner_handle = std::exchange(h.owner_handle, VK_NULL_HANDLE);
             handle = std::exchange(h.handle, VK_NULL_HANDLE);
             allocator = std::exchange(h.allocator, nullptr);
             return *this;
         }
-        owned_handle &operator=(owned_handle const &) = delete;
 
         T get() const noexcept { return handle; }
+        T const *address() const noexcept { return &handle; }
+        O owner() const noexcept { return owner_handle; }
 
         /// Remove the current content (if any)
         void reset() noexcept {
-            if (owner and handle) {
-                D(std::exchange(owner, VK_NULL_HANDLE),
+            if (owner_handle and handle) {
+                D(std::exchange(owner_handle, VK_NULL_HANDLE),
                   std::exchange(handle, VK_NULL_HANDLE),
                   std::exchange(allocator, nullptr));
             }
@@ -82,7 +84,7 @@ namespace planet::vk {
                        I const &info,
                        VkAllocationCallbacks const *alloc = nullptr) {
             reset();
-            owner = h;
+            owner_handle = h;
             allocator = alloc;
             worked(C(h, &info, alloc, &handle));
         }

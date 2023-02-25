@@ -52,6 +52,7 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
                 }
             }
         }
+        best_present_mode = VK_PRESENT_MODE_FIFO_KHR;
         for (auto const &m : present_modes) {
             if (m == VK_PRESENT_MODE_MAILBOX_KHR) {
                 best_present_mode = m;

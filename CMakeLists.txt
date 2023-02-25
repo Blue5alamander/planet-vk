@@ -4,9 +4,18 @@ project(planet-audio)
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     add_custom_target(felspar-check)
     set_property(TARGET felspar-check PROPERTY EXCLUDE_FROM_ALL TRUE)
+    add_custom_target(felspar-stress)
+    set_property(TARGET felspar-stress PROPERTY EXCLUDE_FROM_ALL TRUE)
     add_custom_target(planet-examples)
     set_property(TARGET planet-examples PROPERTY EXCLUDE_FROM_ALL TRUE)
+
     include(requirements.cmake)
+    add_compile_options(
+            -Werror
+            -fdiagnostics-color=always
+            -fdiagnostics-show-option
+            -Wall -Wextra -Wpedantic
+        )
 endif()
 
 

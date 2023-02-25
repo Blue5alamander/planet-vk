@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/vk/debug_messenger.hpp>
 #include <planet/vk/surface.hpp>
 #include <planet/vk/physical_device.hpp>
 
@@ -30,9 +31,10 @@ namespace planet::vk {
 
       public:
         static VkInstanceCreateInfo
-                info(extensions const &, VkApplicationInfo const &);
+                info(extensions &, VkApplicationInfo const &);
         instance(
-                VkInstanceCreateInfo const &,
+                extensions const &,
+                VkInstanceCreateInfo &,
                 std::function<VkSurfaceKHR(VkInstance)>);
 
         instance(instance const &) = delete;
@@ -43,6 +45,10 @@ namespace planet::vk {
         VkInstance get() const noexcept { return handle.h; }
 
         vk::surface surface;
+
+        /// The debug messenger is automatically used if there are validation
+        /// layers present
+        vk::debug_messenger debug_messenger;
 
         std::span<physical_device const> physical_devices() const {
             return pdevices;

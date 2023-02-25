@@ -20,7 +20,9 @@ planet::vk::command_pool::command_pool(vk::device const &d, vk::surface const &s
 
 
 planet::vk::command_buffers::command_buffers(
-        vk::command_pool const &cp, std::size_t const count)
+        vk::command_pool const &cp,
+        std::size_t const count,
+        VkCommandBufferLevel const level)
 : device{cp.device}, command_pool{cp} {
     handles.resize(count, VK_NULL_HANDLE);
     buffers.reserve(count);
@@ -28,7 +30,7 @@ planet::vk::command_buffers::command_buffers(
     VkCommandBufferAllocateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     info.commandPool = command_pool.get();
-    info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    info.level = level;
     info.commandBufferCount = handles.size();
     planet::vk::worked(
             vkAllocateCommandBuffers(device.get(), &info, handles.data()));
@@ -49,11 +51,11 @@ planet::vk::command_buffers::~command_buffers() {
 
 
 planet::vk::command_buffer::command_buffer(
-        vk::command_pool const &cp)
+        vk::command_pool const &cp, VkCommandBufferLevel const level)
 : self_owned{true}, device{cp.device}, command_pool{cp} {
     VkCommandBufferAllocateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    info.level = level;
     info.commandPool = command_pool.get();
     info.commandBufferCount = 1;
 
@@ -79,4 +81,25 @@ planet::vk::command_buffer::~command_buffer() {
                 device.get(), command_pool.get(), handles.size(),
                 handles.data());
     }
+}
+
+
+void planet::vk::command_buffer::begin(VkCommandBufferUsageFlags const flags) {
+    VkCommandBufferBeginInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    info.flags = flags;
+    worked(vkBeginCommandBuffer(handle, &info));
+}
+
+
+void planet::vk::command_buffer::end() { worked(vkEndCommandBuffer(handle)); }
+
+
+void planet::vk::command_buffer::submit(VkQueue const queue) {
+    std::array buffers{handle};
+    VkSubmitInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    info.commandBufferCount = buffers.size();
+    info.pCommandBuffers = buffers.data();
+    vkQueueSubmit(queue, 1, &info, VK_NULL_HANDLE);
 }
