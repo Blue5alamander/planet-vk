@@ -66,6 +66,7 @@ namespace planet::vk {
         }
 
         T get() const noexcept { return handle; }
+        T const *address() const noexcept { return &handle; }
         O owner() const noexcept { return owner_handle; }
 
         /// Remove the current content (if any)
