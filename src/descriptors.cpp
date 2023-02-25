@@ -58,6 +58,18 @@ planet::vk::descriptor_set_layout::descriptor_set_layout(
 }
 
 
+planet::vk::descriptor_set_layout
+        planet::vk::descriptor_set_layout::for_uniform_buffer_object(
+                vk::device const &device) {
+    VkDescriptorSetLayoutBinding ubo_binding{};
+    ubo_binding.binding = 0;
+    ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    ubo_binding.descriptorCount = 1;
+    ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    return vk::descriptor_set_layout{device, ubo_binding};
+}
+
+
 /// ## `planet::vk::descriptor_sets`
 
 
