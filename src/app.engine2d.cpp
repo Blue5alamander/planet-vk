@@ -23,3 +23,11 @@ planet::vk::engine2d::app::app(int, char const *argv[], char const *name)
                   return surface_handle;
               }};
   }()} {}
+
+
+int planet::vk::engine2d::app::run(felspar::coro::task<int> (*co_main)(app &)) {
+    auto const wrapper = [](felspar::io::warden &, app *papp,
+                            felspar::coro::task<int> (*cm)(app &))
+            -> felspar::io::warden::task<int> { co_return co_await cm(*papp); };
+    return warden->run(+wrapper, this, co_main);
+}
