@@ -34,7 +34,7 @@ namespace {
 
         attrs[1].binding = 0;
         attrs[1].location = 1;
-        attrs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attrs[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attrs[1].offset = offsetof(planet::vk::engine2d::vertex, c);
 
         return attrs;

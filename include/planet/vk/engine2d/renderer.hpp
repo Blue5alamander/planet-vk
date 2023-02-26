@@ -17,9 +17,6 @@ namespace planet::vk::engine2d {
             return {l.x + r.x, l.y + r.y};
         }
     };
-    struct colour {
-        float r, g, b;
-    };
     struct vertex {
         pos p;
         colour c;
