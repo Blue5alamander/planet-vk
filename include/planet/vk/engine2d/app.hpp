@@ -7,6 +7,9 @@
 namespace planet::vk::engine2d {
 
 
+    class renderer;
+
+
     /// ## An engine for 2d texture based interfaces
     class app final {
         std::unique_ptr<felspar::io::warden> warden;
@@ -22,7 +25,7 @@ namespace planet::vk::engine2d {
         vk::device device{instance, extensions};
 
         /// ### Run the provided UI function
-        int run(felspar::coro::task<int> (*co_main)(app &));
+        int run(felspar::coro::task<int> (*co_main)(app &, renderer &));
     };
 
 
