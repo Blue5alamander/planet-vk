@@ -47,7 +47,7 @@ namespace {
 planet::vk::engine2d::renderer::renderer(engine2d::app &a)
 : app{a},
   viewport{affine::matrix3d::scale_xy(
-          100.0f / a.window.width(), 100.0f / a.window.height())},
+          1.0f, a.window.width() / a.window.height())},
   viewport_buffer{
           app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
