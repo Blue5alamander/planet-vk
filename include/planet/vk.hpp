@@ -2,6 +2,7 @@
 
 
 #include <planet/vk/buffer.hpp>
+#include <planet/vk/colour.hpp>
 #include <planet/vk/commands.hpp>
 #include <planet/vk/debug_messenger.hpp>
 #include <planet/vk/descriptors.hpp>
