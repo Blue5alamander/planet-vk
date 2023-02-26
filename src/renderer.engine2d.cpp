@@ -264,6 +264,15 @@ void planet::vk::engine2d::renderer::draw_2dmesh(
     }
     for (auto const &i : indices) { mesh2d_indexes.push_back(start_index + i); }
 }
+void planet::vk::engine2d::renderer::draw_2dmesh(
+        std::span<vertex const> const vertices,
+        std::span<std::uint32_t const> const indices,
+        pos const p,
+        colour const &c) {
+    auto const start_index = mesh2d_triangles.size();
+    for (auto const &v : vertices) { mesh2d_triangles.push_back({v.p + p, c}); }
+    for (auto const &i : indices) { mesh2d_indexes.push_back(start_index + i); }
+}
 
 
 void planet::vk::engine2d::renderer::submit_and_present() {

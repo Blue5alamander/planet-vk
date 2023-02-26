@@ -69,6 +69,11 @@ namespace planet::vk::engine2d {
                 std::span<vertex const>, std::span<std::uint32_t const>);
         void draw_2dmesh(
                 std::span<vertex const>, std::span<std::uint32_t const>, pos);
+        void draw_2dmesh(
+                std::span<vertex const>,
+                std::span<std::uint32_t const>,
+                pos,
+                colour const &);
 
         /// Submit and present the frame. This blocks until the frame is complete
         void submit_and_present();
