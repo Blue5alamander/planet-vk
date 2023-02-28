@@ -51,7 +51,7 @@ namespace planet::vk::engine2d {
 
         /// ### Drawing API
 
-        /// Data we need to track whilst in the render loop
+        /// #### Data we need to track whilst in the render loop
         std::uint32_t image_index = {};
         std::array<VkSemaphore, 1> const wait_semaphores = {
                 img_avail_semaphore.get()};
@@ -61,10 +61,10 @@ namespace planet::vk::engine2d {
                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
         std::array<VkFence, 1> const fences{fence.get()};
 
-        /// Start the render cycle
+        /// #### Start the render cycle
         vk::command_buffer &start(VkClearValue);
 
-        /// Draw a 2D triangle mesh with an optional positional offset
+        /// #### Draw a 2D triangle mesh with an optional positional offset
         void draw_2dmesh(
                 std::span<vertex const>, std::span<std::uint32_t const>);
         void draw_2dmesh(
@@ -75,11 +75,26 @@ namespace planet::vk::engine2d {
                 pos,
                 colour const &);
 
-        /// Submit and present the frame. This blocks until the frame is complete
+        /// #### Submit and present the frame
+        /// This blocks until the frame is complete
         void submit_and_present();
 
+        /// ### View space mapping
+
+        /// #### Calculate square aspect ratio
+        /**
+         * The Vulkan coordinate system maps both width and height to -1 to +1.
+         * This corrects the width and height so that the narrowest dimension is
+         * in the range -1 to +1 and the widest is adjusted to give a square
+         * aspect.
+         */
+        static affine::matrix3d correct_aspect_ratio(engine2d::app &);
+
+        /// #### Reset the view matrix
+        void reset_viewport(affine::matrix3d const &);
+
       private:
-        affine::matrix3d viewport;
+        affine::matrix3d viewport{correct_aspect_ratio(app)};
         buffer<affine::matrix3d> viewport_buffer;
         device_memory::mapping viewport_mapping;
 

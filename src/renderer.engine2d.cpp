@@ -46,8 +46,6 @@ namespace {
 
 planet::vk::engine2d::renderer::renderer(engine2d::app &a)
 : app{a},
-  viewport{affine::matrix3d::scale_xy(
-          a.window.height() / a.window.width(), 1.0f)},
   viewport_buffer{
           app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
@@ -70,6 +68,19 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
     set.pBufferInfo = &info;
 
     vkUpdateDescriptorSets(app.device.get(), 1, &set, 0, nullptr);
+}
+
+
+planet::affine::matrix3d planet::vk::engine2d::renderer::correct_aspect_ratio(
+        engine2d::app &app) {
+    return affine::matrix3d::scale_xy(
+            app.window.height() / app.window.width(), 1.0f);
+}
+
+
+void planet::vk::engine2d::renderer::reset_viewport(affine::matrix3d const &m) {
+    viewport = m;
+    std::memcpy(viewport_mapping.get(), &viewport, sizeof(affine::matrix3d));
 }
 
 
