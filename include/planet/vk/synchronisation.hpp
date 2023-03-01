@@ -19,6 +19,12 @@ namespace planet::vk {
 
         vk::device const &device;
         VkFence get() const noexcept { return handle.get(); }
+
+        /// ### Returns true if the fence is ready
+        bool is_ready() const;
+
+        /// ### Resets the fence
+        void reset();
     };
 
 

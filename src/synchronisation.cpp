@@ -13,6 +13,23 @@ planet::vk::fence::fence(vk::device const &d) : device{d} {
 }
 
 
+bool planet::vk::fence::is_ready() const {
+    auto const result = vkGetFenceStatus(device.get(), get());
+    if (result == VK_NOT_READY) {
+        return false;
+    } else {
+        return planet::vk::worked(result) == VK_SUCCESS;
+    }
+}
+
+
+void planet::vk::fence::reset() {
+    std::array fences{get()};
+    planet::vk::worked(
+            vkResetFences(device.get(), fences.size(), fences.data()));
+}
+
+
 /// ## `planet::vk::semaphore`
 
 
