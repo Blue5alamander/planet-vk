@@ -3,6 +3,9 @@
 #include <cstring>
 
 
+using namespace std::literals;
+
+
 namespace {
 
 
@@ -47,27 +50,45 @@ namespace {
 planet::vk::engine2d::renderer::renderer(engine2d::app &a)
 : app{a},
   viewport_buffer{
-          app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
-  viewport_mapping{viewport_buffer.map()} {
-    std::memcpy(viewport_mapping.get(), &viewport, sizeof(affine::matrix3d));
+          buffer<affine::matrix3d>{
+                  app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
+          buffer<affine::matrix3d>{
+                  app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT}},
+  viewport_mapping{viewport_buffer[0].map(), viewport_buffer[1].map()} {
+    std::memcpy(viewport_mapping[0].get(), &viewport, sizeof(affine::matrix3d));
+    std::memcpy(viewport_mapping[1].get(), &viewport, sizeof(affine::matrix3d));
 
-    VkDescriptorBufferInfo info{};
-    info.buffer = viewport_buffer.get();
-    info.offset = 0;
-    info.range = sizeof(affine::matrix3d);
+    for (std::size_t index{}; auto const &vpb : viewport_buffer) {
+        VkDescriptorBufferInfo info{};
+        info.buffer = vpb.get();
+        info.offset = 0;
+        info.range = sizeof(affine::matrix3d);
 
-    VkWriteDescriptorSet set{};
-    set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    set.dstSet = ubo_sets[0];
-    set.dstBinding = 0;
-    set.dstArrayElement = 0;
-    set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    set.descriptorCount = 1;
-    set.pBufferInfo = &info;
+        VkWriteDescriptorSet set{};
+        set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        set.dstSet = ubo_sets[index];
+        set.dstBinding = 0;
+        set.dstArrayElement = 0;
+        set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        set.descriptorCount = 1;
+        set.pBufferInfo = &info;
 
-    vkUpdateDescriptorSets(app.device.get(), 1, &set, 0, nullptr);
+        vkUpdateDescriptorSets(app.device.get(), 1, &set, 0, nullptr);
+
+        ++index;
+    }
+}
+planet::vk::engine2d::renderer::~renderer() {
+    for (auto &f : fence) {
+        std::array waitfor{f.get()};
+        vkWaitForFences(
+                app.device.get(), waitfor.size(), waitfor.data(), VK_TRUE,
+                UINT64_MAX);
+    }
 }
 
 
@@ -80,7 +101,9 @@ planet::affine::matrix3d planet::vk::engine2d::renderer::correct_aspect_ratio(
 
 void planet::vk::engine2d::renderer::reset_viewport(affine::matrix3d const &m) {
     viewport = m;
-    std::memcpy(viewport_mapping.get(), &viewport, sizeof(affine::matrix3d));
+    std::memcpy(
+            viewport_mapping[current_frame].get(), &viewport,
+            sizeof(affine::matrix3d));
 }
 
 
@@ -217,21 +240,28 @@ planet::vk::graphics_pipeline
 }
 
 
-planet::vk::command_buffer &
+felspar::coro::task<void>
         planet::vk::engine2d::renderer::start(VkClearValue const colour) {
+    // Wait for the previous version of this frame number to finish
+    while (not fence[current_frame].is_ready()) {
+        co_await app.sdl.io.sleep(5ms);
+    }
+
     // Get an image from the swap chain
     image_index = 0;
     planet::vk::worked(vkAcquireNextImageKHR(
             app.device.get(), swapchain.get(),
-            std::numeric_limits<uint64_t>::max(), img_avail_semaphore.get(),
-            VK_NULL_HANDLE, &image_index));
+            std::numeric_limits<uint64_t>::max(),
+            img_avail_semaphore[current_frame].get(), VK_NULL_HANDLE,
+            &image_index));
+
     // We need to wait for the image before we can run the commands to draw
     // to it, and signal the render finished one when we're done
-    planet::vk::worked(
-            vkResetFences(app.device.get(), fences.size(), fences.data()));
+    fence[current_frame].reset();
 
     // Start to record command buffers
-    auto &cb = command_buffers.buffers[image_index];
+    auto &cb = command_buffers[current_frame];
+    vkResetCommandBuffer(cb.get(), {});
 
     VkCommandBufferBeginInfo begin_info = {};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -240,7 +270,8 @@ planet::vk::command_buffer &
     VkRenderPassBeginInfo render_pass_info = {};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     render_pass_info.renderPass = mesh_pipeline.render_pass.get();
-    render_pass_info.framebuffer = swapchain.frame_buffers[image_index].get();
+    render_pass_info.framebuffer =
+            swapchain.frame_buffers.at(image_index).get();
     render_pass_info.renderArea.offset.x = 0;
     render_pass_info.renderArea.offset.y = 0;
     render_pass_info.renderArea.extent = swapchain.extents;
@@ -253,8 +284,6 @@ planet::vk::command_buffer &
 
     mesh2d_triangles.clear();
     mesh2d_indexes.clear();
-
-    return cb;
 }
 
 
@@ -287,13 +316,15 @@ void planet::vk::engine2d::renderer::draw_2dmesh(
 
 
 void planet::vk::engine2d::renderer::submit_and_present() {
-    auto &cb = command_buffers.buffers[image_index];
+    auto &cb = command_buffers[current_frame];
 
-    planet::vk::buffer<planet::vk::engine2d::vertex> vertex_buffer{
+    auto &vertex_buffer = vertex_buffers[current_frame];
+    vertex_buffer = {
             app.device, mesh2d_triangles, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-    planet::vk::buffer<std::uint32_t> index_buffer{
+    auto &index_buffer = index_buffers[current_frame];
+    index_buffer = {
             app.device, mesh2d_indexes, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -315,6 +346,12 @@ void planet::vk::engine2d::renderer::submit_and_present() {
     vkCmdEndRenderPass(cb.get());
     planet::vk::worked(vkEndCommandBuffer(cb.get()));
 
+    std::array<VkSemaphore, 1> const wait_semaphores = {
+            img_avail_semaphore[current_frame].get()};
+    std::array<VkSemaphore, 1> const signal_semaphores = {
+            render_finished_semaphore[current_frame].get()};
+    std::array<VkPipelineStageFlags, 1> const wait_stages = {
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
     std::array command_buffer{cb.get()};
     VkSubmitInfo submit_info = {};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -326,7 +363,8 @@ void planet::vk::engine2d::renderer::submit_and_present() {
     submit_info.signalSemaphoreCount = signal_semaphores.size();
     submit_info.pSignalSemaphores = signal_semaphores.data();
     planet::vk::worked(vkQueueSubmit(
-            app.device.graphics_queue, 1, &submit_info, fence.get()));
+            app.device.graphics_queue, 1, &submit_info,
+            fence[current_frame].get()));
 
     // Finally, present the updated image in the swap chain
     std::array<VkSwapchainKHR, 1> present_chain = {swapchain.get()};
@@ -340,8 +378,5 @@ void planet::vk::engine2d::renderer::submit_and_present() {
     planet::vk::worked(
             vkQueuePresentKHR(app.device.present_queue, &present_info));
 
-    // Wait for the frame to finish
-    planet::vk::worked(vkWaitForFences(
-            app.device.get(), fences.size(), fences.data(), true,
-            std::numeric_limits<uint64_t>::max()));
+    current_frame = (current_frame + 1) % max_frames_in_flight;
 }

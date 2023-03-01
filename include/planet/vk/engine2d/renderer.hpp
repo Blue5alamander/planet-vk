@@ -10,6 +10,10 @@
 namespace planet::vk::engine2d {
 
 
+    /// Maximum number of frames that we're willing to deal with at any given time
+    constexpr std::size_t max_frames_in_flight = 2;
+
+
     struct pos {
         float x, y;
 
@@ -25,6 +29,7 @@ namespace planet::vk::engine2d {
 
     /// ## Renderer
     class renderer final {
+        std::size_t current_frame = {};
         vk::graphics_pipeline create_mesh_pipeline();
 
         std::vector<vertex> mesh2d_triangles;
@@ -32,6 +37,7 @@ namespace planet::vk::engine2d {
 
       public:
         renderer(engine2d::app &);
+        ~renderer();
 
         engine2d::app &app;
 
@@ -42,27 +48,28 @@ namespace planet::vk::engine2d {
         vk::graphics_pipeline mesh_pipeline{create_mesh_pipeline()};
 
         vk::command_pool command_pool{app.device, app.instance.surface};
-        vk::command_buffers command_buffers{
-                command_pool, swapchain.frame_buffers.size()};
+        vk::command_buffers command_buffers{command_pool, max_frames_in_flight};
 
-        vk::semaphore img_avail_semaphore{app.device},
-                render_finished_semaphore{app.device};
-        vk::fence fence{app.device};
+        std::array<vk::semaphore, max_frames_in_flight> img_avail_semaphore{
+                app.device, app.device},
+                render_finished_semaphore{app.device, app.device};
+        std::array<vk::fence, max_frames_in_flight> fence{
+                app.device, app.device};
+
 
         /// ### Drawing API
 
         /// #### Data we need to track whilst in the render loop
         std::uint32_t image_index = {};
-        std::array<VkSemaphore, 1> const wait_semaphores = {
-                img_avail_semaphore.get()};
-        std::array<VkSemaphore, 1> const signal_semaphores = {
-                render_finished_semaphore.get()};
-        std::array<VkPipelineStageFlags, 1> const wait_stages = {
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
-        std::array<VkFence, 1> const fences{fence.get()};
+        std::array<
+                planet::vk::buffer<planet::vk::engine2d::vertex>,
+                max_frames_in_flight>
+                vertex_buffers;
+        std::array<planet::vk::buffer<std::uint32_t>, max_frames_in_flight>
+                index_buffers;
 
         /// #### Start the render cycle
-        vk::command_buffer &start(VkClearValue);
+        felspar::coro::task<void> start(VkClearValue);
 
         /// #### Draw a 2D triangle mesh with an optional positional offset
         void draw_2dmesh(
@@ -95,11 +102,13 @@ namespace planet::vk::engine2d {
 
       private:
         affine::matrix3d viewport{correct_aspect_ratio(app)};
-        buffer<affine::matrix3d> viewport_buffer;
-        device_memory::mapping viewport_mapping;
+        std::array<buffer<affine::matrix3d>, max_frames_in_flight>
+                viewport_buffer;
+        std::array<device_memory::mapping, max_frames_in_flight> viewport_mapping;
 
-        vk::descriptor_pool ubo_pool{app.device};
-        vk::descriptor_sets ubo_sets{ubo_pool, ubo_layout};
+        vk::descriptor_pool ubo_pool{app.device, max_frames_in_flight};
+        vk::descriptor_sets ubo_sets{
+                ubo_pool, ubo_layout, max_frames_in_flight};
     };
 
 
