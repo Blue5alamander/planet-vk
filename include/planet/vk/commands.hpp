@@ -52,6 +52,7 @@ namespace planet::vk {
 
     class command_buffers final {
         std::vector<VkCommandBuffer> handles;
+        std::vector<command_buffer> buffers;
 
       public:
         command_buffers(
@@ -68,9 +69,10 @@ namespace planet::vk {
         vk::device const &device;
         vk::command_pool const &command_pool;
 
-        std::vector<command_buffer> buffers;
         std::size_t size() const noexcept { return buffers.size(); }
-        command_buffer &operator[](std::size_t i) { return buffers[i]; }
+        command_buffer &operator[](std::size_t const i) {
+            return buffers.at(i);
+        }
     };
 
 

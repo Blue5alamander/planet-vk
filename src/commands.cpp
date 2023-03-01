@@ -25,8 +25,6 @@ planet::vk::command_buffers::command_buffers(
         VkCommandBufferLevel const level)
 : device{cp.device}, command_pool{cp} {
     handles.resize(count, VK_NULL_HANDLE);
-    buffers.reserve(count);
-
     VkCommandBufferAllocateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     info.commandPool = command_pool.get();
@@ -35,6 +33,7 @@ planet::vk::command_buffers::command_buffers(
     planet::vk::worked(
             vkAllocateCommandBuffers(device.get(), &info, handles.data()));
 
+    buffers.reserve(count);
     for (auto const h : handles) {
         buffers.push_back(command_buffer{command_pool, h});
     }
