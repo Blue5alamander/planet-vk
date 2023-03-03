@@ -11,7 +11,7 @@ namespace planet::vk::engine2d {
 
 
     /// Maximum number of frames that we're willing to deal with at any given time
-    constexpr std::size_t max_frames_in_flight = 2;
+    constexpr std::size_t max_frames_in_flight = 3;
 
 
     struct pos {
@@ -51,22 +51,13 @@ namespace planet::vk::engine2d {
         vk::command_buffers command_buffers{command_pool, max_frames_in_flight};
 
         std::array<vk::semaphore, max_frames_in_flight> img_avail_semaphore{
-                app.device, app.device},
-                render_finished_semaphore{app.device, app.device};
+                app.device, app.device, app.device},
+                render_finished_semaphore{app.device, app.device, app.device};
         std::array<vk::fence, max_frames_in_flight> fence{
-                app.device, app.device};
+                app.device, app.device, app.device};
 
 
         /// ### Drawing API
-
-        /// #### Data we need to track whilst in the render loop
-        std::uint32_t image_index = {};
-        std::array<
-                planet::vk::buffer<planet::vk::engine2d::vertex>,
-                max_frames_in_flight>
-                vertex_buffers;
-        std::array<planet::vk::buffer<std::uint32_t>, max_frames_in_flight>
-                index_buffers;
 
         /// #### Start the render cycle
         felspar::coro::task<void> start(VkClearValue);
@@ -86,6 +77,7 @@ namespace planet::vk::engine2d {
         /// This blocks until the frame is complete
         void submit_and_present();
 
+
         /// ### View space mapping
 
         /// #### Calculate square aspect ratio
@@ -101,6 +93,18 @@ namespace planet::vk::engine2d {
         void reset_viewport(affine::matrix3d const &);
 
       private:
+        /// ### Data we need to track whilst in the render loop
+
+        std::uint32_t image_index = {};
+        std::array<
+                planet::vk::buffer<planet::vk::engine2d::vertex>,
+                max_frames_in_flight>
+                vertex_buffers;
+        std::array<planet::vk::buffer<std::uint32_t>, max_frames_in_flight>
+                index_buffers;
+
+        /// ### View port transformation matrix and UBO
+
         affine::matrix3d viewport{correct_aspect_ratio(app)};
         std::array<buffer<affine::matrix3d>, max_frames_in_flight>
                 viewport_buffer;

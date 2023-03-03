@@ -57,10 +57,17 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
           buffer<affine::matrix3d>{
                   app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
+          buffer<affine::matrix3d>{
+                  app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                           | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT}},
-  viewport_mapping{viewport_buffer[0].map(), viewport_buffer[1].map()} {
-    std::memcpy(viewport_mapping[0].get(), &viewport, sizeof(affine::matrix3d));
-    std::memcpy(viewport_mapping[1].get(), &viewport, sizeof(affine::matrix3d));
+  viewport_mapping{
+          viewport_buffer[0].map(), viewport_buffer[1].map(),
+          viewport_buffer[2].map()} {
+    for (auto &mapping : viewport_mapping) {
+        std::memcpy(mapping.get(), &viewport, sizeof(affine::matrix3d));
+    }
 
     for (std::size_t index{}; auto const &vpb : viewport_buffer) {
         VkDescriptorBufferInfo info{};
