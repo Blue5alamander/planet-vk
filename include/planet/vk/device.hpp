@@ -16,7 +16,6 @@ namespace planet::vk {
         VkDevice handle = VK_NULL_HANDLE;
 
       public:
-        device() noexcept;
         device(vk::instance const &, extensions const &);
         ~device();
 
