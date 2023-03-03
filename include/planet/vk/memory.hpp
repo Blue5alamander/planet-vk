@@ -21,6 +21,8 @@ namespace planet::vk {
         std::size_t minimum_alignment = 1 << 10;
         /// ### GPU memory allocation block size
         std::size_t allocation_block_size = 64 << 20;
+        /// ### Whether this allocator should split memory allocations
+        bool split = false;
     };
     /// ### Default "safe" configuration for an allocator
     static constexpr device_memory_allocator_configuration
@@ -40,12 +42,17 @@ namespace planet::vk {
         std::atomic<std::size_t> ownership_count = 1u;
         device_memory_allocator *allocator = nullptr;
         std::uint32_t memory_type_index = {};
+        std::size_t allocation_size = {};
 
         device_memory_allocation(
                 device_memory_allocator *a,
                 handle_type h,
-                std::uint32_t const mti)
-        : handle{std::move(h)}, allocator{a}, memory_type_index{mti} {}
+                std::uint32_t const mti,
+                std::size_t const bytes)
+        : handle{std::move(h)},
+          allocator{a},
+          memory_type_index{mti},
+          allocation_size{bytes} {}
 
       public:
         ~device_memory_allocation();
@@ -79,11 +86,15 @@ namespace planet::vk {
         friend class device_memory_allocator;
 
         device_memory_allocation *allocation = nullptr;
-        // std::size_t offset = {};
-        // std::size_t size = {};
+        std::size_t offset = {};
+        std::size_t byte_count = {};
 
         /// The allocated memory provided here
-        device_memory(device_memory_allocation *a) noexcept : allocation{a} {}
+        device_memory(
+                device_memory_allocation *a,
+                std::size_t const o,
+                std::size_t const s) noexcept
+        : allocation{a}, offset{o}, byte_count{s} {}
 
       public:
         device_memory() {}
@@ -94,20 +105,40 @@ namespace planet::vk {
         device_memory &operator=(device_memory &&);
         device_memory &operator=(device_memory const &);
 
+        /// ### Split the memory
+        /**
+         * Returns a new `device_memory` comprising the first part of this
+         * memory and updates the remaining memory to point to the second half
+         * of GPU memory.
+         */
+        device_memory split(std::size_t bytes);
+
+
         /// ### Free the held memory
         void reset() { device_memory_allocation::decrement(allocation); }
 
-        /// ### Return the Vulkan handle to the memory
+
+        /// ### Query information about this memory
+
+        /// #### Return the Vulkan handle to the memory
         VkDeviceMemory get() const noexcept {
             return allocation ? allocation->get() : VK_NULL_HANDLE;
         }
 
+        /// #### Return the size of the allocation
+        std::size_t size() const noexcept { return byte_count; }
+
+
         /// ### Map all/some of the memory to system RAM
+        /**
+         * The offset and size parameters are relative to the start of this part
+         * of the memory allocation.
+         */
         class mapping;
         friend class device_memory::mapping;
         mapping map_memory(
-                VkDeviceSize const offset,
-                VkDeviceSize const size,
+                VkDeviceSize offset,
+                VkDeviceSize size,
                 VkMemoryMapFlags flags = {});
     };
 
@@ -123,6 +154,7 @@ namespace planet::vk {
         struct pool {
             std::mutex mtx;
             std::vector<device_memory_allocation::handle_type> free_memory;
+            device_memory splitting;
         };
         /// ### Free memory by memory type index
         std::vector<pool> pools;
@@ -146,7 +178,8 @@ namespace planet::vk {
         /// #### Release memory
         void deallocate(
                 device_memory_allocation::handle_type,
-                std::uint32_t memory_type_index);
+                std::uint32_t memory_type_index,
+                std::size_t bytes);
 
 
         /// ### Clear all memory held by the allocator
