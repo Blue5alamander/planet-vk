@@ -178,6 +178,7 @@ planet::vk::device::device(
 
 
 planet::vk::device::~device() {
+    startup_memory.clear_without_check();
     if (handle) {
         vkDeviceWaitIdle(handle);
         vkDestroyDevice(handle, nullptr);
@@ -185,9 +186,7 @@ planet::vk::device::~device() {
 }
 
 
-/**
- * planet::vk::debug_messenger
- */
+/// ## `planet::vk::debug_messenger`
 
 
 VkDebugUtilsMessengerCreateInfoEXT planet::vk::debug_messenger::create_info(

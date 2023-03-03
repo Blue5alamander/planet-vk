@@ -4,6 +4,7 @@
 #include <planet/vk/helpers.hpp>
 
 #include <atomic>
+#include <mutex>
 
 
 namespace planet::vk {
@@ -15,11 +16,15 @@ namespace planet::vk {
 
 
     /// ## Memory allocation configuration
-
-    /// ### Minimum GPU device memory alignment
-    constexpr std::size_t minimum_device_memory_alignment = 1 << 10;
-    /// ### GPU memory allocation block size
-    constexpr std::size_t device_memory_allocation_block_size = 64 << 20;
+    struct device_memory_allocator_configuration {
+        /// ### Minimum GPU device memory alignment
+        std::size_t minimum_alignment = 1 << 10;
+        /// ### GPU memory allocation block size
+        std::size_t allocation_block_size = 64 << 20;
+    };
+    /// ### Default "safe" configuration for an allocator
+    static constexpr device_memory_allocator_configuration
+            thread_safe_device_memory_allocator = {};
 
 
     /// ## Allocated GPU memory
@@ -34,9 +39,13 @@ namespace planet::vk {
         handle_type handle;
         std::atomic<std::size_t> ownership_count = 1u;
         device_memory_allocator *allocator = nullptr;
+        std::uint32_t memory_type_index = {};
 
-        device_memory_allocation(device_memory_allocator *a, handle_type h)
-        : handle{std::move(h)}, allocator{a} {}
+        device_memory_allocation(
+                device_memory_allocator *a,
+                handle_type h,
+                std::uint32_t const mti)
+        : handle{std::move(h)}, allocator{a}, memory_type_index{mti} {}
 
       public:
         ~device_memory_allocation();
@@ -88,11 +97,12 @@ namespace planet::vk {
         /// ### Free the held memory
         void reset() { device_memory_allocation::decrement(allocation); }
 
+        /// ### Return the Vulkan handle to the memory
         VkDeviceMemory get() const noexcept {
             return allocation ? allocation->get() : VK_NULL_HANDLE;
         }
 
-        /// Map all/some of the memory to system RAM
+        /// ### Map all/some of the memory to system RAM
         class mapping;
         friend class device_memory::mapping;
         mapping map_memory(
@@ -109,21 +119,43 @@ namespace planet::vk {
      * use of the handed out memory.
      */
     class device_memory_allocator final {
+        /// ### Memory pool
+        struct pool {
+            std::mutex mtx;
+            std::vector<device_memory_allocation::handle_type> free_memory;
+        };
         /// ### Free memory by memory type index
-        // std::vector<std::vector<device_memory_allocation::handle_type>>
-        //         free_memory;
+        std::vector<pool> pools;
 
       public:
         /// ### Bind allocator to a device
-        device_memory_allocator(vk::device const &d) : device{d} {}
+        device_memory_allocator(
+                vk::device const &,
+                device_memory_allocator_configuration const & =
+                        thread_safe_device_memory_allocator);
 
         vk::device const &device;
+        device_memory_allocator_configuration config;
 
-        /// ### Allocate memory from this allocator's pool
+        /// ### Allocation and release
+
+        /// #### Allocate memory from this allocator's pool
         device_memory allocate(
                 std::size_t const bytes, std::uint32_t const memory_type_index);
-        /// ### Release memory
-        void deallocate(device_memory_allocation::handle_type);
+
+        /// #### Release memory
+        void deallocate(
+                device_memory_allocation::handle_type,
+                std::uint32_t memory_type_index);
+
+
+        /// ### Clear all memory held by the allocator
+        /**
+         * This will be done automatically by the destructor, but this allows
+         * the allocator to be cleared with a check that any outstanding
+         * allocations have been properly returned.
+         */
+        void clear_without_check();
     };
 
 

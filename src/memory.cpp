@@ -1,4 +1,5 @@
 #include <planet/vk/device.hpp>
+#include <planet/vk/instance.hpp>
 #include <planet/vk/memory.hpp>
 
 
@@ -21,7 +22,9 @@ planet::vk::device_memory_allocation::handle_type
 
 
 planet::vk::device_memory_allocation::~device_memory_allocation() {
-    if (allocator) { allocator->deallocate(std::move(handle)); }
+    if (allocator) {
+        allocator->deallocate(std::move(handle), memory_type_index);
+    }
 }
 
 
@@ -35,17 +38,47 @@ void planet::vk::device_memory_allocation::decrement(
 /// ## `planet::vk::device_memory_allocator`
 
 
+planet::vk::device_memory_allocator::device_memory_allocator(
+        vk::device const &d, device_memory_allocator_configuration const &c)
+: pools(d.instance.gpu().memory_properties.memoryTypeCount),
+  device{d},
+  config{c} {}
+
+
 planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
         std::size_t const bytes, std::uint32_t const memory_type_index) {
+    auto &pool = pools[memory_type_index];
+    std::scoped_lock _{pool.mtx};
+    device_memory_allocation::handle_type handle;
+    if (pool.free_memory.empty()) {
+        if (bytes > config.allocation_block_size) {
+            throw felspar::stdexcept::logic_error{
+                    "Memory allocation requested is too large"};
+        } else {
+            handle = device_memory_allocation::allocate(
+                    device, config.allocation_block_size, memory_type_index);
+        }
+    } else {
+        handle = std::move(pool.free_memory.back());
+        pool.free_memory.pop_back();
+    }
     return new device_memory_allocation(
-            this,
-            device_memory_allocation::allocate(
-                    device, bytes, memory_type_index));
+            this, std::move(handle), memory_type_index);
 }
 
 
 void planet::vk::device_memory_allocator::deallocate(
-        device_memory_allocation::handle_type) {}
+        device_memory_allocation::handle_type h,
+        std::uint32_t const memory_type_index) {
+    auto &pool = pools[memory_type_index];
+    std::scoped_lock _{pool.mtx};
+    pool.free_memory.push_back(std::move(h));
+}
+
+
+void planet::vk::device_memory_allocator::clear_without_check() {
+    pools.clear();
+}
 
 
 /// ## `planet::vk::device_memory`

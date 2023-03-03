@@ -38,10 +38,6 @@ namespace planet::vk {
 
         /// #### Allocate start-up memory
         device_memory_allocator startup_memory{*this};
-        /// #### Allocate per-scene memory
-        device_memory_allocator scene_memory{*this};
-        /// #### Per-frame memory allocator
-        device_memory_allocator per_frame_memory{*this};
     };
 
 

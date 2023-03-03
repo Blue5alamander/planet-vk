@@ -41,6 +41,12 @@ namespace planet::vk::engine2d {
 
         engine2d::app &app;
 
+
+        /// ### Per-frame memory allocator
+        device_memory_allocator per_frame_memory{app.device};
+
+
+        /// ### Swap chain, command buffers and synchronisation
         vk::swap_chain swapchain{app.device, app.window.extents()};
         vk::descriptor_set_layout ubo_layout{
                 vk::descriptor_set_layout::for_uniform_buffer_object(

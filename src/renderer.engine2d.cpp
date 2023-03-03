@@ -330,14 +330,13 @@ void planet::vk::engine2d::renderer::submit_and_present() {
 
     auto &vertex_buffer = vertex_buffers[current_frame];
     vertex_buffer = {
-            app.device.per_frame_memory, mesh2d_triangles,
+            per_frame_memory, mesh2d_triangles,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     auto &index_buffer = index_buffers[current_frame];
     index_buffer = {
-            app.device.per_frame_memory, mesh2d_indexes,
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            per_frame_memory, mesh2d_indexes, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 
