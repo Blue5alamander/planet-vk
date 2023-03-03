@@ -37,12 +37,19 @@ namespace planet::vk {
     class device_memory_allocation final {
         friend class device_memory;
         friend class device_memory_allocator;
+
         using handle_type = device_handle<VkDeviceMemory, vkFreeMemory>;
         handle_type handle;
+
         std::atomic<std::size_t> ownership_count = 1u;
         device_memory_allocator *allocator = nullptr;
         std::uint32_t memory_type_index = {};
         std::size_t allocation_size = {};
+
+        std::mutex mapping_mtx;
+        std::size_t mapping_count = 0u;
+        std::byte *mapped_base = nullptr;
+        VkMemoryMapFlags mapped_flags = {};
 
         device_memory_allocation(
                 device_memory_allocator *a,
@@ -66,16 +73,24 @@ namespace planet::vk {
 
         VkDeviceMemory get() const noexcept { return handle.get(); }
 
+
         /// ### Perform raw memory allocation
         static handle_type allocate(
                 vk::device const &,
                 std::size_t bytes,
                 std::uint32_t memory_type_index);
 
+
         /// ### Handle increment and decrement counts
+
+        /// #### Increment and decrement the ownership counts
         static device_memory_allocation *
                 increment(device_memory_allocation *) noexcept;
         static void decrement(device_memory_allocation *&) noexcept;
+
+        /// #### Increment and decrement the mapping count
+        std::byte *map_memory(VkMemoryMapFlags);
+        void unmap_memory();
     };
 
 
@@ -133,6 +148,13 @@ namespace planet::vk {
         /**
          * The offset and size parameters are relative to the start of this part
          * of the memory allocation.
+         *
+         * This is internally reference counted and the entire memory area is
+         * mapped on first mapping. This allows the same Vulkan allocation to be
+         * mapped multiple times at the same time.
+         *
+         * The flags for subsequent mappings must be the same as for the first.
+         * This is checked and an error will be thrown if this is not the case.
          */
         class mapping;
         friend class device_memory::mapping;
@@ -194,18 +216,16 @@ namespace planet::vk {
 
     /// ## CPU memory mapped to GPU memory
     class device_memory::mapping final {
-        VkDevice device_handle;
-        VkDeviceMemory memory_handle;
+        device_memory_allocation *allocation = nullptr;
         void *pointer = nullptr;
 
         void unsafe_reset();
 
       public:
-        mapping();
+        mapping() {}
         mapping(mapping const &) = delete;
         mapping(mapping &&);
-        mapping(VkDevice const d,
-                VkDeviceMemory const m,
+        mapping(device_memory_allocation *allocation,
                 VkDeviceSize const offset,
                 VkDeviceSize const size,
                 VkMemoryMapFlags flags = {});

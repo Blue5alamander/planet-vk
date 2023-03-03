@@ -46,6 +46,30 @@ planet::vk::device_memory_allocation *
 }
 
 
+std::byte *planet::vk::device_memory_allocation::map_memory(
+        VkMemoryMapFlags const flags) {
+    std::scoped_lock _{mapping_mtx};
+    if (not mapping_count) {
+        void *p = nullptr;
+        worked(vkMapMemory(
+                handle.owner(), handle.get(), {}, allocation_size, flags, &p));
+        mapped_base = reinterpret_cast<std::byte *>(p);
+        mapped_flags = flags;
+    } else if (flags != mapped_flags) {
+        throw felspar::stdexcept::runtime_error{
+                "The memory mapped flags aren't compatible"};
+    }
+    ++mapping_count;
+    return mapped_base;
+}
+
+
+void planet::vk::device_memory_allocation::unmap_memory() {
+    std::scoped_lock _{mapping_mtx};
+    if (--mapping_count == 0) { vkUnmapMemory(handle.owner(), handle.get()); }
+}
+
+
 /// ## `planet::vk::device_memory_allocator`
 
 
@@ -127,8 +151,7 @@ planet::vk::device_memory::mapping planet::vk::device_memory::map_memory(
         VkDeviceSize const extra_offset,
         VkDeviceSize const size,
         VkMemoryMapFlags flags) {
-    return {allocation->handle.owner(), allocation->handle.get(),
-            offset + extra_offset, size, flags};
+    return {allocation, offset + extra_offset, size, flags};
 }
 
 
@@ -150,41 +173,33 @@ planet::vk::device_memory
 /// ## `planet::vk::device_memory::mapping`
 
 
-planet::vk::device_memory::mapping::mapping()
-: device_handle{}, memory_handle{} {}
-
-
 planet::vk::device_memory::mapping::mapping(
-        VkDevice const d,
-        VkDeviceMemory const m,
+        device_memory_allocation *const a,
         VkDeviceSize const offset,
-        VkDeviceSize const size,
+        VkDeviceSize,
         VkMemoryMapFlags flags)
-: device_handle{d}, memory_handle{m}, pointer{[&]() {
-      void *p = nullptr;
-      worked(vkMapMemory(device_handle, memory_handle, offset, size, flags, &p));
-      return p;
+: allocation{a}, pointer{[&]() {
+      std::byte *base = allocation->map_memory(flags);
+      return base + offset;
   }()} {}
 
 
 planet::vk::device_memory::mapping::mapping(mapping &&m)
-: device_handle{std::exchange(m.device_handle, {})},
-  memory_handle{std::exchange(m.memory_handle, {})},
+: allocation{std::exchange(m.allocation, nullptr)},
   pointer{std::exchange(m.pointer, nullptr)} {}
-
-
-void planet::vk::device_memory::mapping::unsafe_reset() {
-    /// Note that this does not reset the internal fields
-    if (pointer) { vkUnmapMemory(device_handle, memory_handle); }
-}
 
 
 planet::vk::device_memory::mapping &
         planet::vk::device_memory::mapping::operator=(
                 planet::vk::device_memory::mapping &&m) {
     unsafe_reset();
-    device_handle = std::exchange(m.device_handle, {});
-    memory_handle = std::exchange(m.memory_handle, {});
+    allocation = std::exchange(m.allocation, nullptr);
     pointer = std::exchange(m.pointer, nullptr);
     return *this;
+}
+
+
+void planet::vk::device_memory::mapping::unsafe_reset() {
+    /// Note that this does not reset the internal fields
+    if (allocation) { allocation->unmap_memory(); }
 }
