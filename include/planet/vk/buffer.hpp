@@ -12,7 +12,7 @@ namespace planet::vk {
     /// A buffer of multiple items
     template<typename T>
     class buffer {
-        vk::device const *pdevice = nullptr;
+        device_memory_allocator *allocator = nullptr;
 
         using buffer_handle_type = device_handle<VkBuffer, vkDestroyBuffer>;
         buffer_handle_type buffer_handle;
@@ -29,36 +29,36 @@ namespace planet::vk {
 
         buffer() {}
         /// Allocate space for a number of items
-        buffer(vk::device const &device,
+        buffer(device_memory_allocator &a,
                std::size_t const c,
                VkBufferUsageFlags const usage,
                VkMemoryPropertyFlags const properties)
-        : pdevice(&device), count{c} {
+        : allocator(&a), count{c} {
             VkBufferCreateInfo buffer{};
             buffer.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
             buffer.size = byte_count();
             buffer.usage = usage;
             buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            buffer_handle.create<vkCreateBuffer>(device.get(), buffer);
+            buffer_handle.create<vkCreateBuffer>(
+                    allocator->device.get(), buffer);
 
-            memory = device_memory{
-                    device, memory_requirements().size,
-                    find_memory_type(properties)};
+            memory = allocator->allocate(
+                    memory_requirements().size, find_memory_type(properties));
 
             worked(vkBindBufferMemory(
-                    device.get(), buffer_handle.get(), memory.get(), {}));
+                    allocator->device.get(), buffer_handle.get(), memory.get(),
+                    {}));
         }
         /// Allocate memory for a number of items, and copy them into GPU memory
-        buffer(vk::device const &device,
-               std::span<T const> const vertices,
+        buffer(device_memory_allocator &allocator,
+               std::span<T const> const items,
                VkBufferUsageFlags const usage,
                VkMemoryPropertyFlags const properties)
-        : buffer{device, vertices.size(), usage, properties} {
+        : buffer{allocator, items.size(), usage, properties} {
             auto data = memory.map_memory({}, byte_count());
             std::span<value_type> gpumemory{
-                    reinterpret_cast<value_type *>(data.get()),
-                    vertices.size()};
-            std::copy(vertices.begin(), vertices.end(), gpumemory.begin());
+                    reinterpret_cast<value_type *>(data.get()), items.size()};
+            std::copy(items.begin(), items.end(), gpumemory.begin());
         }
 
 
@@ -79,7 +79,8 @@ namespace planet::vk {
         /// Searches for a memory index that matches the requested properties
         std::uint32_t find_memory_type(VkMemoryPropertyFlags properties) const {
             auto const mr = memory_requirements();
-            auto const &gpump = pdevice->instance.gpu().memory_properties;
+            auto const &gpump =
+                    allocator->device.instance.gpu().memory_properties;
             for (std::uint32_t index{}; index < gpump.memoryTypeCount;
                  ++index) {
                 bool const type_is_correct =

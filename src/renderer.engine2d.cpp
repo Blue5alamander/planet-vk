@@ -51,15 +51,18 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
 : app{a},
   viewport_buffer{
           buffer<affine::matrix3d>{
-                  app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                  app.device.startup_memory, 1u,
+                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                           | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
           buffer<affine::matrix3d>{
-                  app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                  app.device.startup_memory, 1u,
+                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                           | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
           buffer<affine::matrix3d>{
-                  app.device, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                  app.device.startup_memory, 1u,
+                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                           | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT}},
   viewport_mapping{
@@ -327,12 +330,14 @@ void planet::vk::engine2d::renderer::submit_and_present() {
 
     auto &vertex_buffer = vertex_buffers[current_frame];
     vertex_buffer = {
-            app.device, mesh2d_triangles, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            app.device.per_frame_memory, mesh2d_triangles,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     auto &index_buffer = index_buffers[current_frame];
     index_buffer = {
-            app.device, mesh2d_indexes, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            app.device.per_frame_memory, mesh2d_indexes,
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 

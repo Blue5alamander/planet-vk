@@ -996,7 +996,7 @@ class HelloTriangleApplication {
         vkUnmapMemory(device.get(), stagingBufferMemory);
 
         vertexBuffer = {
-                device, vertices.size(),
+                device.startup_memory, vertices.size(),
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT
                         | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
@@ -1024,7 +1024,7 @@ class HelloTriangleApplication {
         vkUnmapMemory(device.get(), stagingBufferMemory);
 
         indexBuffer = {
-                device, indices.size(),
+                device.startup_memory, indices.size(),
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT
                         | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
