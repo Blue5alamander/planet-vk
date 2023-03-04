@@ -2,15 +2,13 @@
 
 
 #include <planet/affine/extents2d.hpp>
+#include <planet/vk/device.hpp>
 #include <planet/vk/frame_buffer.hpp>
+#include <planet/vk/image.hpp>
 #include <planet/vk/render_pass.hpp>
 
 
 namespace planet::vk {
-
-
-    class device;
-    class image_view;
 
 
     /// A swap chain
@@ -56,40 +54,21 @@ namespace planet::vk {
         /// Frame buffers
         std::vector<frame_buffer> frame_buffers;
         template<typename... Attachments>
-        void create_frame_buffers(
-                render_pass const &, Attachments... attachments);
-    };
-
-
-    /// The image views that live in the swap chain
-    class image_view final {
-        using handle_type = device_handle<VkImageView, vkDestroyImageView>;
-        handle_type handle;
-
-      public:
-        image_view(swap_chain const &, VkImage);
-
-        vk::device const &device;
-        VkImageView get() const noexcept { return handle.get(); }
-    };
-
-
-    template<typename... Attachments>
-    inline void swap_chain::create_frame_buffers(
-            render_pass const &rp, Attachments... extra) {
-        for (auto const &view : image_views) {
-            std::array attachments{VkImageView{extra}..., view.get()};
-            VkFramebufferCreateInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            info.renderPass = rp.get();
-            info.attachmentCount = attachments.size();
-            info.pAttachments = attachments.data();
-            info.width = extents.width;
-            info.height = extents.height;
-            info.layers = 1;
-            frame_buffers.emplace_back(device, info);
+        void create_frame_buffers(render_pass const &rp, Attachments... extra) {
+            for (auto const &view : image_views) {
+                std::array attachments{VkImageView{extra}..., view.get()};
+                VkFramebufferCreateInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+                info.renderPass = rp.get();
+                info.attachmentCount = attachments.size();
+                info.pAttachments = attachments.data();
+                info.width = extents.width;
+                info.height = extents.height;
+                info.layers = 1;
+                frame_buffers.emplace_back(device, info);
+            }
         }
-    }
+    };
 
 
 }

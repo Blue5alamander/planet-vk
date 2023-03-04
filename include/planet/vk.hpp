@@ -10,6 +10,7 @@
 #include <planet/vk/extensions.hpp>
 #include <planet/vk/frame_buffer.hpp>
 #include <planet/vk/helpers.hpp>
+#include <planet/vk/image.hpp>
 #include <planet/vk/instance.hpp>
 #include <planet/vk/memory.hpp>
 #include <planet/vk/physical_device.hpp>

@@ -4,6 +4,7 @@ add_library(planet-vk
         commands.cpp
         descriptors.cpp
         frame_buffer.cpp
+        image.cpp
         init.cpp
         memory.cpp
         pipeline.cpp
