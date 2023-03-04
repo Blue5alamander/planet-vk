@@ -118,6 +118,21 @@ planet::vk::instance::instance_handle::~instance_handle() {
 }
 
 
+std::uint32_t planet::vk::instance::find_memory_type(
+        VkMemoryRequirements const mr,
+        VkMemoryPropertyFlags const properties) const {
+    auto const &gpump = gpu().memory_properties;
+    for (std::uint32_t index{}; index < gpump.memoryTypeCount; ++index) {
+        bool const type_is_correct = (mr.memoryTypeBits bitand (1 << index));
+        bool const properties_match =
+                (gpump.memoryTypes[index].propertyFlags bitand properties);
+        if (type_is_correct and properties_match) { return index; }
+    }
+    throw felspar::stdexcept::runtime_error{
+            "No matching GPU memory was found for allocation"};
+}
+
+
 /// ## `planet::vk::physical_device`
 
 

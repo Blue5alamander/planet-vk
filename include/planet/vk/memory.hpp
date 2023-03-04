@@ -188,6 +188,8 @@ namespace planet::vk {
             std::vector<device_memory_allocation::handle_type> free_memory;
             device_memory splitting;
         };
+
+
         /// ### Free memory by memory type index
         std::vector<pool> pools;
 
@@ -201,11 +203,14 @@ namespace planet::vk {
         vk::device const &device;
         device_memory_allocator_configuration config;
 
+
         /// ### Allocation and release
 
         /// #### Allocate memory from this allocator's pool
+        device_memory
+                allocate(std::size_t bytes, std::uint32_t memory_type_index);
         device_memory allocate(
-                std::size_t const bytes, std::uint32_t const memory_type_index);
+                std::size_t bytes, VkMemoryRequirements, VkMemoryPropertyFlags);
 
         /// #### Release memory
         void deallocate(

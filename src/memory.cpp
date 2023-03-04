@@ -105,6 +105,13 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
         return std::exchange(pool.splitting, {});
     }
 }
+planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
+        std::size_t const bytes,
+        VkMemoryRequirements const requirements,
+        VkMemoryPropertyFlags const flags) {
+    return allocate(
+            bytes, device.instance.find_memory_type(requirements, flags));
+}
 
 
 void planet::vk::device_memory_allocator::deallocate(

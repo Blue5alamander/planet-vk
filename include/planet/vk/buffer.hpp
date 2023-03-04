@@ -62,34 +62,24 @@ namespace planet::vk {
         /// ### Queries
         VkBuffer get() const noexcept { return buffer_handle.get(); }
 
-        /// Number of items in the buffer
+        /// #### Number of items in the buffer
         std::size_t size() const noexcept { return count; }
         std::size_t byte_count() const noexcept { return count * sizeof(T); }
 
-        /// Return the memory requirements for the buffer
+        /// #### Return the memory requirements for the buffer
         VkMemoryRequirements memory_requirements() const noexcept {
             VkMemoryRequirements mr{};
             vkGetBufferMemoryRequirements(
                     buffer_handle.owner(), buffer_handle.get(), &mr);
             return mr;
         }
-        /// Searches for a memory index that matches the requested properties
-        std::uint32_t find_memory_type(VkMemoryPropertyFlags properties) const {
-            auto const mr = memory_requirements();
-            auto const &gpump =
-                    allocator->device.instance.gpu().memory_properties;
-            for (std::uint32_t index{}; index < gpump.memoryTypeCount;
-                 ++index) {
-                bool const type_is_correct =
-                        (mr.memoryTypeBits bitand (1 << index));
-                bool const properties_match =
-                        (gpump.memoryTypes[index].propertyFlags
-                         bitand properties);
-                if (type_is_correct and properties_match) { return index; }
-            }
-            throw felspar::stdexcept::runtime_error{
-                    "No matching GPU memory was found for allocation"};
+        /// #### Searches for a memory index that matches the requested properties
+        std::uint32_t
+                find_memory_type(VkMemoryPropertyFlags const properties) const {
+            return allocator->device.instance.find_memory_type(
+                    memory_requirements(), properties);
         }
+
 
         /// ### Map GPU memory to host
         auto map() { return memory.map_memory({}, byte_count()); }

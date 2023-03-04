@@ -46,6 +46,12 @@ namespace planet::vk {
 
         vk::surface surface;
 
+
+        /// ### Find a matching memory index
+        std::uint32_t find_memory_type(
+                VkMemoryRequirements, VkMemoryPropertyFlags) const;
+
+
         /// The debug messenger is automatically used if there are validation
         /// layers present
         vk::debug_messenger debug_messenger;
