@@ -86,7 +86,8 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
     if (pool.splitting.size() < bytes) {
         auto const allocating = std::max(bytes, config.allocation_block_size);
         device_memory_allocation::handle_type handle;
-        if (pool.free_memory.empty()) {
+        if (allocating > config.allocation_block_size
+            or pool.free_memory.empty()) {
             handle = device_memory_allocation::allocate(
                     device, allocating, memory_type_index);
         } else {
