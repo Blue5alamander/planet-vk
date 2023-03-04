@@ -23,6 +23,8 @@ namespace planet::vk {
         std::size_t allocation_block_size = 64 << 20;
         /// ### Whether this allocator should split memory allocations
         bool split = true;
+        /// ### Memory mapping flags for all memory allocated here
+        VkMemoryMapFlags memory_map_flags = {};
     };
     /// ### Default "safe" configuration for an allocator
     static constexpr device_memory_allocator_configuration
@@ -49,7 +51,6 @@ namespace planet::vk {
         std::mutex mapping_mtx;
         std::size_t mapping_count = 0u;
         std::byte *mapped_base = nullptr;
-        VkMemoryMapFlags mapped_flags = {};
 
         device_memory_allocation(
                 device_memory_allocator *a,
@@ -89,7 +90,7 @@ namespace planet::vk {
         static void decrement(device_memory_allocation *&) noexcept;
 
         /// #### Increment and decrement the mapping count
-        std::byte *map_memory(VkMemoryMapFlags);
+        std::byte *map_memory();
         void unmap_memory();
     };
 
@@ -170,10 +171,7 @@ namespace planet::vk {
          */
         class mapping;
         friend class device_memory::mapping;
-        mapping map_memory(
-                VkDeviceSize offset,
-                VkDeviceSize size,
-                VkMemoryMapFlags flags = {});
+        mapping map_memory(VkDeviceSize offset, VkDeviceSize size);
     };
 
 
@@ -239,8 +237,7 @@ namespace planet::vk {
         mapping(mapping &&);
         mapping(device_memory_allocation *allocation,
                 VkDeviceSize const offset,
-                VkDeviceSize const size,
-                VkMemoryMapFlags flags = {});
+                VkDeviceSize const size);
         ~mapping() { unsafe_reset(); }
 
         mapping &operator=(mapping const &) = delete;

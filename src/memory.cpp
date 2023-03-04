@@ -46,18 +46,14 @@ planet::vk::device_memory_allocation *
 }
 
 
-std::byte *planet::vk::device_memory_allocation::map_memory(
-        VkMemoryMapFlags const flags) {
+std::byte *planet::vk::device_memory_allocation::map_memory() {
     std::scoped_lock _{mapping_mtx};
     if (not mapping_count) {
         void *p = nullptr;
         worked(vkMapMemory(
-                handle.owner(), handle.get(), {}, allocation_size, flags, &p));
+                handle.owner(), handle.get(), {}, allocation_size,
+                allocator->config.memory_map_flags, &p));
         mapped_base = reinterpret_cast<std::byte *>(p);
-        mapped_flags = flags;
-    } else if (flags != mapped_flags) {
-        throw felspar::stdexcept::runtime_error{
-                "The memory mapped flags aren't compatible"};
     }
     ++mapping_count;
     return mapped_base;
@@ -154,10 +150,8 @@ void planet::vk::device_memory::bind_buffer_memory(VkBuffer buffer_handle) {
 
 
 planet::vk::device_memory::mapping planet::vk::device_memory::map_memory(
-        VkDeviceSize const extra_offset,
-        VkDeviceSize const size,
-        VkMemoryMapFlags flags) {
-    return {allocation, offset + extra_offset, size, flags};
+        VkDeviceSize const extra_offset, VkDeviceSize const size) {
+    return {allocation, offset + extra_offset, size};
 }
 
 
@@ -182,10 +176,9 @@ planet::vk::device_memory
 planet::vk::device_memory::mapping::mapping(
         device_memory_allocation *const a,
         VkDeviceSize const offset,
-        VkDeviceSize,
-        VkMemoryMapFlags flags)
+        VkDeviceSize)
 : allocation{a}, pointer{[&]() {
-      std::byte *base = allocation->map_memory(flags);
+      std::byte *base = allocation->map_memory();
       return base + offset;
   }()} {}
 
