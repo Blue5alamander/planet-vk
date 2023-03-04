@@ -147,6 +147,12 @@ planet::vk::device_memory &
 }
 
 
+void planet::vk::device_memory::bind_buffer_memory(VkBuffer buffer_handle) {
+    worked(vkBindBufferMemory(
+            allocation->handle.owner(), buffer_handle, get(), offset));
+}
+
+
 planet::vk::device_memory::mapping planet::vk::device_memory::map_memory(
         VkDeviceSize const extra_offset,
         VkDeviceSize const size,

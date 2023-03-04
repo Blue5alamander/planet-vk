@@ -148,6 +148,14 @@ namespace planet::vk {
         std::size_t size() const noexcept { return byte_count; }
 
 
+        /// ### Bind a buffer to this memory
+        /**
+         * Wrapper around `vkBindBufferMemory` which ensures that the correct
+         * memory offset for shared allocations is used.
+         */
+        void bind_buffer_memory(VkBuffer);
+
+
         /// ### Map all/some of the memory to system RAM
         /**
          * The offset and size parameters are relative to the start of this part
