@@ -22,7 +22,7 @@ namespace planet::vk {
         /// ### GPU memory allocation block size
         std::size_t allocation_block_size = 64 << 20;
         /// ### Whether this allocator should split memory allocations
-        bool split = false;
+        bool split = true;
     };
     /// ### Default "safe" configuration for an allocator
     static constexpr device_memory_allocator_configuration
