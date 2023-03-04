@@ -130,7 +130,11 @@ namespace planet::vk {
 
 
         /// ### Free the held memory
-        void reset() { device_memory_allocation::decrement(allocation); }
+        void reset() {
+            device_memory_allocation::decrement(allocation);
+            offset = {};
+            byte_count = {};
+        }
 
 
         /// ### Query information about this memory
