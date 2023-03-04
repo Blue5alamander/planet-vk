@@ -151,9 +151,13 @@ planet::vk::device_memory &
 }
 
 
-void planet::vk::device_memory::bind_buffer_memory(VkBuffer buffer_handle) {
+void planet::vk::device_memory::bind_buffer_memory(VkBuffer const buffer_handle) {
     worked(vkBindBufferMemory(
             allocation->handle.owner(), buffer_handle, get(), offset));
+}
+void planet::vk::device_memory::bind_image_memory(VkImage const image_handle) {
+    worked(vkBindImageMemory(
+            allocation->handle.owner(), image_handle, get(), offset));
 }
 
 

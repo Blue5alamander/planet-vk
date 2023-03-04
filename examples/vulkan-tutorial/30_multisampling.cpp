@@ -391,18 +391,15 @@ class HelloTriangleApplication {
 
     planet::vk::command_pool commandPool{device, instance.surface};
 
-    VkImage colorImage;
-    VkDeviceMemory colorImageMemory;
-    VkImageView colorImageView;
+    planet::vk::image colorImage;
+    planet::vk::image_view colorImageView;
 
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    planet::vk::image depthImage;
+    planet::vk::image_view depthImageView;
 
     uint32_t mipLevels;
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-    VkImageView textureImageView;
+    planet::vk::image textureImage;
+    planet::vk::image_view textureImageView;
     VkSampler textureSampler;
 
     std::vector<Vertex> vertices;
@@ -451,7 +448,8 @@ class HelloTriangleApplication {
         createColorResources();
         createDepthResources();
         swapChain.create_frame_buffers(
-                graphicsPipeline.render_pass, colorImageView, depthImageView);
+                graphicsPipeline.render_pass, colorImageView.get(),
+                depthImageView.get());
         createTextureImage();
         createTextureImageView();
         createTextureSampler();
@@ -472,29 +470,13 @@ class HelloTriangleApplication {
         vkDeviceWaitIdle(device.get());
     }
 
-    void cleanupSwapChain() {
-        vkDestroyImageView(device.get(), depthImageView, nullptr);
-        vkDestroyImage(device.get(), depthImage, nullptr);
-        vkFreeMemory(device.get(), depthImageMemory, nullptr);
-
-        vkDestroyImageView(device.get(), colorImageView, nullptr);
-        vkDestroyImage(device.get(), colorImage, nullptr);
-        vkFreeMemory(device.get(), colorImageMemory, nullptr);
-    }
-
     void cleanup() {
-        cleanupSwapChain();
-
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroyBuffer(device.get(), uniformBuffers[i], nullptr);
             vkFreeMemory(device.get(), uniformBuffersMemory[i], nullptr);
         }
 
         vkDestroySampler(device.get(), textureSampler, nullptr);
-        vkDestroyImageView(device.get(), textureImageView, nullptr);
-
-        vkDestroyImage(device.get(), textureImage, nullptr);
-        vkFreeMemory(device.get(), textureImageMemory, nullptr);
 
         glfwDestroyWindow(window);
 
@@ -509,15 +491,14 @@ class HelloTriangleApplication {
             glfwWaitEvents();
         }
 
-        vkDeviceWaitIdle(device.get());
-
-        cleanupSwapChain();
+        device.wait_idle();
 
         createSwapChain();
         createColorResources();
         createDepthResources();
         swapChain.create_frame_buffers(
-                graphicsPipeline.render_pass, colorImageView, depthImageView);
+                graphicsPipeline.render_pass, colorImageView.get(),
+                depthImageView.get());
     }
 
     void pickPhysicalDevice() {
@@ -543,28 +524,36 @@ class HelloTriangleApplication {
     void createColorResources() {
         VkFormat colorFormat = swapChain.image_format;
 
-        createImage(
-                swapChain.extents.width, swapChain.extents.height, 1,
-                msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
+        colorImage = {
+                device.startup_memory,
+                swapChain.extents.width,
+                swapChain.extents.height,
+                1,
+                msaaSamples,
+                colorFormat,
+                VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
                         | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage,
-                colorImageMemory);
-        colorImageView = createImageView(
-                colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+        colorImageView = {
+                colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1};
     }
 
     void createDepthResources() {
         VkFormat depthFormat = findDepthFormat();
 
-        createImage(
-                swapChain.extents.width, swapChain.extents.height, 1,
-                msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+        depthImage = {
+                device.startup_memory,
+                swapChain.extents.width,
+                swapChain.extents.height,
+                1,
+                msaaSamples,
+                depthFormat,
+                VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage,
-                depthImageMemory);
-        depthImageView = createImageView(
-                depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+        depthImageView = {
+                depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1};
     }
 
     VkFormat findSupportedFormat(
@@ -633,21 +622,26 @@ class HelloTriangleApplication {
 
         stbi_image_free(pixels);
 
-        createImage(
-                texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT,
-                VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+        textureImage = {
+                device.startup_memory,
+                static_cast<uint32_t>(texWidth),
+                static_cast<uint32_t>(texHeight),
+                mipLevels,
+                VK_SAMPLE_COUNT_1_BIT,
+                VK_FORMAT_R8G8B8A8_SRGB,
+                VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT
                         | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                         | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage,
-                textureImageMemory);
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
         transitionImageLayout(
-                textureImage, VK_FORMAT_R8G8B8A8_SRGB,
+                textureImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 mipLevels);
         copyBufferToImage(
-                stagingBuffer, textureImage, static_cast<uint32_t>(texWidth),
+                stagingBuffer, textureImage.get(),
+                static_cast<uint32_t>(texWidth),
                 static_cast<uint32_t>(texHeight));
         // transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while
         // generating mipmaps
@@ -656,8 +650,8 @@ class HelloTriangleApplication {
         vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
 
         generateMipmaps(
-                textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight,
-                mipLevels);
+                textureImage.get(), VK_FORMAT_R8G8B8A8_SRGB, texWidth,
+                texHeight, mipLevels);
     }
 
     void generateMipmaps(
@@ -769,9 +763,9 @@ class HelloTriangleApplication {
     }
 
     void createTextureImageView() {
-        textureImageView = createImageView(
+        textureImageView = {
                 textureImage, VK_FORMAT_R8G8B8A8_SRGB,
-                VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+                VK_IMAGE_ASPECT_COLOR_BIT, mipLevels};
     }
 
     void createTextureSampler() {
@@ -796,73 +790,6 @@ class HelloTriangleApplication {
 
         planet::vk::worked(vkCreateSampler(
                 device.get(), &samplerInfo, nullptr, &textureSampler));
-    }
-
-    VkImageView createImageView(
-            VkImage image,
-            VkFormat format,
-            VkImageAspectFlags aspectFlags,
-            uint32_t mipLevels) {
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = image;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = format;
-        viewInfo.subresourceRange.aspectMask = aspectFlags;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = mipLevels;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-
-        VkImageView imageView;
-        planet::vk::worked(vkCreateImageView(
-                device.get(), &viewInfo, nullptr, &imageView));
-
-        return imageView;
-    }
-
-    void createImage(
-            uint32_t width,
-            uint32_t height,
-            uint32_t mipLevels,
-            VkSampleCountFlagBits numSamples,
-            VkFormat format,
-            VkImageTiling tiling,
-            VkImageUsageFlags usage,
-            VkMemoryPropertyFlags properties,
-            VkImage &image,
-            VkDeviceMemory &imageMemory) {
-        VkImageCreateInfo imageInfo{};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent.width = width;
-        imageInfo.extent.height = height;
-        imageInfo.extent.depth = 1;
-        imageInfo.mipLevels = mipLevels;
-        imageInfo.arrayLayers = 1;
-        imageInfo.format = format;
-        imageInfo.tiling = tiling;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = usage;
-        imageInfo.samples = numSamples;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        planet::vk::worked(
-                vkCreateImage(device.get(), &imageInfo, nullptr, &image));
-
-        VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(device.get(), image, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex =
-                instance.find_memory_type(memRequirements, properties);
-
-        planet::vk::worked(vkAllocateMemory(
-                device.get(), &allocInfo, nullptr, &imageMemory));
-
-        vkBindImageMemory(device.get(), image, imageMemory, 0);
     }
 
     void transitionImageLayout(
@@ -1064,7 +991,7 @@ class HelloTriangleApplication {
 
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = textureImageView;
+            imageInfo.imageView = textureImageView.get();
             imageInfo.sampler = textureSampler;
 
             std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
