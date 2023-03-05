@@ -447,8 +447,6 @@ class HelloTriangleApplication {
                 graphicsPipeline.render_pass, colorImageView.get(),
                 depthImageView.get());
         createTextureImage();
-        createTextureImageView();
-        createTextureSampler();
         loadModel();
         createVertexBuffer();
         createIndexBuffer();
@@ -625,6 +623,12 @@ class HelloTriangleApplication {
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture.mip_levels);
         texture.image.copy_from(commandPool, stagingBuffer);
         texture.image.generate_mip_maps(commandPool, texture.mip_levels);
+
+        texture.image_view = {
+                texture.image, texture.image.format, VK_IMAGE_ASPECT_COLOR_BIT,
+                texture.mip_levels};
+
+        texture.sampler = {device, texture.mip_levels};
     }
 
     VkSampleCountFlagBits getMaxUsableSampleCount() {
@@ -639,16 +643,6 @@ class HelloTriangleApplication {
         if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
 
         return VK_SAMPLE_COUNT_1_BIT;
-    }
-
-    void createTextureImageView() {
-        texture.image_view = {
-                texture.image, texture.image.format,
-                VK_IMAGE_ASPECT_COLOR_BIT, texture.mip_levels};
-    }
-
-    void createTextureSampler() {
-        texture.sampler = {device, texture.mip_levels};
     }
 
     void loadModel() {
