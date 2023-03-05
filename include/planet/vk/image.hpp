@@ -7,7 +7,9 @@
 namespace planet::vk {
 
 
-    class device;
+    template<typename T>
+    class buffer;
+    class command_pool;
     class swap_chain;
 
 
@@ -38,8 +40,22 @@ namespace planet::vk {
 
         /// ### Query image view
 
+        std::uint32_t width = {}, height = {};
+        VkFormat format;
         auto device_handle() const noexcept { return handle.owner(); }
         auto get() const noexcept { return handle.get(); }
+
+
+        /// ### Image manipulation
+
+        /// #### Set up a layout transition
+        void transition_layout(
+                command_pool &,
+                VkImageLayout old_layout,
+                VkImageLayout new_layout,
+                std::uint32_t mip_levels);
+        /// #### Copy staging buffer pixels to the image
+        void copy_from(command_pool &, buffer<std::byte> const &);
     };
 
 
