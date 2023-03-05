@@ -40,8 +40,8 @@ namespace planet::vk {
 
         /// ### Query image view
 
-        std::uint32_t width = {}, height = {};
-        VkFormat format;
+        std::uint32_t width = {}, height = {}, mip_levels = {};
+        VkFormat format = {};
         auto device_handle() const noexcept { return handle.owner(); }
         auto get() const noexcept { return handle.get(); }
 
@@ -54,8 +54,12 @@ namespace planet::vk {
                 VkImageLayout old_layout,
                 VkImageLayout new_layout,
                 std::uint32_t mip_levels);
+
         /// #### Copy staging buffer pixels to the image
         void copy_from(command_pool &, buffer<std::byte> const &);
+
+        /// #### Generate MIP map layers for image
+        void generate_mip_maps(command_pool &, std::uint32_t mip_levels);
     };
 
 
