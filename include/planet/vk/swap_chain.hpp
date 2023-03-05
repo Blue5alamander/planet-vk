@@ -23,11 +23,11 @@ namespace planet::vk {
 
       public:
         template<typename Ex>
-        swap_chain(vk::device const &d, Ex const ex) : device{d} {
+        swap_chain(vk::device &d, Ex const ex) : device{d} {
             create(ex);
         }
 
-        vk::device const &device;
+        device_view device;
         VkSwapchainKHR get() const noexcept { return handle.get(); }
 
         /// Recreate the swap chain and everything dependant on it, for example
@@ -35,7 +35,7 @@ namespace planet::vk {
         /// to use
         template<typename Ex>
         std::uint32_t recreate(Ex const ex) {
-            device.wait_idle();
+            device().wait_idle();
             return create(ex);
         }
 

@@ -18,9 +18,9 @@ namespace planet::vk {
         std::vector<std::byte> spirv;
 
       public:
-        shader_module(vk::device const &, std::vector<std::byte>);
+        shader_module(vk::device &, std::vector<std::byte>);
 
-        vk::device const &device;
+        device_view device;
         VkShaderModule get() const noexcept { return handle.get(); }
 
         /// Fill in the structure from the shader module

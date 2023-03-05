@@ -16,12 +16,12 @@ namespace planet::vk {
         handle_type handle;
 
       public:
-        pipeline_layout(vk::device const &);
-        pipeline_layout(vk::device const &, descriptor_set_layout const &);
-        pipeline_layout(vk::device const &, VkPipelineLayoutCreateInfo const &);
+        pipeline_layout(vk::device &);
+        pipeline_layout(vk::device &, descriptor_set_layout const &);
+        pipeline_layout(vk::device &, VkPipelineLayoutCreateInfo const &);
 
-        vk::device const &device;
-        VkPipelineLayout get() const noexcept { return handle.get(); }
+        device_view device;
+        auto get() const noexcept { return handle.get(); }
     };
 
 
@@ -30,13 +30,13 @@ namespace planet::vk {
 
       public:
         graphics_pipeline(
-                vk::device const &,
+                vk::device &,
                 VkGraphicsPipelineCreateInfo &,
                 vk::render_pass,
                 pipeline_layout);
 
-        vk::device const &device;
-        VkPipeline get() const noexcept { return handle.get(); }
+        device_view device;
+        auto get() const noexcept { return handle.get(); }
 
         vk::render_pass render_pass;
         vk::pipeline_layout layout;

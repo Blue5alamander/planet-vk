@@ -12,9 +12,9 @@ namespace planet::vk {
         handle_type handle;
 
       public:
-        frame_buffer(vk::device const &, VkFramebufferCreateInfo const &);
+        frame_buffer(vk::device &, VkFramebufferCreateInfo const &);
 
-        vk::device const &device;
+        device_view device;
         VkFramebuffer get() const noexcept { return handle.get(); }
     };
 

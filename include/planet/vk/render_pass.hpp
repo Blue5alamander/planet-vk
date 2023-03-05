@@ -12,9 +12,9 @@ namespace planet::vk {
         handle_type handle;
 
       public:
-        render_pass(vk::device const &, VkRenderPassCreateInfo const &);
+        render_pass(vk::device &, VkRenderPassCreateInfo const &);
 
-        vk::device const &device;
+        device_view device;
         VkRenderPass get() const noexcept { return handle.get(); }
     };
 

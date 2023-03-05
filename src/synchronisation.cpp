@@ -5,7 +5,7 @@
 /// ## `planet::vk::fence`
 
 
-planet::vk::fence::fence(vk::device const &d) : device{d} {
+planet::vk::fence::fence(vk::device &d) : device{d} {
     VkFenceCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -33,7 +33,7 @@ void planet::vk::fence::reset() {
 /// ## `planet::vk::semaphore`
 
 
-planet::vk::semaphore::semaphore(vk::device const &d) : device{d} {
+planet::vk::semaphore::semaphore(vk::device &d) : device{d} {
     VkSemaphoreCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     handle.create<vkCreateSemaphore>(device.get(), info);

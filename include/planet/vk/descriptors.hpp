@@ -21,13 +21,13 @@ namespace planet::vk {
       public:
         /// ### General purpose creation of a pool for the described sizes
         descriptor_pool(
-                vk::device const &,
+                vk::device &,
                 std::span<VkDescriptorPoolSize const>,
                 std::uint32_t max_sets);
         /// ### Create a pool for a single size with the requested maximum size
-        explicit descriptor_pool(vk::device const &, std::uint32_t count = 1);
+        explicit descriptor_pool(vk::device &, std::uint32_t count = 1);
 
-        vk::device const &device;
+        device_view device;
         VkDescriptorPool get() const noexcept { return handle.get(); }
     };
 
@@ -41,15 +41,14 @@ namespace planet::vk {
       public:
         /// ### General purpose set layout creation
         descriptor_set_layout(
-                vk::device const &, VkDescriptorSetLayoutCreateInfo const &);
+                vk::device &, VkDescriptorSetLayoutCreateInfo const &);
         /// ### Create a set layout for only a single binding
         descriptor_set_layout(
-                vk::device const &, VkDescriptorSetLayoutBinding const &);
+                vk::device &, VkDescriptorSetLayoutBinding const &);
         /// ### For a uniform buffer object
-        static descriptor_set_layout
-                for_uniform_buffer_object(vk::device const &);
+        static descriptor_set_layout for_uniform_buffer_object(vk::device &);
 
-        vk::device const &device;
+        device_view device;
         VkDescriptorSetLayout get() const noexcept { return handle.get(); }
         VkDescriptorSetLayout const *address() const noexcept {
             return handle.address();

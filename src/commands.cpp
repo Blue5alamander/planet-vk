@@ -6,7 +6,7 @@
 /// ## `planet::vk::command_pool`
 
 
-planet::vk::command_pool::command_pool(vk::device const &d, vk::surface const &s)
+planet::vk::command_pool::command_pool(vk::device &d, vk::surface const &s)
 : device{d} {
     VkCommandPoolCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

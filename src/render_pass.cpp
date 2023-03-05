@@ -6,7 +6,7 @@
 
 
 planet::vk::render_pass::render_pass(
-        vk::device const &d, VkRenderPassCreateInfo const &info)
+        vk::device &d, VkRenderPassCreateInfo const &info)
 : device{d} {
     handle.create<vkCreateRenderPass>(device.get(), info);
 }

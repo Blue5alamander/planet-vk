@@ -6,7 +6,7 @@
 
 
 planet::vk::descriptor_pool::descriptor_pool(
-        vk::device const &d,
+        vk::device &d,
         std::span<VkDescriptorPoolSize const> sizes,
         std::uint32_t const max)
 : device{d} {
@@ -21,7 +21,7 @@ planet::vk::descriptor_pool::descriptor_pool(
 
 
 planet::vk::descriptor_pool::descriptor_pool(
-        vk::device const &d, std::uint32_t const count)
+        vk::device &d, std::uint32_t const count)
 : device{d} {
     VkDescriptorPoolSize size{};
     size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -40,14 +40,14 @@ planet::vk::descriptor_pool::descriptor_pool(
 
 
 planet::vk::descriptor_set_layout::descriptor_set_layout(
-        vk::device const &d, VkDescriptorSetLayoutCreateInfo const &info)
+        vk::device &d, VkDescriptorSetLayoutCreateInfo const &info)
 : device{d} {
     handle.create<vkCreateDescriptorSetLayout>(device.get(), info);
 }
 
 
 planet::vk::descriptor_set_layout::descriptor_set_layout(
-        vk::device const &d, VkDescriptorSetLayoutBinding const &layout)
+        vk::device &d, VkDescriptorSetLayoutBinding const &layout)
 : device{d} {
     VkDescriptorSetLayoutCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -60,7 +60,7 @@ planet::vk::descriptor_set_layout::descriptor_set_layout(
 
 planet::vk::descriptor_set_layout
         planet::vk::descriptor_set_layout::for_uniform_buffer_object(
-                vk::device const &device) {
+                vk::device &device) {
     VkDescriptorSetLayoutBinding ubo_binding{};
     ubo_binding.binding = 0;
     ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

@@ -37,15 +37,18 @@ namespace planet::vk {
         command_buffer &operator=(command_buffer const &) = delete;
         command_buffer &operator=(command_buffer &&) = delete;
 
-        vk::device const &device;
+        device_view device;
         vk::command_pool const &command_pool;
-        VkCommandBuffer get() const noexcept { return handle; }
+        auto get() const noexcept { return handle; }
 
-        /// `vkBeginCommandBuffer`
+
+        /// ### API wrappers
+
+        /// #### `vkBeginCommandBuffer`
         void begin(VkCommandBufferUsageFlags = {});
-        /// `vkEndCommandBuffer`
+        /// #### `vkEndCommandBuffer`
         void end();
-        /// `vkQueueSubmit`
+        /// #### `vkQueueSubmit`
         void submit(VkQueue);
     };
 
@@ -66,7 +69,7 @@ namespace planet::vk {
         command_buffers &operator=(command_buffers const &) = delete;
         command_buffers &operator=(command_buffers &&) = delete;
 
-        vk::device const &device;
+        device_view device;
         vk::command_pool const &command_pool;
 
         std::size_t size() const noexcept { return buffers.size(); }
@@ -81,9 +84,9 @@ namespace planet::vk {
         handle_type handle;
 
       public:
-        command_pool(vk::device const &, vk::surface const &);
+        command_pool(vk::device &, vk::surface const &);
 
-        vk::device const &device;
+        device_view device;
         VkCommandPool get() const noexcept { return handle.get(); }
     };
 

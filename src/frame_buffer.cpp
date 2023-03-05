@@ -6,7 +6,7 @@
 
 
 planet::vk::frame_buffer::frame_buffer(
-        vk::device const &d, VkFramebufferCreateInfo const &info)
+        vk::device &d, VkFramebufferCreateInfo const &info)
 : device{d} {
     handle.create<vkCreateFramebuffer>(device.get(), info);
 }

@@ -6,7 +6,7 @@
 
 
 planet::vk::shader_module::shader_module(
-        vk::device const &d, std::vector<std::byte> bc)
+        vk::device &d, std::vector<std::byte> bc)
 : spirv{std::move(bc)}, device{d} {
     VkShaderModuleCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

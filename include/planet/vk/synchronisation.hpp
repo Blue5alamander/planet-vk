@@ -15,9 +15,9 @@ namespace planet::vk {
         handle_type handle;
 
       public:
-        fence(vk::device const &);
+        fence(vk::device &);
 
-        vk::device const &device;
+        device_view device;
         VkFence get() const noexcept { return handle.get(); }
 
         /// ### Returns true if the fence is ready
@@ -33,9 +33,9 @@ namespace planet::vk {
         handle_type handle;
 
       public:
-        semaphore(vk::device const &);
+        semaphore(vk::device &);
 
-        vk::device const &device;
+        device_view device;
         VkSemaphore get() const noexcept { return handle.get(); }
     };
 

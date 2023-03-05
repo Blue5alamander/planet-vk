@@ -6,7 +6,7 @@
 /// ## `planet::vk::pipeline_layout`
 
 
-planet::vk::pipeline_layout::pipeline_layout(vk::device const &d) : device{d} {
+planet::vk::pipeline_layout::pipeline_layout(vk::device &d) : device{d} {
     VkPipelineLayoutCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     handle.create<vkCreatePipelineLayout>(device.get(), info);
@@ -14,7 +14,7 @@ planet::vk::pipeline_layout::pipeline_layout(vk::device const &d) : device{d} {
 
 
 planet::vk::pipeline_layout::pipeline_layout(
-        vk::device const &d, descriptor_set_layout const &dsl)
+        vk::device &d, descriptor_set_layout const &dsl)
 : device{d} {
     VkPipelineLayoutCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -25,7 +25,7 @@ planet::vk::pipeline_layout::pipeline_layout(
 
 
 planet::vk::pipeline_layout::pipeline_layout(
-        vk::device const &d, VkPipelineLayoutCreateInfo const &info)
+        vk::device &d, VkPipelineLayoutCreateInfo const &info)
 : device{d} {
     handle.create<vkCreatePipelineLayout>(device.get(), info);
 }
@@ -35,7 +35,7 @@ planet::vk::pipeline_layout::pipeline_layout(
 
 
 planet::vk::graphics_pipeline::graphics_pipeline(
-        vk::device const &d,
+        vk::device &d,
         VkGraphicsPipelineCreateInfo &info,
         vk::render_pass rp,
         pipeline_layout pl)
