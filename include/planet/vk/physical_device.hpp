@@ -10,6 +10,7 @@ namespace planet::vk {
     class instance;
 
 
+    /// ## Vulkan physical device
     class physical_device final {
         VkPhysicalDevice handle;
 
@@ -21,6 +22,11 @@ namespace planet::vk {
         VkPhysicalDeviceProperties properties = {};
         VkPhysicalDeviceFeatures features = {};
         VkPhysicalDeviceMemoryProperties memory_properties = {};
+
+        /// ### API wrappers
+
+        /// #### `vkGetPhysicalDeviceFormatProperties`
+        VkFormatProperties format_properties(VkFormat) const;
     };
 
 

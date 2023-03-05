@@ -646,9 +646,8 @@ class HelloTriangleApplication {
             int32_t texHeight,
             uint32_t mipLevels) {
         // Check if image format supports linear blitting
-        VkFormatProperties formatProperties;
-        vkGetPhysicalDeviceFormatProperties(
-                instance.gpu().get(), imageFormat, &formatProperties);
+        auto const formatProperties =
+                instance.gpu().format_properties(imageFormat);
 
         if (!(formatProperties.optimalTilingFeatures
               & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {

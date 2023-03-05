@@ -247,3 +247,11 @@ planet::vk::physical_device::physical_device(VkPhysicalDevice h, VkSurfaceKHR)
     vkGetPhysicalDeviceFeatures(handle, &features);
     vkGetPhysicalDeviceMemoryProperties(handle, &memory_properties);
 }
+
+
+VkFormatProperties planet::vk::physical_device::format_properties(
+        VkFormat const format) const {
+    VkFormatProperties properties{};
+    vkGetPhysicalDeviceFormatProperties(get(), format, &properties);
+    return properties;
+}
