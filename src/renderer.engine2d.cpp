@@ -93,6 +93,8 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
     }
 }
 planet::vk::engine2d::renderer::~renderer() {
+    /// Because images can be in flight when we're destructed, we have to wait
+    /// for them
     for (auto &f : fence) {
         std::array waitfor{f.get()};
         vkWaitForFences(
