@@ -76,7 +76,7 @@ namespace planet::vk {
         /// #### Searches for a memory index that matches the requested properties
         std::uint32_t
                 find_memory_type(VkMemoryPropertyFlags const properties) const {
-            return allocator->device.instance.find_memory_type(
+            return allocator->device().instance.find_memory_type(
                     memory_requirements(), properties);
         }
 

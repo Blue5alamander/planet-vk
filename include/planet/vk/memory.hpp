@@ -77,7 +77,7 @@ namespace planet::vk {
 
         /// ### Perform raw memory allocation
         static handle_type allocate(
-                vk::device const &,
+                vk::device &,
                 std::size_t bytes,
                 std::uint32_t memory_type_index);
 
@@ -201,11 +201,11 @@ namespace planet::vk {
       public:
         /// ### Bind allocator to a device
         device_memory_allocator(
-                vk::device const &,
+                vk::device &,
                 device_memory_allocator_configuration const & =
                         thread_safe_device_memory_allocator);
 
-        vk::device const &device;
+        device_view device;
         device_memory_allocator_configuration config;
 
 

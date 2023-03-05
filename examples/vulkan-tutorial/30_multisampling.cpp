@@ -586,10 +586,6 @@ class HelloTriangleApplication {
                 texdata.size(), &texWidth, &texHeight, &texChannels,
                 STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
-        texture.mip_levels = static_cast<uint32_t>(std::floor(
-                                     std::log2(std::max(texWidth, texHeight))))
-                + 1;
-
         if (!pixels) {
             throw std::runtime_error("failed to load texture image!");
         }
@@ -605,30 +601,10 @@ class HelloTriangleApplication {
 
         stbi_image_free(pixels);
 
-        texture.image = {
-                device.startup_memory,
+        texture = planet::vk::texture::create_with_mip_levels_from(
+                device.startup_memory, commandPool, stagingBuffer,
                 static_cast<uint32_t>(texWidth),
-                static_cast<uint32_t>(texHeight),
-                texture.mip_levels,
-                VK_SAMPLE_COUNT_1_BIT,
-                VK_FORMAT_R8G8B8A8_SRGB,
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-                        | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-                        | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
-
-        texture.image.transition_layout(
-                commandPool, VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture.mip_levels);
-        texture.image.copy_from(commandPool, stagingBuffer);
-        texture.image.generate_mip_maps(commandPool, texture.mip_levels);
-
-        texture.image_view = {
-                texture.image, texture.image.format, VK_IMAGE_ASPECT_COLOR_BIT,
-                texture.mip_levels};
-
-        texture.sampler = {device, texture.mip_levels};
+                static_cast<uint32_t>(texHeight));
     }
 
     VkSampleCountFlagBits getMaxUsableSampleCount() {

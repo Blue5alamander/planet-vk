@@ -31,7 +31,16 @@ namespace planet::vk {
     /// ## Texture map
     class texture final {
       public:
-        std::uint32_t mip_levels = {};
+        /// ### Construction
+        static texture create_with_mip_levels_from(
+                device_memory_allocator &,
+                command_pool &,
+                buffer<std::byte> const &,
+                std::uint32_t width,
+                std::uint32_t height);
+
+
+        /// ### Attributes
         vk::image image;
         vk::image_view image_view;
         vk::sampler sampler;

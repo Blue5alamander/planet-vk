@@ -10,7 +10,7 @@
 
 planet::vk::device_memory_allocation::handle_type
         planet::vk::device_memory_allocation::allocate(
-                vk::device const &device,
+                vk::device &device,
                 std::size_t const bytes,
                 std::uint32_t const memory_type_index) {
     VkMemoryAllocateInfo alloc{};
@@ -70,7 +70,7 @@ void planet::vk::device_memory_allocation::unmap_memory() {
 
 
 planet::vk::device_memory_allocator::device_memory_allocator(
-        vk::device const &d, device_memory_allocator_configuration const &c)
+        vk::device &d, device_memory_allocator_configuration const &c)
 : pools(d.instance.gpu().memory_properties.memoryTypeCount),
   device{d},
   config{c} {}
@@ -111,7 +111,7 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
         VkMemoryRequirements const requirements,
         VkMemoryPropertyFlags const flags) {
     return allocate(
-            bytes, device.instance.find_memory_type(requirements, flags));
+            bytes, device().instance.find_memory_type(requirements, flags));
 }
 
 
