@@ -7,6 +7,9 @@
 #include <iostream>
 
 
+/// ## `planet::vk::debug_messenger`
+
+
 namespace {
     VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
             VkDebugUtilsMessageSeverityFlagBitsEXT,
@@ -15,6 +18,108 @@ namespace {
             void *) {
         std::cerr << "Validation message: " << data->pMessage << '\n';
         return VK_FALSE;
+    }
+}
+
+
+VkDebugUtilsMessengerCreateInfoEXT planet::vk::debug_messenger::create_info(
+        PFN_vkDebugUtilsMessengerCallbackEXT cb, void *ud) {
+    VkDebugUtilsMessengerCreateInfoEXT info{};
+    info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+            | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    info.pfnUserCallback = cb;
+    info.pUserData = ud;
+    return info;
+}
+
+
+planet::vk::debug_messenger::debug_messenger(
+        instance const &i, PFN_vkDebugUtilsMessengerCallbackEXT cb, void *ud)
+: instance_handle{i.get()} {
+    auto info = create_info(cb, ud);
+    if (auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+                vkGetInstanceProcAddr(
+                        instance_handle, "vkCreateDebugUtilsMessengerEXT"));
+        func) {
+        worked(func(instance_handle, &info, nullptr, &handle));
+    } else {
+        throw felspar::stdexcept::runtime_error{
+                "vkCreateDebugUtilsMessengerEXT extension is not present"};
+    }
+}
+
+
+planet::vk::debug_messenger::~debug_messenger() {
+    if (instance_handle and handle) {
+        if (auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+                    vkGetInstanceProcAddr(
+                            instance_handle, "vkDestroyDebugUtilsMessengerEXT"));
+            func) {
+            func(instance_handle, handle, nullptr);
+        }
+    }
+}
+
+
+/// ## `planet::vk::device`
+
+
+planet::vk::device::device(
+        vk::instance const &i, vk::extensions const &extensions)
+: instance{i} {
+    felspar::memory::small_vector<VkDeviceQueueCreateInfo, 2> queue_create_infos;
+    const float queue_priority = 1.f;
+    for (auto const q : std::array{
+                 instance.surface.graphics_queue_index(),
+                 instance.surface.presentation_queue_index()}) {
+        queue_create_infos.emplace_back();
+        queue_create_infos.back().sType =
+                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queue_create_infos.back().queueFamilyIndex = q;
+        queue_create_infos.back().queueCount = 1;
+        queue_create_infos.back().pQueuePriorities = &queue_priority;
+    }
+
+    VkPhysicalDeviceFeatures device_features = {};
+    device_features.samplerAnisotropy = VK_TRUE;
+
+    VkDeviceCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    if (instance.surface.graphics_queue_index()
+        == instance.surface.presentation_queue_index()) {
+        info.queueCreateInfoCount = 1;
+    } else {
+        info.queueCreateInfoCount = queue_create_infos.size();
+    }
+    info.pQueueCreateInfos = queue_create_infos.data();
+    info.enabledLayerCount = extensions.validation_layers.size();
+    info.ppEnabledLayerNames = extensions.validation_layers.data();
+    info.enabledExtensionCount = extensions.device_extensions.size();
+    info.ppEnabledExtensionNames = extensions.device_extensions.data();
+    info.pEnabledFeatures = &device_features;
+    planet::vk::worked(
+            vkCreateDevice(instance.gpu().get(), &info, nullptr, &handle));
+
+    vkGetDeviceQueue(
+            handle, instance.surface.graphics_queue_index(), 0,
+            &graphics_queue);
+    vkGetDeviceQueue(
+            handle, instance.surface.presentation_queue_index(), 0,
+            &present_queue);
+}
+
+
+planet::vk::device::~device() {
+    staging_memory.clear_without_check();
+    startup_memory.clear_without_check();
+    if (handle) {
+        vkDeviceWaitIdle(handle);
+        vkDestroyDevice(handle, nullptr);
     }
 }
 
@@ -141,109 +246,4 @@ planet::vk::physical_device::physical_device(VkPhysicalDevice h, VkSurfaceKHR)
     vkGetPhysicalDeviceProperties(handle, &properties);
     vkGetPhysicalDeviceFeatures(handle, &features);
     vkGetPhysicalDeviceMemoryProperties(handle, &memory_properties);
-}
-
-
-/// ## `planet::vk::device`
-
-
-planet::vk::device::device(
-        vk::instance const &i, vk::extensions const &extensions)
-: instance{i} {
-    felspar::memory::small_vector<VkDeviceQueueCreateInfo, 2> queue_create_infos;
-    const float queue_priority = 1.f;
-    for (auto const q : std::array{
-                 instance.surface.graphics_queue_index(),
-                 instance.surface.presentation_queue_index()}) {
-        queue_create_infos.emplace_back();
-        queue_create_infos.back().sType =
-                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_create_infos.back().queueFamilyIndex = q;
-        queue_create_infos.back().queueCount = 1;
-        queue_create_infos.back().pQueuePriorities = &queue_priority;
-    }
-
-    VkPhysicalDeviceFeatures device_features = {};
-    device_features.samplerAnisotropy = VK_TRUE;
-
-    VkDeviceCreateInfo info = {};
-    info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    if (instance.surface.graphics_queue_index()
-        == instance.surface.presentation_queue_index()) {
-        info.queueCreateInfoCount = 1;
-    } else {
-        info.queueCreateInfoCount = queue_create_infos.size();
-    }
-    info.pQueueCreateInfos = queue_create_infos.data();
-    info.enabledLayerCount = extensions.validation_layers.size();
-    info.ppEnabledLayerNames = extensions.validation_layers.data();
-    info.enabledExtensionCount = extensions.device_extensions.size();
-    info.ppEnabledExtensionNames = extensions.device_extensions.data();
-    info.pEnabledFeatures = &device_features;
-    planet::vk::worked(
-            vkCreateDevice(instance.gpu().get(), &info, nullptr, &handle));
-
-    vkGetDeviceQueue(
-            handle, instance.surface.graphics_queue_index(), 0,
-            &graphics_queue);
-    vkGetDeviceQueue(
-            handle, instance.surface.presentation_queue_index(), 0,
-            &present_queue);
-}
-
-
-planet::vk::device::~device() {
-    staging_memory.clear_without_check();
-    startup_memory.clear_without_check();
-    if (handle) {
-        vkDeviceWaitIdle(handle);
-        vkDestroyDevice(handle, nullptr);
-    }
-}
-
-
-/// ## `planet::vk::debug_messenger`
-
-
-VkDebugUtilsMessengerCreateInfoEXT planet::vk::debug_messenger::create_info(
-        PFN_vkDebugUtilsMessengerCallbackEXT cb, void *ud) {
-    VkDebugUtilsMessengerCreateInfoEXT info{};
-    info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-            | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-            | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    info.pfnUserCallback = cb;
-    info.pUserData = ud;
-    return info;
-}
-
-
-planet::vk::debug_messenger::debug_messenger(
-        instance const &i, PFN_vkDebugUtilsMessengerCallbackEXT cb, void *ud)
-: instance_handle{i.get()} {
-    auto info = create_info(cb, ud);
-    if (auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-                vkGetInstanceProcAddr(
-                        instance_handle, "vkCreateDebugUtilsMessengerEXT"));
-        func) {
-        worked(func(instance_handle, &info, nullptr, &handle));
-    } else {
-        throw felspar::stdexcept::runtime_error{
-                "vkCreateDebugUtilsMessengerEXT extension is not present"};
-    }
-}
-
-
-planet::vk::debug_messenger::~debug_messenger() {
-    if (instance_handle and handle) {
-        if (auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-                    vkGetInstanceProcAddr(
-                            instance_handle, "vkDestroyDebugUtilsMessengerEXT"));
-            func) {
-            func(instance_handle, handle, nullptr);
-        }
-    }
 }
