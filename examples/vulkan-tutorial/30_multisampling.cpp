@@ -151,6 +151,8 @@ class HelloTriangleApplication {
         return planet::vk::device{instance, extensions};
     }();
 
+    planet::vk::device_memory_allocator staging_memory{device};
+
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
 
     planet::vk::descriptor_set_layout descriptorSetLayout = [this]() {
@@ -407,9 +409,8 @@ class HelloTriangleApplication {
     planet::vk::buffer<Vertex> vertexBuffer;
     planet::vk::buffer<std::uint32_t> indexBuffer;
 
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    std::vector<void *> uniformBuffersMapped;
+    std::vector<planet::vk::buffer<UniformBufferObject>> uniformBuffers;
+    std::vector<planet::vk::device_memory::mapping> uniformBuffersMapped;
 
     planet::vk::descriptor_pool descriptorPool = [this]() {
         std::array<VkDescriptorPoolSize, 2> poolSizes{};
@@ -471,10 +472,7 @@ class HelloTriangleApplication {
     }
 
     void cleanup() {
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroyBuffer(device.get(), uniformBuffers[i], nullptr);
-            vkFreeMemory(device.get(), uniformBuffersMemory[i], nullptr);
-        }
+            uniformBuffers.clear();
 
         vkDestroySampler(device.get(), textureSampler, nullptr);
 
@@ -607,18 +605,13 @@ class HelloTriangleApplication {
             throw std::runtime_error("failed to load texture image!");
         }
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(
-                imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        planet::vk::buffer<std::byte> stagingBuffer{
+                staging_memory, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                stagingBuffer, stagingBufferMemory);
-
-        void *data;
-        vkMapMemory(device.get(), stagingBufferMemory, 0, imageSize, 0, &data);
-        memcpy(data, pixels, static_cast<size_t>(imageSize));
-        vkUnmapMemory(device.get(), stagingBufferMemory);
+                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+        auto stagingBufferMemory{stagingBuffer.map()};
+        memcpy(stagingBufferMemory.get(), pixels,
+               static_cast<size_t>(imageSize));
 
         stbi_image_free(pixels);
 
@@ -640,14 +633,11 @@ class HelloTriangleApplication {
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 mipLevels);
         copyBufferToImage(
-                stagingBuffer, textureImage.get(),
+                stagingBuffer.get(), textureImage.get(),
                 static_cast<uint32_t>(texWidth),
                 static_cast<uint32_t>(texHeight));
         // transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while
         // generating mipmaps
-
-        vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
-        vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
 
         generateMipmaps(
                 textureImage.get(), VK_FORMAT_R8G8B8A8_SRGB, texWidth,
@@ -909,18 +899,13 @@ class HelloTriangleApplication {
     void createVertexBuffer() {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(
-                bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        planet::vk::buffer<Vertex> stagingBuffer{
+                staging_memory,
+                vertices.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                stagingBuffer, stagingBufferMemory);
-
-        void *data;
-        vkMapMemory(device.get(), stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, vertices.data(), (size_t)bufferSize);
-        vkUnmapMemory(device.get(), stagingBufferMemory);
+                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+                        auto data = stagingBuffer.map();
+        memcpy(data.get(), vertices.data(), (size_t)bufferSize);
 
         vertexBuffer = {
                 device.startup_memory, vertices.size(),
@@ -928,27 +913,19 @@ class HelloTriangleApplication {
                         | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
-        copyBuffer(stagingBuffer, vertexBuffer.get(), bufferSize);
-
-        vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
-        vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
+        copyBuffer(stagingBuffer.get(), vertexBuffer.get(), bufferSize);
     }
 
     void createIndexBuffer() {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(
-                bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        planet::vk::buffer<std::uint32_t> stagingBuffer{
+                staging_memory,
+                indices.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                stagingBuffer, stagingBufferMemory);
-
-        void *data;
-        vkMapMemory(device.get(), stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, indices.data(), (size_t)bufferSize);
-        vkUnmapMemory(device.get(), stagingBufferMemory);
+                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+        auto data = stagingBuffer.map();
+        memcpy(data.get(), indices.data(), (size_t)bufferSize);
 
         indexBuffer = {
                 device.startup_memory, indices.size(),
@@ -956,36 +933,27 @@ class HelloTriangleApplication {
                         | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
-        copyBuffer(stagingBuffer, indexBuffer.get(), bufferSize);
-
-        vkDestroyBuffer(device.get(), stagingBuffer, nullptr);
-        vkFreeMemory(device.get(), stagingBufferMemory, nullptr);
+        copyBuffer(stagingBuffer.get(), indexBuffer.get(), bufferSize);
     }
 
     void createUniformBuffers() {
-        VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
         uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-        uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
         uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            createBuffer(
-                    bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                uniformBuffers[i] = {
+                        device.startup_memory,
+                    1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                    uniformBuffers[i], uniformBuffersMemory[i]);
-
-            vkMapMemory(
-                    device.get(), uniformBuffersMemory[i], 0, bufferSize, 0,
-                    &uniformBuffersMapped[i]);
+                            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+                uniformBuffersMapped[i] = uniformBuffers[i].map();
         }
     }
 
     void createDescriptorSets() {
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffers[i];
+            bufferInfo.buffer = uniformBuffers[i].get();
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1019,36 +987,6 @@ class HelloTriangleApplication {
                     static_cast<uint32_t>(descriptorWrites.size()),
                     descriptorWrites.data(), 0, nullptr);
         }
-    }
-
-    void createBuffer(
-            VkDeviceSize size,
-            VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties,
-            VkBuffer &buffer,
-            VkDeviceMemory &bufferMemory) {
-        VkBufferCreateInfo bufferInfo{};
-        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = size;
-        bufferInfo.usage = usage;
-        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        planet::vk::worked(
-                vkCreateBuffer(device.get(), &bufferInfo, nullptr, &buffer));
-
-        VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(device.get(), buffer, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex =
-                instance.find_memory_type(memRequirements, properties);
-
-        planet::vk::worked(vkAllocateMemory(
-                device.get(), &allocInfo, nullptr, &bufferMemory));
-
-        vkBindBufferMemory(device.get(), buffer, bufferMemory, 0);
     }
 
     planet::vk::command_buffer beginSingleTimeCommands() {
@@ -1171,7 +1109,7 @@ class HelloTriangleApplication {
                 10.0f);
         ubo.proj[1][1] *= -1;
 
-        memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+        memcpy(uniformBuffersMapped[currentImage].get(), &ubo, sizeof(ubo));
     }
 
     void drawFrame() {
