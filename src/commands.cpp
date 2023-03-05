@@ -20,7 +20,7 @@ planet::vk::command_pool::command_pool(vk::device &d, vk::surface const &s)
 
 
 planet::vk::command_buffers::command_buffers(
-        vk::command_pool const &cp,
+        vk::command_pool &cp,
         std::size_t const count,
         VkCommandBufferLevel const level)
 : device{cp.device}, command_pool{cp} {
@@ -50,7 +50,7 @@ planet::vk::command_buffers::~command_buffers() {
 
 
 planet::vk::command_buffer::command_buffer(
-        vk::command_pool const &cp, VkCommandBufferLevel const level)
+        vk::command_pool &cp, VkCommandBufferLevel const level)
 : self_owned{true}, device{cp.device}, command_pool{cp} {
     VkCommandBufferAllocateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -63,14 +63,14 @@ planet::vk::command_buffer::command_buffer(
 
 
 planet::vk::command_buffer::command_buffer(
-        vk::command_pool const &cp, VkCommandBuffer const h)
+        vk::command_pool &cp, VkCommandBuffer const h)
 : handle{h}, device{cp.device}, command_pool{cp} {}
 
 
 planet::vk::command_buffer::command_buffer(command_buffer &&b)
 : handle{std::exchange(b.handle, VK_NULL_HANDLE)},
-  device{b.device},
-  command_pool{b.command_pool} {}
+  device{std::move(b.device)},
+  command_pool{std::move(b.command_pool)} {}
 
 
 planet::vk::command_buffer::~command_buffer() {
@@ -80,6 +80,19 @@ planet::vk::command_buffer::~command_buffer() {
                 device.get(), command_pool.get(), handles.size(),
                 handles.data());
     }
+}
+
+
+planet::vk::command_buffer
+        planet::vk::command_buffer::single_use(vk::command_pool &cp) {
+    planet::vk::command_buffer cb{cp};
+    cb.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    return cb;
+}
+void planet::vk::command_buffer::end_and_submit() {
+    end();
+    submit(device().graphics_queue);
+    vkQueueWaitIdle(device().graphics_queue);
 }
 
 

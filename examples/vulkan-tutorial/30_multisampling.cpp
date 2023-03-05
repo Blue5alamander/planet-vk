@@ -655,7 +655,8 @@ class HelloTriangleApplication {
                     "texture image format does not support linear blitting!");
         }
 
-        auto commandBuffer = beginSingleTimeCommands();
+        auto commandBuffer =
+                planet::vk::command_buffer::single_use(commandPool);
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -729,7 +730,7 @@ class HelloTriangleApplication {
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
                 nullptr, 1, &barrier);
 
-        endSingleTimeCommands(std::move(commandBuffer));
+        commandBuffer.end_and_submit();
     }
 
     VkSampleCountFlagBits getMaxUsableSampleCount() {
@@ -760,7 +761,8 @@ class HelloTriangleApplication {
             VkImageLayout oldLayout,
             VkImageLayout newLayout,
             uint32_t mipLevels) {
-        auto commandBuffer = beginSingleTimeCommands();
+        auto commandBuffer =
+                planet::vk::command_buffer::single_use(commandPool);
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -801,12 +803,13 @@ class HelloTriangleApplication {
                 commandBuffer.get(), sourceStage, destinationStage, 0, 0,
                 nullptr, 0, nullptr, 1, &barrier);
 
-        endSingleTimeCommands(std::move(commandBuffer));
+        commandBuffer.end_and_submit();
     }
 
     void copyBufferToImage(
             VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        auto commandBuffer = beginSingleTimeCommands();
+        auto commandBuffer =
+                planet::vk::command_buffer::single_use(commandPool);
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -823,7 +826,7 @@ class HelloTriangleApplication {
                 commandBuffer.get(), buffer, image,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        endSingleTimeCommands(std::move(commandBuffer));
+        commandBuffer.end_and_submit();
     }
 
     void loadModel() {
@@ -961,27 +964,16 @@ class HelloTriangleApplication {
         }
     }
 
-    planet::vk::command_buffer beginSingleTimeCommands() {
-        planet::vk::command_buffer commandBuffer{commandPool};
-        commandBuffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-        return commandBuffer;
-    }
-
-    void endSingleTimeCommands(planet::vk::command_buffer commandBuffer) {
-        commandBuffer.end();
-        commandBuffer.submit(device.graphics_queue);
-        vkQueueWaitIdle(device.graphics_queue);
-    }
-
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-        auto commandBuffer = beginSingleTimeCommands();
+        auto commandBuffer =
+                planet::vk::command_buffer::single_use(commandPool);
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
         vkCmdCopyBuffer(
                 commandBuffer.get(), srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(std::move(commandBuffer));
+        commandBuffer.end_and_submit();
     }
 
     void recordCommandBuffer(
