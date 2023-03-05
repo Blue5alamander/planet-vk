@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <planet/vk/helpers.hpp>
+#include <planet/vk/image.hpp>
 
 
 namespace planet::vk {
@@ -23,7 +23,7 @@ namespace planet::vk {
 
         /// ### Query sampler
 
-        auto device_handle() const noexcept { return handle.owner(); }
+        device_view device;
         auto get() const noexcept { return handle.get(); }
     };
 
@@ -31,6 +31,10 @@ namespace planet::vk {
     /// ## Texture map
     class texture final {
       public:
+        std::uint32_t mip_levels = {};
+        vk::image image;
+        vk::image_view image_view;
+        vk::sampler sampler;
     };
 
 

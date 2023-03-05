@@ -397,10 +397,7 @@ class HelloTriangleApplication {
     planet::vk::image depthImage;
     planet::vk::image_view depthImageView;
 
-    uint32_t mipLevels;
-    planet::vk::image textureImage;
-    planet::vk::image_view textureImageView;
-    planet::vk::sampler textureSampler;
+    planet::vk::texture texture;
 
     std::vector<Vertex> vertices;
     std::vector<std::uint32_t> indices;
@@ -591,8 +588,8 @@ class HelloTriangleApplication {
                 texdata.size(), &texWidth, &texHeight, &texChannels,
                 STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
-        mipLevels = static_cast<uint32_t>(std::floor(
-                            std::log2(std::max(texWidth, texHeight))))
+        texture.mip_levels = static_cast<uint32_t>(std::floor(
+                                     std::log2(std::max(texWidth, texHeight))))
                 + 1;
 
         if (!pixels) {
@@ -610,11 +607,11 @@ class HelloTriangleApplication {
 
         stbi_image_free(pixels);
 
-        textureImage = {
+        texture.image = {
                 device.startup_memory,
                 static_cast<uint32_t>(texWidth),
                 static_cast<uint32_t>(texHeight),
-                mipLevels,
+                texture.mip_levels,
                 VK_SAMPLE_COUNT_1_BIT,
                 VK_FORMAT_R8G8B8A8_SRGB,
                 VK_IMAGE_TILING_OPTIMAL,
@@ -624,19 +621,19 @@ class HelloTriangleApplication {
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
         transitionImageLayout(
-                textureImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
+                texture.image.get(), VK_FORMAT_R8G8B8A8_SRGB,
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                mipLevels);
+                texture.mip_levels);
         copyBufferToImage(
-                stagingBuffer.get(), textureImage.get(),
+                stagingBuffer.get(), texture.image.get(),
                 static_cast<uint32_t>(texWidth),
                 static_cast<uint32_t>(texHeight));
         // transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while
         // generating mipmaps
 
         generateMipmaps(
-                textureImage.get(), VK_FORMAT_R8G8B8A8_SRGB, texWidth,
-                texHeight, mipLevels);
+                texture.image.get(), VK_FORMAT_R8G8B8A8_SRGB, texWidth,
+                texHeight, texture.mip_levels);
     }
 
     void generateMipmaps(
@@ -748,12 +745,14 @@ class HelloTriangleApplication {
     }
 
     void createTextureImageView() {
-        textureImageView = {
-                textureImage, VK_FORMAT_R8G8B8A8_SRGB,
-                VK_IMAGE_ASPECT_COLOR_BIT, mipLevels};
+        texture.image_view = {
+                texture.image, VK_FORMAT_R8G8B8A8_SRGB,
+                VK_IMAGE_ASPECT_COLOR_BIT, texture.mip_levels};
     }
 
-    void createTextureSampler() { textureSampler = {device, mipLevels}; }
+    void createTextureSampler() {
+        texture.sampler = {device, texture.mip_levels};
+    }
 
     void transitionImageLayout(
             VkImage image,
@@ -934,8 +933,8 @@ class HelloTriangleApplication {
 
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = textureImageView.get();
-            imageInfo.sampler = textureSampler.get();
+            imageInfo.imageView = texture.image_view.get();
+            imageInfo.sampler = texture.sampler.get();
 
             std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
