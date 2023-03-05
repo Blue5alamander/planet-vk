@@ -96,6 +96,7 @@ namespace planet::vk {
 
 
     /// ## A sub-chunk of allocated GPU memory
+
     /// TODO Have the memory managed by a separate allocator that splits a
     /// large allocation
     class device_memory final {
@@ -170,9 +171,6 @@ namespace planet::vk {
          * This is internally reference counted and the entire memory area is
          * mapped on first mapping. This allows the same Vulkan allocation to be
          * mapped multiple times at the same time.
-         *
-         * The flags for subsequent mappings must be the same as for the first.
-         * This is checked and an error will be thrown if this is not the case.
          */
         class mapping;
         friend class device_memory::mapping;
