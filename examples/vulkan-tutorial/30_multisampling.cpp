@@ -400,7 +400,7 @@ class HelloTriangleApplication {
     uint32_t mipLevels;
     planet::vk::image textureImage;
     planet::vk::image_view textureImageView;
-    VkSampler textureSampler;
+    planet::vk::sampler textureSampler;
 
     std::vector<Vertex> vertices;
     std::vector<std::uint32_t> indices;
@@ -465,17 +465,13 @@ class HelloTriangleApplication {
             glfwPollEvents();
             drawFrame();
         }
-
-        vkDeviceWaitIdle(device.get());
+        device.wait_idle();
     }
 
     void cleanup() {
+        uniformBuffersMapped.clear();
         uniformBuffers.clear();
-
-        vkDestroySampler(device.get(), textureSampler, nullptr);
-
         glfwDestroyWindow(window);
-
         glfwTerminate();
     }
 
@@ -757,29 +753,7 @@ class HelloTriangleApplication {
                 VK_IMAGE_ASPECT_COLOR_BIT, mipLevels};
     }
 
-    void createTextureSampler() {
-        VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.anisotropyEnable = VK_TRUE;
-        samplerInfo.maxAnisotropy =
-                instance.gpu().properties.limits.maxSamplerAnisotropy;
-        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable = VK_FALSE;
-        samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = static_cast<float>(mipLevels);
-        samplerInfo.mipLodBias = 0.0f;
-
-        planet::vk::worked(vkCreateSampler(
-                device.get(), &samplerInfo, nullptr, &textureSampler));
-    }
+    void createTextureSampler() { textureSampler = {device, mipLevels}; }
 
     void transitionImageLayout(
             VkImage image,
@@ -959,7 +933,7 @@ class HelloTriangleApplication {
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = textureImageView.get();
-            imageInfo.sampler = textureSampler;
+            imageInfo.sampler = textureSampler.get();
 
             std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 

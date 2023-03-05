@@ -20,3 +20,4 @@
 #include <planet/vk/surface.hpp>
 #include <planet/vk/swap_chain.hpp>
 #include <planet/vk/synchronisation.hpp>
+#include <planet/vk/texture.hpp>
