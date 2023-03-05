@@ -522,8 +522,7 @@ class HelloTriangleApplication {
                 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
                         | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
-        colorImageView = {
-                colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1};
+        colorImageView = {colorImage, VK_IMAGE_ASPECT_COLOR_BIT};
     }
 
     void createDepthResources() {
@@ -539,8 +538,7 @@ class HelloTriangleApplication {
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
-        depthImageView = {
-                depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1};
+        depthImageView = {depthImage, VK_IMAGE_ASPECT_DEPTH_BIT};
     }
 
     VkFormat findSupportedFormat(

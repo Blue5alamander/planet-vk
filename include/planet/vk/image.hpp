@@ -80,14 +80,10 @@ namespace planet::vk {
                 VkFormat,
                 VkImageAspectFlags,
                 std::uint32_t mip_levels);
-        image_view(
-                vk::image const &image,
-                VkFormat const format,
-                VkImageAspectFlags const flags,
-                std::uint32_t const mip_levels)
+        image_view(vk::image const &image, VkImageAspectFlags const flags)
         : image_view{
-                image.device_handle(), image.get(), format, flags,
-                mip_levels} {}
+                image.device_handle(), image.get(), image.format, flags,
+                image.mip_levels} {}
 
         /// #### Create an image view from the swap chain
         image_view(swap_chain const &, VkImage);

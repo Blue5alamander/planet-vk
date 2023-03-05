@@ -65,9 +65,7 @@ planet::vk::texture planet::vk::texture::create_with_mip_levels_from(
     texture.image.copy_from(cp, buffer);
     texture.image.generate_mip_maps(cp, mip_levels);
 
-    texture.image_view = {
-            texture.image, texture.image.format, VK_IMAGE_ASPECT_COLOR_BIT,
-            mip_levels};
+    texture.image_view = {texture.image, VK_IMAGE_ASPECT_COLOR_BIT};
 
     texture.sampler = {allocator.device, mip_levels};
 
