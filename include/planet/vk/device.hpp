@@ -37,7 +37,19 @@ namespace planet::vk {
         /// ### Allocators
 
         /// #### Allocate start-up memory
+        /**
+         * Use this to allocate device memory that is used for very long life
+         * times. For example, geometry or textures that ar loaded at start up
+         * and then used for the entire life of the application.
+         */
         device_memory_allocator startup_memory{*this};
+
+        /// #### Allocate staging memory
+        /**
+         * Use this for staging memory. The buffers or images etc. allocated
+         * here should be for very short lived allocations.
+         */
+        device_memory_allocator staging_memory{*this};
     };
 
 

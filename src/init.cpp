@@ -193,6 +193,7 @@ planet::vk::device::device(
 
 
 planet::vk::device::~device() {
+    staging_memory.clear_without_check();
     startup_memory.clear_without_check();
     if (handle) {
         vkDeviceWaitIdle(handle);

@@ -151,8 +151,6 @@ class HelloTriangleApplication {
         return planet::vk::device{instance, extensions};
     }();
 
-    planet::vk::device_memory_allocator staging_memory{device};
-
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
 
     planet::vk::descriptor_set_layout descriptorSetLayout = [this]() {
@@ -472,7 +470,7 @@ class HelloTriangleApplication {
     }
 
     void cleanup() {
-            uniformBuffers.clear();
+        uniformBuffers.clear();
 
         vkDestroySampler(device.get(), textureSampler, nullptr);
 
@@ -606,7 +604,8 @@ class HelloTriangleApplication {
         }
 
         planet::vk::buffer<std::byte> stagingBuffer{
-                staging_memory, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                device.staging_memory, imageSize,
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
         auto stagingBufferMemory{stagingBuffer.map()};
@@ -900,11 +899,11 @@ class HelloTriangleApplication {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
         planet::vk::buffer<Vertex> stagingBuffer{
-                staging_memory,
-                vertices.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                device.staging_memory, vertices.size(),
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-                        auto data = stagingBuffer.map();
+        auto data = stagingBuffer.map();
         memcpy(data.get(), vertices.data(), (size_t)bufferSize);
 
         vertexBuffer = {
@@ -920,8 +919,8 @@ class HelloTriangleApplication {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
         planet::vk::buffer<std::uint32_t> stagingBuffer{
-                staging_memory,
-                indices.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                device.staging_memory, indices.size(),
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
         auto data = stagingBuffer.map();
@@ -941,12 +940,12 @@ class HelloTriangleApplication {
         uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-                uniformBuffers[i] = {
-                        device.startup_memory,
-                    1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            uniformBuffers[i] = {
+                    device.startup_memory, 1,
+                    VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                             | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-                uniformBuffersMapped[i] = uniformBuffers[i].map();
+            uniformBuffersMapped[i] = uniformBuffers[i].map();
         }
     }
 
