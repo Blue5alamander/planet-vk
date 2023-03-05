@@ -39,7 +39,7 @@ namespace planet::vk {
         /// #### Allocate start-up memory
         /**
          * Use this to allocate device memory that is used for very long life
-         * times. For example, geometry or textures that ar loaded at start up
+         * times. For example, geometry or textures that art loaded at start up
          * and then used for the entire life of the application.
          */
         device_memory_allocator startup_memory{*this};
