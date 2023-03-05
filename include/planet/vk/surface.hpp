@@ -42,10 +42,10 @@ namespace planet::vk {
             return graphics.has_value() and present.has_value();
         }
         std::uint32_t graphics_queue_index() const noexcept {
-            return *graphics;
+            return graphics.value();
         }
         std::uint32_t presentation_queue_index() const noexcept {
-            return *present;
+            return present.value();
         }
 
         /// ### Swap chain support
