@@ -10,10 +10,6 @@
 namespace planet::vk::engine2d {
 
 
-    /// Maximum number of frames that we're willing to deal with at any given time
-    constexpr std::size_t max_frames_in_flight = 3;
-
-
     struct pos {
         float x, y;
 
@@ -31,6 +27,7 @@ namespace planet::vk::engine2d {
     class renderer final {
         std::size_t current_frame = {};
         vk::graphics_pipeline create_mesh_pipeline();
+        vk::render_pass create_render_pass();
 
         std::vector<vertex> mesh2d_triangles;
         std::vector<std::uint32_t> mesh2d_indexes;
@@ -51,7 +48,7 @@ namespace planet::vk::engine2d {
         vk::descriptor_set_layout ubo_layout{
                 vk::descriptor_set_layout::for_uniform_buffer_object(
                         app.device)};
-        vk::graphics_pipeline mesh_pipeline{create_mesh_pipeline()};
+        vk::render_pass render_pass{create_render_pass()};
 
         vk::command_pool command_pool{app.device, app.instance.surface};
         vk::command_buffers command_buffers{command_pool, max_frames_in_flight};
@@ -61,6 +58,11 @@ namespace planet::vk::engine2d {
                 render_finished_semaphore{app.device, app.device, app.device};
         std::array<vk::fence, max_frames_in_flight> fence{
                 app.device, app.device, app.device};
+
+
+        /// ### Pipelines
+
+        vk::graphics_pipeline mesh_pipeline{create_mesh_pipeline()};
 
 
         /// ### Drawing API

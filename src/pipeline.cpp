@@ -37,9 +37,9 @@ planet::vk::pipeline_layout::pipeline_layout(
 planet::vk::graphics_pipeline::graphics_pipeline(
         vk::device &d,
         VkGraphicsPipelineCreateInfo &info,
-        vk::render_pass rp,
+        vk::render_pass &rp,
         pipeline_layout pl)
-: device{d}, render_pass{std::move(rp)}, layout{std::move(pl)} {
+: device{d}, render_pass{rp}, layout{std::move(pl)} {
     info.renderPass = render_pass.get();
     info.layout = layout.get();
 

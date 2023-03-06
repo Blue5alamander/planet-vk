@@ -32,13 +32,13 @@ namespace planet::vk {
         graphics_pipeline(
                 vk::device &,
                 VkGraphicsPipelineCreateInfo &,
-                vk::render_pass,
+                vk::render_pass &,
                 pipeline_layout);
 
         device_view device;
         auto get() const noexcept { return handle.get(); }
 
-        vk::render_pass render_pass;
+        view<vk::render_pass> render_pass;
         vk::pipeline_layout layout;
 
       private:
