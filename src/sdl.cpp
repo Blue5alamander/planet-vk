@@ -1,11 +1,17 @@
 #include <planet/sdl/init.hpp>
+#include <planet/vk/buffer.hpp>
+#include <planet/vk/commands.hpp>
+#include <planet/vk/device.hpp>
 #include <planet/vk/extensions.hpp>
+#include <planet/vk/memory.hpp>
+#include <planet/vk/sdl/texture.hpp>
 #include <planet/vk/sdl/window.hpp>
 
 #include <felspar/exceptions.hpp>
 
 #include <SDL_vulkan.h>
 
+#include <cstring>
 #include <iostream>
 
 
@@ -65,4 +71,30 @@ planet::vk::sdl::window::window(
     int ww{}, wh{};
     SDL_Vulkan_GetDrawableSize(pw.get(), &ww, &wh);
     size = {float(ww), float(wh)};
+}
+
+
+/// ## Font and texture writing
+
+
+planet::vk::texture planet::vk::sdl::render(
+        device_memory_allocator &allocator,
+        command_pool &cp,
+        planet::sdl::font const &font,
+        char const *text) {
+    auto surface = font.render(text);
+
+    std::size_t const byte_count = surface.height() * surface.get()->pitch;
+
+    buffer<std::byte> staging{
+            allocator.device().staging_memory, byte_count,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+
+    auto mapped{staging.map()};
+    std::memcpy(mapped.get(), surface.get()->pixels, byte_count);
+
+    return planet::vk::texture::create_with_mip_levels_from(
+            allocator, cp, staging, surface.width(), surface.height());
 }

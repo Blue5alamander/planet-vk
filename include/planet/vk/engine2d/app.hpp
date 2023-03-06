@@ -23,6 +23,7 @@ namespace planet::vk::engine2d {
 
         planet::asset_manager asset_manager;
         planet::sdl::init sdl;
+        planet::sdl::ttf text{sdl};
         planet::vk::sdl::window window;
         planet::vk::extensions extensions{window};
         vk::instance instance;
