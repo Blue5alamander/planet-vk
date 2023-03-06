@@ -125,7 +125,7 @@ namespace planet::vk {
          * memory and updates the remaining memory to point to the second half
          * of GPU memory.
          */
-        device_memory split(std::size_t bytes);
+        device_memory split(std::size_t bytes, std::size_t alignment);
 
 
         /// ### Free the held memory
@@ -207,10 +207,11 @@ namespace planet::vk {
         /// ### Allocation and release
 
         /// #### Allocate memory from this allocator's pool
-        device_memory
-                allocate(std::size_t bytes, std::uint32_t memory_type_index);
         device_memory allocate(
-                std::size_t bytes, VkMemoryRequirements, VkMemoryPropertyFlags);
+                std::size_t bytes,
+                std::uint32_t memory_type_index,
+                std::size_t alignment);
+        device_memory allocate(VkMemoryRequirements, VkMemoryPropertyFlags);
 
         /// #### Release memory
         void deallocate(

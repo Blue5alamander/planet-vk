@@ -78,9 +78,9 @@ planet::vk::device_memory_allocator::device_memory_allocator(
 
 planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
         std::size_t const bytes_requested,
-        std::uint32_t const memory_type_index) {
-    auto const bytes = felspar::memory::block_size(
-            bytes_requested, config.minimum_alignment);
+        std::uint32_t const memory_type_index,
+        std::size_t const alignment) {
+    auto const bytes = felspar::memory::block_size(bytes_requested, alignment);
     auto &pool = pools[memory_type_index];
     std::scoped_lock _{pool.mtx};
     if (pool.splitting.size() < bytes) {
@@ -101,17 +101,18 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
                 allocating};
     }
     if (config.split) {
-        return pool.splitting.split(bytes);
+        return pool.splitting.split(bytes, alignment);
     } else {
         return std::exchange(pool.splitting, {});
     }
 }
 planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
-        std::size_t const bytes,
         VkMemoryRequirements const requirements,
         VkMemoryPropertyFlags const flags) {
     return allocate(
-            bytes, device().instance.find_memory_type(requirements, flags));
+            requirements.size,
+            device().instance.find_memory_type(requirements, flags),
+            requirements.alignment);
 }
 
 
@@ -167,18 +168,20 @@ planet::vk::device_memory::mapping planet::vk::device_memory::map_memory(
 }
 
 
-planet::vk::device_memory
-        planet::vk::device_memory::split(std::size_t const bytes) {
-    if (bytes > byte_count) {
+planet::vk::device_memory planet::vk::device_memory::split(
+        std::size_t const bytes, std::size_t const alignment) {
+    auto aligned_offset = felspar::memory::aligned_offset(offset, alignment);
+    auto const growth = bytes + aligned_offset - offset;
+    if (growth > byte_count) {
         throw felspar::stdexcept::logic_error{
                 "The split is larger than the memory block"};
-    } else {
-        device_memory first{
-                device_memory_allocation::increment(allocation), offset, bytes};
-        offset += bytes;
-        byte_count -= bytes;
-        return first;
     }
+    device_memory first{
+            device_memory_allocation::increment(allocation), aligned_offset,
+            bytes};
+    byte_count -= growth;
+    offset += growth;
+    return first;
 }
 
 

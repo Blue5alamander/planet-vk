@@ -38,7 +38,7 @@ planet::vk::image::image(
     VkMemoryRequirements requirements;
     vkGetImageMemoryRequirements(handle.owner(), handle.get(), &requirements);
 
-    memory = allocator.allocate(requirements.size, requirements, memory_flags);
+    memory = allocator.allocate(requirements, memory_flags);
     memory.bind_image_memory(handle.get());
 }
 

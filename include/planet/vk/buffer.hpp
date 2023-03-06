@@ -42,8 +42,9 @@ namespace planet::vk {
             buffer_handle.create<vkCreateBuffer>(
                     allocator->device.get(), buffer);
 
+            auto mr = memory_requirements();
             memory = allocator->allocate(
-                    memory_requirements().size, find_memory_type(properties));
+                    byte_count(), find_memory_type(properties), mr.alignment);
             memory.bind_buffer_memory(buffer_handle.get());
         }
         /// Allocate memory for a number of items, and copy them into GPU memory
