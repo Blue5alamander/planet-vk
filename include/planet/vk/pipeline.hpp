@@ -18,6 +18,7 @@ namespace planet::vk {
       public:
         pipeline_layout(vk::device &);
         pipeline_layout(vk::device &, descriptor_set_layout const &);
+        pipeline_layout(vk::device &, std::span<VkDescriptorSetLayout const>);
         pipeline_layout(vk::device &, VkPipelineLayoutCreateInfo const &);
 
         device_view device;

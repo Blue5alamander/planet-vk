@@ -25,6 +25,17 @@ planet::vk::pipeline_layout::pipeline_layout(
 
 
 planet::vk::pipeline_layout::pipeline_layout(
+        vk::device &d, std::span<VkDescriptorSetLayout const> const s)
+: device{d} {
+    VkPipelineLayoutCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    info.setLayoutCount = s.size();
+    info.pSetLayouts = s.data();
+    handle.create<vkCreatePipelineLayout>(device.get(), info);
+}
+
+
+planet::vk::pipeline_layout::pipeline_layout(
         vk::device &d, VkPipelineLayoutCreateInfo const &info)
 : device{d} {
     handle.create<vkCreatePipelineLayout>(device.get(), info);
