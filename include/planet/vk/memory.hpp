@@ -96,9 +96,6 @@ namespace planet::vk {
 
 
     /// ## A sub-chunk of allocated GPU memory
-
-    /// TODO Have the memory managed by a separate allocator that splits a
-    /// large allocation
     class device_memory final {
         friend class device_memory_allocator;
 
