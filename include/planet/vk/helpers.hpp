@@ -12,13 +12,17 @@ namespace planet::vk {
     class device;
 
 
-    /// Checks that an API has worked, if it has not then throw an exception
+    /// ## Checks that an API has worked
+    /// If it has not then throw an exception.
+    namespace detail {
+        std::string error(VkResult);
+    }
     inline VkResult
             worked(VkResult result,
                    felspar::source_location const &loc =
                            felspar::source_location::current()) {
         if (result != VK_SUCCESS) {
-            throw felspar::stdexcept::runtime_error{"Vulkan call failed", loc};
+            throw felspar::stdexcept::runtime_error{detail::error(result), loc};
         } else {
             return result;
         }

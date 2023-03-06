@@ -66,6 +66,24 @@ planet::vk::debug_messenger::~debug_messenger() {
 }
 
 
+/// ## `planet::vk::detail`
+
+
+/**
+ * Error code numbers can be found at
+ * <https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkResult.html>
+ */
+std::string planet::vk::detail::error(VkResult const code) {
+    return "Vulkan error: " + [code]() -> std::string {
+        switch (code) {
+        case VK_ERROR_OUT_OF_POOL_MEMORY: return "VK_ERROR_OUT_OF_POOL_MEMORY";
+        case VK_SUCCESS: return "VK_SUCCESS";
+        default: return "Unknown error " + std::to_string(code);
+        }
+    }();
+}
+
+
 /// ## `planet::vk::device`
 
 
