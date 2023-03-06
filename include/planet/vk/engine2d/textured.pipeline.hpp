@@ -39,14 +39,15 @@ namespace planet::vk::engine2d::pipeline {
         };
 
 
-        static constexpr std::size_t max_textures_per_frame = 1024;
+        static constexpr std::size_t max_textures_per_frame = 4;
 
-        vk::descriptor_pool texture_pool{app.device, max_frames_in_flight};
-        vk::descriptor_sets texture_sets{
-                texture_pool, texture_layout, max_frames_in_flight};
+        vk::descriptor_pool texture_pool{
+                app.device, max_textures_per_frame *max_frames_in_flight};
+        std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
 
         std::vector<vertex> quads;
-        std::vector<VkDescriptorImageInfo> textures;
+        std::array<std::vector<VkDescriptorImageInfo>, max_frames_in_flight>
+                textures;
     };
 
 

@@ -60,7 +60,11 @@ planet::vk::engine2d::pipeline::textured::textured(
         vk::swap_chain &sc,
         vk::render_pass &rp,
         vk::descriptor_set_layout &dsl)
-: app{a}, swap_chain{sc}, render_pass{rp}, vp_layout{dsl}, texture_layout{[&]() {
+: app{a},
+  swap_chain{sc},
+  render_pass{rp},
+  vp_layout{dsl},
+  texture_layout{[&]() {
       VkDescriptorSetLayoutBinding binding{};
       binding.binding = 0;
       binding.descriptorCount = max_textures_per_frame;
@@ -68,7 +72,11 @@ planet::vk::engine2d::pipeline::textured::textured(
       binding.pImmutableSamplers = nullptr;
       binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
       return vk::descriptor_set_layout{app.device, binding};
-  }()} {}
+  }()},
+  texture_sets{
+          {{texture_pool, texture_layout, max_textures_per_frame},
+           {texture_pool, texture_layout, max_textures_per_frame},
+           {texture_pool, texture_layout, max_textures_per_frame}}} {}
 
 
 planet::vk::graphics_pipeline
