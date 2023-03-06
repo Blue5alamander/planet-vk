@@ -7,24 +7,8 @@
 namespace planet::vk::engine2d::pipeline {
 
 
-    struct pos {
-        float x, y;
-
-        friend constexpr pos operator+(pos const l, pos const r) {
-            return {l.x + r.x, l.y + r.y};
-        }
-    };
-    struct vertex {
-        pos p;
-        colour c;
-    };
-
-
     /// ## 2D triangle mesh with per-vertex colour
     class mesh final {
-        std::vector<vertex> mesh2d_triangles;
-        std::vector<std::uint32_t> mesh2d_indexes;
-
         vk::graphics_pipeline create_mesh_pipeline();
 
       public:
@@ -41,19 +25,35 @@ namespace planet::vk::engine2d::pipeline {
         vk::graphics_pipeline pipeline{create_mesh_pipeline()};
 
 
+        struct pos {
+            float x, y;
+            friend constexpr pos operator+(pos const l, pos const r) {
+                return {l.x + r.x, l.y + r.y};
+            }
+        };
+        struct vertex {
+            pos p;
+            colour c;
+        };
+
+
         /// ### Draw a 2D triangle mesh with an optional positional offset
-        void draw_2dmesh(
-                std::span<vertex const>, std::span<std::uint32_t const>);
-        void draw_2dmesh(
-                std::span<vertex const>, std::span<std::uint32_t const>, pos);
-        void draw_2dmesh(
-                std::span<vertex const>,
-                std::span<std::uint32_t const>,
-                pos,
-                colour const &);
+        void draw(std::span<vertex const>, std::span<std::uint32_t const>);
+        void draw(std::span<vertex const>, std::span<std::uint32_t const>, pos);
+        void
+                draw(std::span<vertex const>,
+                     std::span<std::uint32_t const>,
+                     pos,
+                     colour const &);
+
+        /// ### Add draw commands to command buffer
+        void render(renderer &, command_buffer &, std::size_t current_frame);
 
       private:
+        std::vector<vertex> triangles;
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
+
+        std::vector<std::uint32_t> indexes;
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
     };
 

@@ -3,6 +3,7 @@
 
 #include <planet/affine/matrix3d.hpp>
 #include <planet/vk/engine2d/app.hpp>
+#include <planet/vk/engine2d/mesh.pipeline.hpp>
 
 #include <planet/affine/matrix3d.hpp>
 
@@ -10,27 +11,10 @@
 namespace planet::vk::engine2d {
 
 
-    struct pos {
-        float x, y;
-
-        friend constexpr pos operator+(pos const l, pos const r) {
-            return {l.x + r.x, l.y + r.y};
-        }
-    };
-    struct vertex {
-        pos p;
-        colour c;
-    };
-
-
     /// ## Renderer
     class renderer final {
         std::size_t current_frame = {};
-        vk::graphics_pipeline create_mesh_pipeline();
         vk::render_pass create_render_pass();
-
-        std::vector<vertex> mesh2d_triangles;
-        std::vector<std::uint32_t> mesh2d_indexes;
 
       public:
         renderer(engine2d::app &);
@@ -44,7 +28,7 @@ namespace planet::vk::engine2d {
 
 
         /// ### Swap chain, command buffers and synchronisation
-        vk::swap_chain swapchain{app.device, app.window.extents()};
+        vk::swap_chain swap_chain{app.device, app.window.extents()};
         vk::descriptor_set_layout ubo_layout{
                 vk::descriptor_set_layout::for_uniform_buffer_object(
                         app.device)};
@@ -62,24 +46,13 @@ namespace planet::vk::engine2d {
 
         /// ### Pipelines
 
-        vk::graphics_pipeline mesh_pipeline{create_mesh_pipeline()};
+        pipeline::mesh mesh{app, swap_chain, render_pass, ubo_layout};
 
 
         /// ### Drawing API
 
         /// #### Start the render cycle
         felspar::coro::task<void> start(VkClearValue);
-
-        /// #### Draw a 2D triangle mesh with an optional positional offset
-        void draw_2dmesh(
-                std::span<vertex const>, std::span<std::uint32_t const>);
-        void draw_2dmesh(
-                std::span<vertex const>, std::span<std::uint32_t const>, pos);
-        void draw_2dmesh(
-                std::span<vertex const>,
-                std::span<std::uint32_t const>,
-                pos,
-                colour const &);
 
         /// #### Submit and present the frame
         /// This blocks until the frame is complete
@@ -104,12 +77,6 @@ namespace planet::vk::engine2d {
         /// ### Data we need to track whilst in the render loop
 
         std::uint32_t image_index = {};
-        std::array<
-                planet::vk::buffer<planet::vk::engine2d::vertex>,
-                max_frames_in_flight>
-                vertex_buffers;
-        std::array<planet::vk::buffer<std::uint32_t>, max_frames_in_flight>
-                index_buffers;
 
         /// ### View port transformation matrix and UBO
 
