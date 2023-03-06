@@ -348,12 +348,6 @@ class HelloTriangleApplication {
                 static_cast<uint32_t>(dynamicStates.size());
         dynamicState.pDynamicStates = dynamicStates.data();
 
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = descriptorSetLayout.address();
-
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount = shaderStages.size();
@@ -370,7 +364,8 @@ class HelloTriangleApplication {
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
         return planet::vk::graphics_pipeline(
-                device, pipelineInfo, renderPass, {device, pipelineLayoutInfo});
+                device, pipelineInfo, renderPass,
+                {device, descriptorSetLayout});
     }()};
 
     planet::vk::command_pool commandPool{device, instance.surface};
