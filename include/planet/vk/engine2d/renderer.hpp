@@ -4,6 +4,7 @@
 #include <planet/affine/matrix3d.hpp>
 #include <planet/vk/engine2d/app.hpp>
 #include <planet/vk/engine2d/mesh.pipeline.hpp>
+#include <planet/vk/engine2d/textured.pipeline.hpp>
 
 #include <planet/affine/matrix3d.hpp>
 
@@ -47,6 +48,7 @@ namespace planet::vk::engine2d {
         /// ### Pipelines
 
         pipeline::mesh mesh{app, swap_chain, render_pass, ubo_layout};
+        pipeline::textured textured{app, swap_chain, render_pass, ubo_layout};
 
 
         /// ### Drawing API
