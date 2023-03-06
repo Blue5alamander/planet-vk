@@ -28,7 +28,7 @@ namespace {
     template<>
     auto attribute_description<
             planet::vk::engine2d::pipeline::textured::vertex>() {
-        std::array<VkVertexInputAttributeDescription, 2> attrs{};
+        std::array<VkVertexInputAttributeDescription, 3> attrs{};
 
         attrs[0].binding = 0;
         attrs[0].location = 0;
@@ -41,6 +41,12 @@ namespace {
         attrs[1].format = VK_FORMAT_R32G32_SFLOAT;
         attrs[1].offset =
                 offsetof(planet::vk::engine2d::pipeline::textured::vertex, uv);
+
+        attrs[2].binding = 0;
+        attrs[2].location = 2;
+        attrs[2].format = VK_FORMAT_R32_UINT;
+        attrs[2].offset = offsetof(
+                planet::vk::engine2d::pipeline::textured::vertex, tex_id);
 
         return attrs;
     }
@@ -57,7 +63,7 @@ planet::vk::engine2d::pipeline::textured::textured(
 : app{a}, swap_chain{sc}, render_pass{rp}, vp_layout{dsl}, texture_layout{[&]() {
       VkDescriptorSetLayoutBinding binding{};
       binding.binding = 0;
-      binding.descriptorCount = 1;
+      binding.descriptorCount = max_textures_per_frame;
       binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       binding.pImmutableSamplers = nullptr;
       binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;

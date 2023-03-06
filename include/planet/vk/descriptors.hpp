@@ -25,7 +25,7 @@ namespace planet::vk {
                 std::span<VkDescriptorPoolSize const>,
                 std::uint32_t max_sets);
         /// ### Create a pool for a single size with the requested maximum size
-        explicit descriptor_pool(vk::device &, std::uint32_t count = 1);
+        descriptor_pool(vk::device &, std::uint32_t count);
 
         device_view device;
         VkDescriptorPool get() const noexcept { return handle.get(); }
