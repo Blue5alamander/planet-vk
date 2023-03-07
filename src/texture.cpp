@@ -71,3 +71,8 @@ planet::vk::texture planet::vk::texture::create_with_mip_levels_from(
 
     return texture;
 }
+
+
+planet::vk::texture::operator bool() const noexcept {
+    return image.get() and image_view.get() and sampler.get();
+}

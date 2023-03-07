@@ -44,6 +44,10 @@ namespace planet::vk {
         vk::image image;
         vk::image_view image_view;
         vk::sampler sampler;
+
+
+        /// ### Queries
+        explicit operator bool() const noexcept;
     };
 
 
