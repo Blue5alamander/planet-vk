@@ -1,3 +1,4 @@
+#include <planet/vk/engine2d/renderer.hpp>
 #include <planet/vk/engine2d/textured.pipeline.hpp>
 
 
@@ -73,10 +74,7 @@ planet::vk::engine2d::pipeline::textured::textured(
       binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
       return vk::descriptor_set_layout{app.device, binding};
   }()},
-  texture_sets{
-          {{texture_pool, texture_layout, max_textures_per_frame},
-           {texture_pool, texture_layout, max_textures_per_frame},
-           {texture_pool, texture_layout, max_textures_per_frame}}} {}
+  textures(max_textures_per_frame) {}
 
 
 planet::vk::graphics_pipeline
@@ -182,4 +180,88 @@ planet::vk::graphics_pipeline
     return planet::vk::graphics_pipeline{
             app.device, graphics_pipeline_info, render_pass,
             planet::vk::pipeline_layout{app.device, layouts}};
+}
+
+
+void planet::vk::engine2d::pipeline::textured::draw(
+        vk::texture const &texture, affine::rectangle2d const pos) {
+    if (not(quad_count < textures.size())) { return; }
+    std::size_t const index = quads.size();
+    quads.push_back(
+            {{pos.bottom_right().x(), pos.bottom_right().y()},
+             {1, 1},
+             quad_count});
+    quads.push_back(
+            {{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}, quad_count});
+    quads.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}, quad_count});
+    quads.push_back(
+            {{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}, quad_count});
+    indexes.push_back(index);
+    indexes.push_back(index + 1);
+    indexes.push_back(index + 2);
+    indexes.push_back(index);
+    indexes.push_back(index + 2);
+    indexes.push_back(index + 3);
+    textures[quad_count].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    textures[quad_count].imageView = texture.image_view.get();
+    textures[quad_count].sampler = texture.sampler.get();
+    ++quad_count;
+}
+
+
+void planet::vk::engine2d::pipeline::textured::render(
+        engine2d::renderer &renderer,
+        command_buffer &cb,
+        std::size_t const current_frame) {
+    // Cheat -- fill in the rest of the texture descriptors with one of the values
+    while (quad_count < textures.size()) {
+        textures[quad_count++] = textures[0];
+    }
+
+    // Upload and bind data set
+    VkWriteDescriptorSet wds{};
+
+    wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    wds.dstBinding = 0;
+    wds.dstArrayElement = 0;
+    wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    wds.descriptorCount = max_textures_per_frame;
+    wds.pBufferInfo = 0;
+    wds.dstSet = texture_sets[current_frame];
+    wds.pImageInfo = textures.data();
+
+    vkUpdateDescriptorSets(app.device.get(), 1, &wds, 0, nullptr);
+
+    // Issue draw command
+    vkCmdBindDescriptorSets(
+            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout.get(), 0,
+            1, &texture_sets[current_frame], 0, nullptr);
+
+    auto &vertex_buffer = vertex_buffers[current_frame];
+    vertex_buffer = {
+            renderer.per_frame_memory, quads, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+    auto &index_buffer = index_buffers[current_frame];
+    index_buffer = {
+            renderer.per_frame_memory, indexes,
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+
+    std::array buffers{vertex_buffer.get()};
+    std::array offset{VkDeviceSize{}};
+
+    vkCmdBindVertexBuffers(
+            cb.get(), 0, buffers.size(), buffers.data(), offset.data());
+    vkCmdBindIndexBuffer(cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdDrawIndexed(
+            cb.get(), static_cast<uint32_t>(indexes.size()), 1, 0, 0, 0);
+
+    // Clear out data from this frame
+    quads.clear();
+    indexes.clear();
+    quad_count = {};
+    textures.clear();
+    textures.resize(max_textures_per_frame);
 }

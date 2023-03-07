@@ -166,6 +166,14 @@ void planet::vk::engine2d::renderer::submit_and_present() {
             nullptr);
     mesh.render(*this, cb, current_frame);
 
+    vkCmdBindPipeline(
+            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, mesh.pipeline.get());
+    vkCmdBindDescriptorSets(
+            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+            textured.pipeline.layout.get(), 0, 1, &ubo_sets[current_frame], 0,
+            nullptr);
+    textured.render(*this, cb, current_frame);
+
     vkCmdEndRenderPass(cb.get());
     planet::vk::worked(vkEndCommandBuffer(cb.get()));
 

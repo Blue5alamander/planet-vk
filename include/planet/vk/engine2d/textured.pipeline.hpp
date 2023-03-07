@@ -39,15 +39,29 @@ namespace planet::vk::engine2d::pipeline {
         };
 
 
-        static constexpr std::size_t max_textures_per_frame = 4;
+        static constexpr std::size_t max_textures_per_frame = 8;
 
         vk::descriptor_pool texture_pool{
                 app.device, max_textures_per_frame *max_frames_in_flight};
-        std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
+        vk::descriptor_sets texture_sets{
+                texture_pool, texture_layout, max_frames_in_flight};
 
         std::vector<vertex> quads;
-        std::array<std::vector<VkDescriptorImageInfo>, max_frames_in_flight>
-                textures;
+        std::vector<std::uint32_t> indexes;
+        std::uint32_t quad_count = {};
+        std::vector<VkDescriptorImageInfo> textures;
+
+        std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
+        std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
+
+        /// ### Drawing API
+
+        /// #### Draw texture stretched to the axis aligned rectangle
+        void draw(vk::texture const &, affine::rectangle2d);
+
+
+        /// ### Add draw commands to command buffer
+        void render(renderer &, command_buffer &, std::size_t current_frame);
     };
 
 
