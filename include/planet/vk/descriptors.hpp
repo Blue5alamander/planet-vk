@@ -73,6 +73,8 @@ namespace planet::vk {
             return sets.at(index);
         }
         std::size_t size() const noexcept { return sets.size(); }
+        VkDescriptorSet *data() noexcept { return sets.data(); }
+        VkDescriptorSet const *data() const noexcept { return sets.data(); }
     };
 
 

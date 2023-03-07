@@ -46,6 +46,7 @@ namespace planet::vk::engine2d::pipeline {
                      pos,
                      colour const &);
 
+
         /// ### Add draw commands to command buffer
         void render(renderer &, command_buffer &, std::size_t current_frame);
 
