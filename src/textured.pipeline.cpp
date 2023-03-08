@@ -29,7 +29,7 @@ namespace {
     template<>
     auto attribute_description<
             planet::vk::engine2d::pipeline::textured::vertex>() {
-        std::array<VkVertexInputAttributeDescription, 3> attrs{};
+        std::array<VkVertexInputAttributeDescription, 2> attrs{};
 
         attrs[0].binding = 0;
         attrs[0].location = 0;
@@ -43,12 +43,6 @@ namespace {
         attrs[1].offset =
                 offsetof(planet::vk::engine2d::pipeline::textured::vertex, uv);
 
-        attrs[2].binding = 0;
-        attrs[2].location = 2;
-        attrs[2].format = VK_FORMAT_R32_UINT;
-        attrs[2].offset = offsetof(
-                planet::vk::engine2d::pipeline::textured::vertex, tex_id);
-
         return attrs;
     }
 
@@ -61,20 +55,15 @@ planet::vk::engine2d::pipeline::textured::textured(
         vk::swap_chain &sc,
         vk::render_pass &rp,
         vk::descriptor_set_layout &dsl)
-: app{a},
-  swap_chain{sc},
-  render_pass{rp},
-  vp_layout{dsl},
-  texture_layout{[&]() {
+: app{a}, swap_chain{sc}, render_pass{rp}, vp_layout{dsl}, texture_layout{[&]() {
       VkDescriptorSetLayoutBinding binding{};
       binding.binding = 0;
-      binding.descriptorCount = max_textures_per_frame;
+      binding.descriptorCount = 1;
       binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       binding.pImmutableSamplers = nullptr;
       binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
       return vk::descriptor_set_layout{app.device, binding};
-  }()},
-  textures(max_textures_per_frame) {}
+  }()} {}
 
 
 planet::vk::graphics_pipeline
@@ -185,27 +174,25 @@ planet::vk::graphics_pipeline
 
 void planet::vk::engine2d::pipeline::textured::draw(
         vk::texture const &texture, affine::rectangle2d const pos) {
-    if (not(quad_count < textures.size())) { return; }
-    std::size_t const index = quads.size();
-    quads.push_back(
-            {{pos.bottom_right().x(), pos.bottom_right().y()},
-             {1, 1},
-             quad_count});
-    quads.push_back(
-            {{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}, quad_count});
-    quads.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}, quad_count});
-    quads.push_back(
-            {{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}, quad_count});
-    indexes.push_back(index);
-    indexes.push_back(index + 1);
-    indexes.push_back(index + 2);
-    indexes.push_back(index);
-    indexes.push_back(index + 2);
-    indexes.push_back(index + 3);
-    textures[quad_count].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    textures[quad_count].imageView = texture.image_view.get();
-    textures[quad_count].sampler = texture.sampler.get();
-    ++quad_count;
+    std::size_t const quad_index = quads.size();
+
+    quads.push_back({{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}});
+    quads.push_back({{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}});
+    quads.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}});
+    quads.push_back({{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}});
+
+    // For now swap the vertex order so we know we'll see at least one of them
+    indexes.push_back(quad_index);
+    indexes.push_back(quad_index + 1);
+    indexes.push_back(quad_index + 2);
+    indexes.push_back(quad_index);
+    indexes.push_back(quad_index + 3);
+    indexes.push_back(quad_index + 2);
+
+    textures.emplace_back();
+    textures.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    textures.back().imageView = texture.image_view.get();
+    textures.back().sampler = texture.sampler.get();
 }
 
 
@@ -213,29 +200,6 @@ void planet::vk::engine2d::pipeline::textured::render(
         engine2d::renderer &renderer,
         command_buffer &cb,
         std::size_t const current_frame) {
-    // Cheat -- fill in the rest of the texture descriptors with one of the values
-    while (quad_count < textures.size()) {
-        textures[quad_count++] = textures[0];
-    }
-
-    // Upload and bind data set
-    VkWriteDescriptorSet wds{};
-
-    wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    wds.dstBinding = 0;
-    wds.dstArrayElement = 0;
-    wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    wds.descriptorCount = max_textures_per_frame;
-    wds.pBufferInfo = 0;
-    wds.dstSet = texture_sets[current_frame];
-    wds.pImageInfo = textures.data();
-
-    vkUpdateDescriptorSets(app.device.get(), 1, &wds, 0, nullptr);
-
-    // Issue draw command
-    vkCmdBindDescriptorSets(
-            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout.get(), 0,
-            1, &texture_sets[current_frame], 0, nullptr);
 
     auto &vertex_buffer = vertex_buffers[current_frame];
     vertex_buffer = {
@@ -255,13 +219,35 @@ void planet::vk::engine2d::pipeline::textured::render(
     vkCmdBindVertexBuffers(
             cb.get(), 0, buffers.size(), buffers.data(), offset.data());
     vkCmdBindIndexBuffer(cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
-    vkCmdDrawIndexed(
-            cb.get(), static_cast<uint32_t>(indexes.size()), 1, 0, 0, 0);
+
+        vkCmdBindDescriptorSets(
+                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipeline.layout.get(), 1, 1, &texture_sets[current_frame], 0,
+                nullptr);
+
+    for (std::size_t index{}; auto const &tx : textures) {
+        VkWriteDescriptorSet wds{};
+
+        wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        wds.dstSet = texture_sets[current_frame];
+        wds.dstBinding = 0;
+        wds.dstArrayElement = 0;
+        wds.descriptorCount = 1;
+        wds.pBufferInfo = 0;
+        wds.pImageInfo = &tx;
+
+        vkUpdateDescriptorSets(app.device.get(), 1, &wds, 0, nullptr);
+
+        constexpr std::uint32_t index_count = 6;
+        constexpr std::uint32_t instance_count = 1;
+        vkCmdDrawIndexed(cb.get(), index_count, instance_count, index, 0, 0);
+
+        ++index;
+    }
 
     // Clear out data from this frame
     quads.clear();
     indexes.clear();
-    quad_count = {};
     textures.clear();
-    textures.resize(max_textures_per_frame);
 }

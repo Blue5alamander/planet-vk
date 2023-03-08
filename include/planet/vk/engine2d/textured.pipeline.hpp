@@ -35,20 +35,15 @@ namespace planet::vk::engine2d::pipeline {
         };
         struct vertex {
             pos p, uv;
-            std::uint32_t tex_id = {};
         };
 
 
-        static constexpr std::size_t max_textures_per_frame = 8;
-
-        vk::descriptor_pool texture_pool{
-                app.device, max_textures_per_frame *max_frames_in_flight};
+        vk::descriptor_pool texture_pool{app.device, max_frames_in_flight};
         vk::descriptor_sets texture_sets{
                 texture_pool, texture_layout, max_frames_in_flight};
 
         std::vector<vertex> quads;
         std::vector<std::uint32_t> indexes;
-        std::uint32_t quad_count = {};
         std::vector<VkDescriptorImageInfo> textures;
 
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
