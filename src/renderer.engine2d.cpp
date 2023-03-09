@@ -158,20 +158,17 @@ felspar::coro::task<void>
 void planet::vk::engine2d::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
 
-    vkCmdBindPipeline(
-            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, mesh.pipeline.get());
     vkCmdBindDescriptorSets(
             cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
             mesh.pipeline.layout.get(), 0, 1, &ubo_sets[current_frame], 0,
             nullptr);
+
+    vkCmdBindPipeline(
+            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, mesh.pipeline.get());
     mesh.render(*this, cb, current_frame);
 
     vkCmdBindPipeline(
             cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, textured.pipeline.get());
-    vkCmdBindDescriptorSets(
-            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-            textured.pipeline.layout.get(), 0, 1, &ubo_sets[current_frame], 0,
-            nullptr);
     textured.render(*this, cb, current_frame);
 
     vkCmdEndRenderPass(cb.get());
