@@ -199,8 +199,8 @@ void planet::vk::engine2d::pipeline::textured::draw(
 
     // For now swap the vertex order so we know we'll see at least one of them
     indexes.push_back(quad_index);
-    indexes.push_back(quad_index + 1);
     indexes.push_back(quad_index + 2);
+    indexes.push_back(quad_index + 1);
     indexes.push_back(quad_index);
     indexes.push_back(quad_index + 3);
     indexes.push_back(quad_index + 2);
