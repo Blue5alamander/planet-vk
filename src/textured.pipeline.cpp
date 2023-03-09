@@ -254,7 +254,11 @@ void planet::vk::engine2d::pipeline::textured::render(
 
         constexpr std::uint32_t index_count = 6;
         constexpr std::uint32_t instance_count = 1;
-        vkCmdDrawIndexed(cb.get(), index_count, instance_count, index, 0, 0);
+        constexpr std::int32_t vertex_offset = 0;
+        constexpr std::uint32_t first_instance = 0;
+        vkCmdDrawIndexed(
+                cb.get(), index_count, instance_count, index * index_count,
+                vertex_offset, first_instance);
 
         ++index;
     }
