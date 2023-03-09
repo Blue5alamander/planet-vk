@@ -38,7 +38,7 @@ namespace planet::vk::engine2d::pipeline {
         };
 
 
-        static constexpr std::size_t max_textures_per_frame = 1024;
+        static constexpr std::size_t max_textures_per_frame = 10240;
 
         vk::descriptor_pool texture_pool{
                 app.device, max_frames_in_flight *max_textures_per_frame};
