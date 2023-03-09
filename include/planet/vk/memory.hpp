@@ -249,7 +249,9 @@ namespace planet::vk {
         mapping &operator=(mapping const &) = delete;
         mapping &operator=(mapping &&);
 
-        void *get() const noexcept { return pointer; }
+        std::byte *get() const noexcept {
+            return reinterpret_cast<std::byte *>(pointer);
+        }
     };
 
 
