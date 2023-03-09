@@ -55,7 +55,11 @@ planet::vk::engine2d::pipeline::textured::textured(
         vk::swap_chain &sc,
         vk::render_pass &rp,
         vk::descriptor_set_layout &dsl)
-: app{a}, swap_chain{sc}, render_pass{rp}, vp_layout{dsl}, texture_layout{[&]() {
+: app{a},
+  swap_chain{sc},
+  render_pass{rp},
+  vp_layout{dsl},
+  texture_layout{[&]() {
       VkDescriptorSetLayoutBinding binding{};
       binding.binding = 0;
       binding.descriptorCount = 1;
@@ -63,7 +67,14 @@ planet::vk::engine2d::pipeline::textured::textured(
       binding.pImmutableSamplers = nullptr;
       binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
       return vk::descriptor_set_layout{app.device, binding};
-  }()} {}
+  }()},
+  texture_sets{
+          vk::descriptor_sets{
+                  texture_pool, texture_layout, max_textures_per_frame},
+          vk::descriptor_sets{
+                  texture_pool, texture_layout, max_textures_per_frame},
+          vk::descriptor_sets{
+                  texture_pool, texture_layout, max_textures_per_frame}} {}
 
 
 planet::vk::graphics_pipeline
@@ -174,6 +185,11 @@ planet::vk::graphics_pipeline
 
 void planet::vk::engine2d::pipeline::textured::draw(
         vk::texture const &texture, affine::rectangle2d const pos) {
+    if (textures.size() == max_textures_per_frame) {
+        throw felspar::stdexcept::runtime_error{
+                "Have run out of texture slots for this frame"};
+    }
+
     std::size_t const quad_index = quads.size();
 
     quads.push_back({{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}});
@@ -220,24 +236,21 @@ void planet::vk::engine2d::pipeline::textured::render(
             cb.get(), 0, buffers.size(), buffers.data(), offset.data());
     vkCmdBindIndexBuffer(cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdBindDescriptorSets(
-                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipeline.layout.get(), 1, 1, &texture_sets[current_frame], 0,
-                nullptr);
-
     for (std::size_t index{}; auto const &tx : textures) {
         VkWriteDescriptorSet wds{};
-
         wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        wds.dstSet = texture_sets[current_frame];
+        wds.dstSet = texture_sets[current_frame][index];
         wds.dstBinding = 0;
         wds.dstArrayElement = 0;
         wds.descriptorCount = 1;
-        wds.pBufferInfo = 0;
         wds.pImageInfo = &tx;
-
         vkUpdateDescriptorSets(app.device.get(), 1, &wds, 0, nullptr);
+
+        vkCmdBindDescriptorSets(
+                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipeline.layout.get(), 1, 1,
+                &texture_sets[current_frame][index], 0, nullptr);
 
         constexpr std::uint32_t index_count = 6;
         constexpr std::uint32_t instance_count = 1;

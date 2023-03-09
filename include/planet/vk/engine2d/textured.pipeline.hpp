@@ -38,9 +38,11 @@ namespace planet::vk::engine2d::pipeline {
         };
 
 
-        vk::descriptor_pool texture_pool{app.device, max_frames_in_flight};
-        vk::descriptor_sets texture_sets{
-                texture_pool, texture_layout, max_frames_in_flight};
+        static constexpr std::size_t max_textures_per_frame = 1024;
+
+        vk::descriptor_pool texture_pool{
+                app.device, max_frames_in_flight *max_textures_per_frame};
+        std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
 
         std::vector<vertex> quads;
         std::vector<std::uint32_t> indexes;
