@@ -184,7 +184,15 @@ namespace planet::vk {
     class device_memory_allocator final {
         /// ### Memory pool
         struct pool {
-            std::mutex mtx;
+            /**
+             * This mutex must be recursive because we can free the rest of the
+             * split memory if it is not large enough, and that in turn can lead
+             * to a memory chunk being deallocated and added back into the free
+             * memory pool -- we really want to be able to re-use that memory,
+             * and we really don't want to lock up the freeing code waiting on
+             * the same mutex as the allocating code.
+             */
+            std::recursive_mutex mtx;
             std::vector<device_memory_allocation::handle_type> free_memory;
             device_memory splitting;
         };
