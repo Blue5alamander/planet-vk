@@ -155,7 +155,13 @@ planet::vk::graphics_pipeline
     blend_mode.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
             | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT
             | VK_COLOR_COMPONENT_A_BIT;
-    blend_mode.blendEnable = VK_FALSE;
+    blend_mode.blendEnable = VK_TRUE;
+    blend_mode.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blend_mode.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blend_mode.colorBlendOp = VK_BLEND_OP_ADD;
+    blend_mode.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blend_mode.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blend_mode.alphaBlendOp = VK_BLEND_OP_ADD;
 
     VkPipelineColorBlendStateCreateInfo blend_info = {};
     blend_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
