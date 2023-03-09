@@ -84,7 +84,11 @@ planet::vk::texture planet::vk::sdl::render(
         char const *text) {
     auto surface = font.render(text);
 
-    std::size_t const byte_count = surface.height() * surface.get()->pitch;
+    if (surface.get()->format->format != SDL_PIXELFORMAT_ARGB8888) {
+        throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
+    }
+
+    std::size_t const byte_count = surface.height() * surface.width() * 4;
 
     buffer<std::byte> staging{
             allocator.device().staging_memory, byte_count,
@@ -93,7 +97,15 @@ planet::vk::texture planet::vk::sdl::render(
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 
     auto mapped{staging.map()};
-    std::memcpy(mapped.get(), surface.get()->pixels, byte_count);
+    std::byte *const dest_base = mapped.get();
+    std::byte const *const src_base =
+            reinterpret_cast<std::byte const *>(surface.get()->pixels);
+    std::size_t const line_bytes = surface.width() * 4;
+    for (std::size_t line{}; line < surface.height(); ++line) {
+        std::size_t const dest_offset = line * line_bytes;
+        std::size_t const src_offset = line * surface.get()->pitch;
+        std::memcpy(dest_base + dest_offset, src_base + src_offset, line_bytes);
+    }
 
     return planet::vk::texture::create_with_mip_levels_from(
             allocator, cp, staging, surface.width(), surface.height());
