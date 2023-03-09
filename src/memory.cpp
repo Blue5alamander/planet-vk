@@ -84,6 +84,7 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
     auto &pool = pools[memory_type_index];
     std::scoped_lock _{pool.mtx};
     if (pool.splitting.size() < bytes) {
+        pool.splitting.reset();
         auto const allocating = std::max(bytes, config.allocation_block_size);
         device_memory_allocation::handle_type handle;
         if (allocating > config.allocation_block_size
