@@ -66,7 +66,7 @@ planet::vk::engine2d::renderer::~renderer() {
 planet::affine::matrix3d planet::vk::engine2d::renderer::correct_aspect_ratio(
         engine2d::app &app) {
     return affine::matrix3d::scale_xy(
-            app.window.height() / app.window.width(), 1.0f);
+            app.window.height() / app.window.width(), -1.0f);
 }
 
 
