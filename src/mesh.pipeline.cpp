@@ -196,6 +196,8 @@ void planet::vk::engine2d::pipeline::mesh::render(
         engine2d::renderer &renderer,
         command_buffer &cb,
         std::size_t const current_frame) {
+    if (triangles.empty()) { return; }
+
     auto &vertex_buffer = vertex_buffers[current_frame];
     vertex_buffer = {
             renderer.per_frame_memory, triangles,

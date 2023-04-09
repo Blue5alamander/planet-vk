@@ -203,7 +203,6 @@ void planet::vk::engine2d::pipeline::textured::draw(
     quads.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}});
     quads.push_back({{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}});
 
-    // For now swap the vertex order so we know we'll see at least one of them
     indexes.push_back(quad_index);
     indexes.push_back(quad_index + 2);
     indexes.push_back(quad_index + 1);
@@ -222,6 +221,7 @@ void planet::vk::engine2d::pipeline::textured::render(
         engine2d::renderer &renderer,
         command_buffer &cb,
         std::size_t const current_frame) {
+    if (quads.empty()) { return; }
 
     auto &vertex_buffer = vertex_buffers[current_frame];
     vertex_buffer = {
