@@ -54,7 +54,11 @@ namespace planet::vk::engine2d {
         /// ### Drawing API
 
         /// #### Start the render cycle
-        felspar::coro::task<void> start(VkClearValue);
+        /**
+         * Returns the current frame index. This is the index between zero and
+         * `max_frames_in_flight` that is currently being worked on.
+         */
+        felspar::coro::task<std::size_t> start(VkClearValue);
 
         /// #### Submit and present the frame
         /// This blocks until the frame is complete

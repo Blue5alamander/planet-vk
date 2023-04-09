@@ -111,7 +111,7 @@ planet::vk::render_pass planet::vk::engine2d::renderer::create_render_pass() {
 }
 
 
-felspar::coro::task<void>
+felspar::coro::task<std::size_t>
         planet::vk::engine2d::renderer::start(VkClearValue const colour) {
     // Wait for the previous version of this frame number to finish
     while (not fence[current_frame].is_ready()) {
@@ -152,6 +152,8 @@ felspar::coro::task<void>
 
     vkCmdBeginRenderPass(
             cb.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+    co_return current_frame;
 }
 
 
