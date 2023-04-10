@@ -97,4 +97,16 @@ namespace planet::vk::engine2d {
     };
 
 
+    /// ## Create a graphics pipeline
+    graphics_pipeline create_graphics_pipeline(
+            app &,
+            std::string_view vert,
+            std::string_view frag,
+            std::span<VkVertexInputBindingDescription const>,
+            std::span<VkVertexInputAttributeDescription const>,
+            view<vk::swap_chain>,
+            view<vk::render_pass>,
+            pipeline_layout);
+
+
 }

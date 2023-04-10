@@ -1,6 +1,7 @@
 #include <planet/vk/descriptors.hpp>
 #include <planet/vk/device.hpp>
 #include <planet/vk/pipeline.hpp>
+#include <planet/vk/shader_module.hpp>
 
 
 /// ## `planet::vk::pipeline_layout`
