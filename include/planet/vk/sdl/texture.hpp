@@ -14,13 +14,20 @@ namespace planet::vk {
 namespace planet::vk::sdl {
 
 
-    /// Render the requested text and turn it into a Vulkan texture suitable for
-    /// display
-    texture
-            render(device_memory_allocator &,
-                   command_pool &,
-                   planet::sdl::font const &,
-                   char const *);
+    /// ## Create a Vulkan texture from an SDL surface
+    texture create_texture(
+            device_memory_allocator &,
+            command_pool &,
+            planet::sdl::surface const &);
+
+    /// ##  Render text and turn it into a Vulkan texture
+    inline texture
+            render(device_memory_allocator &d,
+                   command_pool &cp,
+                   planet::sdl::font const &f,
+                   char const *t) {
+        return create_texture(d, cp, f.render(t));
+    }
 
 
 }

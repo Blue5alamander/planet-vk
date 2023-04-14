@@ -77,13 +77,10 @@ planet::vk::sdl::window::window(
 /// ## Font and texture writing
 
 
-planet::vk::texture planet::vk::sdl::render(
+planet::vk::texture planet::vk::sdl::create_texture(
         device_memory_allocator &allocator,
         command_pool &cp,
-        planet::sdl::font const &font,
-        char const *text) {
-    auto surface = font.render(text);
-
+        planet::sdl::surface const &surface) {
     if (surface.get()->format->format != SDL_PIXELFORMAT_ARGB8888) {
         throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
     }
