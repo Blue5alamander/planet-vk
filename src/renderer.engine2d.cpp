@@ -12,17 +12,17 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
                        .translate({1.0f, -1.0f})
                        .scale(app.window.height() / 2, app.window.width() / 2)},
   viewport_buffer{
-          buffer<affine::matrix3d>{
+          buffer<coordinate_space>{
                   app.device.startup_memory, 1u,
                   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                           | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
-          buffer<affine::matrix3d>{
+          buffer<coordinate_space>{
                   app.device.startup_memory, 1u,
                   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                           | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
-          buffer<affine::matrix3d>{
+          buffer<coordinate_space>{
                   app.device.startup_memory, 1u,
                   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
@@ -39,7 +39,7 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
         VkDescriptorBufferInfo info{};
         info.buffer = vpb.get();
         info.offset = 0;
-        info.range = sizeof(affine::matrix3d);
+        info.range = sizeof(coordinate_space);
 
         VkWriteDescriptorSet set{};
         set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

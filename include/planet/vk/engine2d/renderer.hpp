@@ -112,7 +112,7 @@ namespace planet::vk::engine2d {
             affine::matrix3d screen;
         };
         coordinate_space coordinates{*this};
-        std::array<buffer<affine::matrix3d>, max_frames_in_flight>
+        std::array<buffer<coordinate_space>, max_frames_in_flight>
                 viewport_buffer;
         std::array<device_memory::mapping, max_frames_in_flight> viewport_mapping;
 
