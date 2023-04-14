@@ -189,4 +189,6 @@ auto planet::vk::engine2d::pipeline::on_screen::extents(
 
 
 void planet::vk::engine2d::pipeline::on_screen::draw_within(
-        renderer &, affine::rectangle2d const &) const {}
+        renderer &r, affine::rectangle2d const &bounds) const {
+    r.screen.draw(texture, {bounds.top_left, extents(bounds.extents)});
+}
