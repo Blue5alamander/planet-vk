@@ -77,9 +77,6 @@ planet::affine::matrix3d planet::vk::engine2d::renderer::correct_aspect_ratio(
 void planet::vk::engine2d::renderer::reset_world_coordinates(
         affine::matrix3d const &m) {
     coordinates.world = m;
-    std::memcpy(
-            viewport_mapping[current_frame].get(), &coordinates,
-            sizeof(coordinate_space));
 }
 
 
@@ -164,6 +161,10 @@ felspar::coro::task<std::size_t>
 
 void planet::vk::engine2d::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
+
+    std::memcpy(
+            viewport_mapping[current_frame].get(), &coordinates,
+            sizeof(coordinate_space));
 
     vkCmdBindDescriptorSets(
             cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
