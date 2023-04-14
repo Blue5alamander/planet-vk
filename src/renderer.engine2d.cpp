@@ -28,7 +28,7 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
           viewport_buffer[0].map(), viewport_buffer[1].map(),
           viewport_buffer[2].map()} {
     for (auto &mapping : viewport_mapping) {
-        std::memcpy(mapping.get(), &viewport, sizeof(affine::matrix3d));
+        std::memcpy(mapping.get(), &ubo, sizeof(ubo_struct));
     }
 
     for (std::size_t index{}; auto const &vpb : viewport_buffer) {
@@ -76,10 +76,9 @@ planet::affine::matrix3d
 
 
 void planet::vk::engine2d::renderer::reset_viewport(affine::matrix3d const &m) {
-    viewport = m;
+    ubo.viewport = m;
     std::memcpy(
-            viewport_mapping[current_frame].get(), &viewport,
-            sizeof(affine::matrix3d));
+            viewport_mapping[current_frame].get(), &ubo, sizeof(ubo_struct));
 }
 
 

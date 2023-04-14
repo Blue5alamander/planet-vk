@@ -88,7 +88,15 @@ namespace planet::vk::engine2d {
 
         /// ### View port transformation matrix and UBO
 
-        affine::matrix3d viewport{correct_aspect_ratio(app)};
+        struct ubo_struct {
+            ubo_struct(renderer &rp)
+            : viewport{renderer::correct_aspect_ratio(rp.app)},
+              screen{renderer::pixel_space(rp.app)} {}
+
+            affine::matrix3d viewport;
+            affine::matrix3d screen;
+        };
+        ubo_struct ubo{*this};
         std::array<buffer<affine::matrix3d>, max_frames_in_flight>
                 viewport_buffer;
         std::array<device_memory::mapping, max_frames_in_flight> viewport_mapping;
