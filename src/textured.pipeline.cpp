@@ -19,7 +19,7 @@ namespace {
         return std::array{description};
     }()};
     constexpr auto attribute_description{[]() {
-        std::array<VkVertexInputAttributeDescription, 2> attrs{};
+        std::array<VkVertexInputAttributeDescription, 3> attrs{};
 
         attrs[0].binding = 0;
         attrs[0].location = 0;
@@ -32,6 +32,12 @@ namespace {
         attrs[1].format = VK_FORMAT_R32G32_SFLOAT;
         attrs[1].offset =
                 offsetof(planet::vk::engine2d::pipeline::textured::vertex, uv);
+
+        attrs[2].binding = 0;
+        attrs[2].location = 2;
+        attrs[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attrs[2].offset =
+                offsetof(planet::vk::engine2d::pipeline::textured::vertex, col);
 
         return attrs;
     }()};

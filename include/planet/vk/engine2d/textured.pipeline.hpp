@@ -35,6 +35,7 @@ namespace planet::vk::engine2d::pipeline {
         };
         struct vertex {
             pos p, uv;
+            colour col = {1.0f, 1.0f, 1.0f};
         };
 
 
