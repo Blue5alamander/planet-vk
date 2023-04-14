@@ -50,7 +50,8 @@ planet::vk::engine2d::pipeline::textured::textured(
         engine2d::app &a,
         vk::swap_chain &sc,
         vk::render_pass &rp,
-        vk::descriptor_set_layout &dsl)
+        vk::descriptor_set_layout &dsl,
+        std::string_view const vs)
 : app{a},
   swap_chain{sc},
   render_pass{rp},
@@ -64,6 +65,7 @@ planet::vk::engine2d::pipeline::textured::textured(
       binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
       return vk::descriptor_set_layout{app.device, binding};
   }()},
+  pipeline{create_pipeline(vs)},
   texture_sets{
           vk::descriptor_sets{
                   texture_pool, texture_layout, max_textures_per_frame},
@@ -74,11 +76,11 @@ planet::vk::engine2d::pipeline::textured::textured(
 
 
 planet::vk::graphics_pipeline
-        planet::vk::engine2d::pipeline::textured::create_pipeline() {
+        planet::vk::engine2d::pipeline::textured::create_pipeline(
+                std::string_view const vertex_shader) {
     return planet::vk::engine2d::create_graphics_pipeline(
-            app, "planet-vk-engine2d/textured.vert.spirv",
-            "planet-vk-engine2d/textured.frag.spirv", binding_description,
-            attribute_description, swap_chain, render_pass,
+            app, vertex_shader, "planet-vk-engine2d/textured.frag.spirv",
+            binding_description, attribute_description, swap_chain, render_pass,
             {app.device, std::array{vp_layout.get(), texture_layout.get()}});
 }
 

@@ -48,7 +48,12 @@ namespace planet::vk::engine2d {
         /// ### Pipelines
 
         pipeline::mesh mesh{app, swap_chain, render_pass, ubo_layout};
-        pipeline::textured textured{app, swap_chain, render_pass, ubo_layout};
+        pipeline::textured textured{
+                app, swap_chain, render_pass, ubo_layout,
+                "planet-vk-engine2d/texture.world.vert.spirv"};
+        pipeline::textured screen{
+                app, swap_chain, render_pass, ubo_layout,
+                "planet-vk-engine2d/texture.screen.vert.spirv"};
 
 
         /// ### Drawing API
