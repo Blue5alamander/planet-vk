@@ -8,6 +8,9 @@ using namespace std::literals;
 
 planet::vk::engine2d::renderer::renderer(engine2d::app &a)
 : app{a},
+  screen_space{affine::transform2d{}
+                       .translate({1.0f, -1.0f})
+                       .scale(app.window.height() / 2, app.window.width() / 2)},
   viewport_buffer{
           buffer<affine::matrix3d>{
                   app.device.startup_memory, 1u,
@@ -27,8 +30,9 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
   viewport_mapping{
           viewport_buffer[0].map(), viewport_buffer[1].map(),
           viewport_buffer[2].map()} {
+
     for (auto &mapping : viewport_mapping) {
-        std::memcpy(mapping.get(), &ubo, sizeof(ubo_struct));
+        std::memcpy(mapping.get(), &coordinates, sizeof(coordinate_space));
     }
 
     for (std::size_t index{}; auto const &vpb : viewport_buffer) {
@@ -68,17 +72,14 @@ planet::affine::matrix3d planet::vk::engine2d::renderer::correct_aspect_ratio(
     return affine::matrix3d::scale_xy(
             app.window.height() / app.window.width(), -1.0f);
 }
-planet::affine::matrix3d
-        planet::vk::engine2d::renderer::pixel_space(engine2d::app &app) {
-    return affine::matrix3d::scale_xy(
-            app.window.height() / 2, app.window.width() / 2);
-}
 
 
-void planet::vk::engine2d::renderer::reset_viewport(affine::matrix3d const &m) {
-    ubo.viewport = m;
+void planet::vk::engine2d::renderer::reset_world_coordinates(
+        affine::matrix3d const &m) {
+    coordinates.world = m;
     std::memcpy(
-            viewport_mapping[current_frame].get(), &ubo, sizeof(ubo_struct));
+            viewport_mapping[current_frame].get(), &coordinates,
+            sizeof(coordinate_space));
 }
 
 

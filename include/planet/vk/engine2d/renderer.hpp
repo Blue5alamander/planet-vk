@@ -75,11 +75,21 @@ namespace planet::vk::engine2d {
          * aspect.
          */
         static affine::matrix3d correct_aspect_ratio(engine2d::app &);
-        /// #### Calculate a matrix for giving screen co-ordinates
-        static affine::matrix3d pixel_space(engine2d::app &);
 
-        /// #### Reset the view matrix
-        void reset_viewport(affine::matrix3d const &);
+        /// #### Reset the view matrix for world coordinates
+        void reset_world_coordinates(affine::matrix3d const &);
+
+        /// #### Transformation into and out of pixel coordinate space
+        /**
+         * Maps between the Vulkan coordinate space and pixel coordinates. Pixel
+         * coordinates have their origin in the top left with the X axis running
+         * right and the Y axis running down. It matches the pixel layout of the
+         * screen.
+         *
+         * The `into` direction is used during rendering and the `outof`
+         * direction can be used for mapping mouse coordinates to Vulkan ones.
+         */
+        affine::transform2d screen_space;
 
       private:
         /// ### Data we need to track whilst in the render loop
@@ -88,15 +98,15 @@ namespace planet::vk::engine2d {
 
         /// ### View port transformation matrix and UBO
 
-        struct ubo_struct {
-            ubo_struct(renderer &rp)
-            : viewport{renderer::correct_aspect_ratio(rp.app)},
-              screen{renderer::pixel_space(rp.app)} {}
+        struct coordinate_space {
+            coordinate_space(renderer &rp)
+            : world{renderer::correct_aspect_ratio(rp.app)},
+              screen{rp.screen_space.into()} {}
 
-            affine::matrix3d viewport;
+            affine::matrix3d world;
             affine::matrix3d screen;
         };
-        ubo_struct ubo{*this};
+        coordinate_space coordinates{*this};
         std::array<buffer<affine::matrix3d>, max_frames_in_flight>
                 viewport_buffer;
         std::array<device_memory::mapping, max_frames_in_flight> viewport_mapping;
