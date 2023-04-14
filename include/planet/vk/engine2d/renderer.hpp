@@ -75,6 +75,8 @@ namespace planet::vk::engine2d {
          * aspect.
          */
         static affine::matrix3d correct_aspect_ratio(engine2d::app &);
+        /// #### Calculate a matrix for giving screen co-ordinates
+        static affine::matrix3d pixel_space(engine2d::app &);
 
         /// #### Reset the view matrix
         void reset_viewport(affine::matrix3d const &);

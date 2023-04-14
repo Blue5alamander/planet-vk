@@ -68,6 +68,11 @@ planet::affine::matrix3d planet::vk::engine2d::renderer::correct_aspect_ratio(
     return affine::matrix3d::scale_xy(
             app.window.height() / app.window.width(), -1.0f);
 }
+planet::affine::matrix3d
+        planet::vk::engine2d::renderer::pixel_space(engine2d::app &app) {
+    return affine::matrix3d::scale_xy(
+            app.window.height() / 2, app.window.width() / 2);
+}
 
 
 void planet::vk::engine2d::renderer::reset_viewport(affine::matrix3d const &m) {
