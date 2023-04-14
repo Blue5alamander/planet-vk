@@ -63,4 +63,22 @@ namespace planet::vk::engine2d::pipeline {
     };
 
 
+    /// ### Draws a texture in the screen space coordinates for layout
+    struct on_screen {
+        on_screen(vk::texture tx)
+        : texture{std::move(tx)}, colour{1.0f, 1.0f, 1.0f} {}
+        on_screen(vk::texture tx, vk::colour const &c)
+        : texture{std::move(tx)}, colour{c} {}
+
+        vk::texture texture;
+        vk::colour colour;
+        ui::scale fit;
+
+        affine::extents2d extents() const noexcept;
+        affine::extents2d extents(affine::extents2d const &) const;
+
+        void draw_within(renderer &, affine::rectangle2d const &) const;
+    };
+
+
 }
