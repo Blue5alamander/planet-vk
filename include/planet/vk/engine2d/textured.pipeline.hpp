@@ -66,6 +66,7 @@ namespace planet::vk::engine2d::pipeline {
 
     /// ### Draws a texture in the screen space coordinates for layout
     struct on_screen {
+        on_screen() = default;
         on_screen(vk::texture tx)
         : texture{std::move(tx)}, colour{1.0f, 1.0f, 1.0f} {}
         on_screen(vk::texture tx, vk::colour const &c)
