@@ -13,7 +13,7 @@ layout(location = 0) out vec2 uv;
 layout(location = 1) out vec4 colour;
 
 void main() {
-    gl_Position = coordinates.screen * vec4(position, 0.0, 1.0);
+    gl_Position = coordinates.pixel * vec4(position, 0.0, 1.0);
     uv = tex_uv;
     colour = tex_colour;
 }
