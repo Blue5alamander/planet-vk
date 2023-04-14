@@ -8,9 +8,10 @@ using namespace std::literals;
 
 planet::vk::engine2d::renderer::renderer(engine2d::app &a)
 : app{a},
-  screen_space{affine::transform2d{}
-                       .translate({1.0f, -1.0f})
-                       .scale(app.window.height() / 2, app.window.width() / 2)},
+  screen_space{
+          affine::transform2d{}
+                  .scale(2.0f / app.window.width(), 2.0f / app.window.height())
+                  .translate({-1.0f, -1.0f})},
   viewport_buffer{
           buffer<coordinate_space>{
                   app.device.startup_memory, 1u,
