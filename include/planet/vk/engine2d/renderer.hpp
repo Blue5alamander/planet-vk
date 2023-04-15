@@ -79,16 +79,15 @@ namespace planet::vk::engine2d {
 
         /// ### View space mapping
 
-        /// #### Calculate square aspect ratio
-        /**
-         * The Vulkan coordinate system maps both width and height to -1 to +1.
-         * This corrects the width and height so that the narrowest dimension is
-         * in the range -1 to +1 and the widest is adjusted to give a square
-         * aspect.
-         */
-        static affine::matrix3d correct_aspect_ratio(engine2d::app &);
-
         /// #### Reset the view matrix for world coordinates
+        /**
+         * Sets the matrix used by the GPU's world coordinate space transform to
+         * get to the Vulkan coordinate space.
+         *
+         * To correct for aspect ratio and to get the Y axis in the more usual
+         * direction the matrix set here must be combined properly with the
+         * matrix from the `logical_vulkan_space`.
+         */
         void reset_world_coordinates(affine::matrix3d const &);
 
         /// #### Transformation into and out of pixel coordinate space
@@ -103,6 +102,16 @@ namespace planet::vk::engine2d {
          */
         affine::transform2d screen_space;
 
+        /// ### Transformation into and out of corrected Vulkan space
+        /**
+         * The Vulkan coordinate system maps both width and height to -1 to +1.
+         * This corrects the width and height so that the narrowest dimension is
+         * in the range -1 to +1 and the widest is adjusted to give a square
+         * aspect.
+
+         */
+        affine::transform2d logical_vulkan_space;
+
       private:
         /// ### Data we need to track whilst in the render loop
 
@@ -112,7 +121,7 @@ namespace planet::vk::engine2d {
 
         struct coordinate_space {
             coordinate_space(renderer &rp)
-            : world{renderer::correct_aspect_ratio(rp.app)},
+            : world{rp.logical_vulkan_space.into()},
               screen{rp.screen_space.into()} {}
 
             affine::matrix3d world;

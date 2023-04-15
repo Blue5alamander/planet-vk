@@ -12,6 +12,8 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
           affine::transform2d{}
                   .scale(2.0f / app.window.width(), 2.0f / app.window.height())
                   .translate({-1.0f, -1.0f})},
+  logical_vulkan_space{affine::transform2d{}.scale(
+          app.window.height() / app.window.width(), -1.0f)},
   viewport_buffer{
           buffer<coordinate_space>{
                   app.device.startup_memory, 1u,
@@ -65,13 +67,6 @@ planet::vk::engine2d::renderer::~renderer() {
                 app.device.get(), waitfor.size(), waitfor.data(), VK_TRUE,
                 UINT64_MAX);
     }
-}
-
-
-planet::affine::matrix3d planet::vk::engine2d::renderer::correct_aspect_ratio(
-        engine2d::app &app) {
-    return affine::matrix3d::scale_xy(
-            app.window.height() / app.window.width(), -1.0f);
 }
 
 
