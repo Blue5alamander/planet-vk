@@ -20,8 +20,8 @@ namespace planet::vk::engine2d::ui {
 
         button(felspar::coro::bus<R> &o, R v)
         : press_value{std::move(v)}, output_to{o} {}
-        button(texture text, felspar::coro::bus<R> &o, R v)
-        : press_value{std::move(v)}, output_to{o}, graphic{std::move(text)} {}
+        button(G g, felspar::coro::bus<R> &o, R v)
+        : press_value{std::move(v)}, output_to{o}, graphic{std::move(g)} {}
 
         affine::extents2d extents(affine::extents2d const &ex) {
             return graphic.extents(ex);
