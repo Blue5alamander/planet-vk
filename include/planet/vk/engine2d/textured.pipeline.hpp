@@ -74,7 +74,6 @@ namespace planet::vk::engine2d::pipeline {
 
         vk::texture texture;
         vk::colour colour;
-        ui::scale fit;
 
         affine::extents2d extents() const noexcept;
         affine::extents2d extents(affine::extents2d const &) const;

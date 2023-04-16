@@ -105,5 +105,6 @@ planet::vk::texture planet::vk::sdl::create_texture(
     }
 
     return planet::vk::texture::create_with_mip_levels_from(
-            allocator, cp, staging, surface.width(), surface.height());
+            allocator, cp, staging, surface.width(), surface.height(),
+            surface.fit);
 }

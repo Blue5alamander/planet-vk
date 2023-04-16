@@ -184,7 +184,7 @@ auto planet::vk::engine2d::pipeline::on_screen::extents() const noexcept
 
 auto planet::vk::engine2d::pipeline::on_screen::extents(
         affine::extents2d const &ex) const -> affine::extents2d {
-    return ui::scaling(extents(), ex, fit);
+    return ui::scaling(extents(), ex, texture.fit);
 }
 
 
