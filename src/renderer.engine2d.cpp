@@ -118,11 +118,18 @@ felspar::coro::task<std::size_t>
 
     // Get an image from the swap chain
     image_index = 0;
-    planet::vk::worked(vkAcquireNextImageKHR(
-            app.device.get(), swap_chain.get(),
-            std::numeric_limits<uint64_t>::max(),
-            img_avail_semaphore[current_frame].get(), VK_NULL_HANDLE,
-            &image_index));
+    if (auto const acquire = vkAcquireNextImageKHR(
+                app.device.get(), swap_chain.get(),
+                std::numeric_limits<uint64_t>::max(),
+                img_avail_semaphore[current_frame].get(), VK_NULL_HANDLE,
+                &image_index);
+        acquire == VK_ERROR_OUT_OF_DATE_KHR or acquire == VK_SUBOPTIMAL_KHR) {
+        app.device.wait_idle();
+        /// TODO Recreate the swap chain with the new window dims
+        planet::vk::worked(acquire);
+    } else {
+        planet::vk::worked(acquire);
+    }
 
     // We need to wait for the image before we can run the commands to draw
     // to it, and signal the render finished one when we're done
