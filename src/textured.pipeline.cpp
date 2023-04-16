@@ -86,7 +86,9 @@ planet::vk::graphics_pipeline
 
 
 void planet::vk::engine2d::pipeline::textured::draw(
-        vk::texture const &texture, affine::rectangle2d const pos) {
+        vk::texture const &texture,
+        affine::rectangle2d const &pos,
+        vk::colour const &colour) {
     if (textures.size() == max_textures_per_frame) {
         throw felspar::stdexcept::runtime_error{
                 "Have run out of texture slots for this frame"};
@@ -94,10 +96,13 @@ void planet::vk::engine2d::pipeline::textured::draw(
 
     std::size_t const quad_index = quads.size();
 
-    quads.push_back({{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}});
-    quads.push_back({{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}});
-    quads.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}});
-    quads.push_back({{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}});
+    quads.push_back(
+            {{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}, colour});
+    quads.push_back(
+            {{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}, colour});
+    quads.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}, colour});
+    quads.push_back(
+            {{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}, colour});
 
     indexes.push_back(quad_index);
     indexes.push_back(quad_index + 2);
@@ -190,5 +195,5 @@ auto planet::vk::engine2d::pipeline::on_screen::extents(
 
 void planet::vk::engine2d::pipeline::on_screen::draw_within(
         renderer &r, affine::rectangle2d const &bounds) const {
-    r.screen.draw(texture, {bounds.top_left, extents(bounds.extents)});
+    r.screen.draw(texture, {bounds.top_left, extents(bounds.extents)}, colour);
 }

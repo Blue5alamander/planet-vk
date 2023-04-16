@@ -7,6 +7,9 @@
 namespace planet::vk::engine2d::pipeline {
 
 
+    constexpr vk::colour white{1.0f, 1.0f, 1.0f, 1.0f};
+
+
     /// ## Textured triangle pipeline
     class textured final {
         graphics_pipeline create_pipeline(std::string_view vertex_shader);
@@ -36,7 +39,7 @@ namespace planet::vk::engine2d::pipeline {
         };
         struct vertex {
             pos p, uv;
-            colour col = {1.0f, 1.0f, 1.0f};
+            colour col = white;
         };
 
 
@@ -56,7 +59,10 @@ namespace planet::vk::engine2d::pipeline {
         /// ### Drawing API
 
         /// #### Draw texture stretched to the axis aligned rectangle
-        void draw(vk::texture const &, affine::rectangle2d);
+        void
+                draw(vk::texture const &,
+                     affine::rectangle2d const &,
+                     colour const & = white);
 
 
         /// ### Add draw commands to command buffer
@@ -67,13 +73,12 @@ namespace planet::vk::engine2d::pipeline {
     /// ### Draws a texture in the screen space coordinates for layout
     struct on_screen {
         on_screen() = default;
-        on_screen(vk::texture tx)
-        : texture{std::move(tx)}, colour{1.0f, 1.0f, 1.0f} {}
+        on_screen(vk::texture tx) : texture{std::move(tx)} {}
         on_screen(vk::texture tx, vk::colour const &c)
         : texture{std::move(tx)}, colour{c} {}
 
         vk::texture texture;
-        vk::colour colour;
+        vk::colour colour = white;
 
         affine::extents2d extents() const noexcept;
         affine::extents2d extents(affine::extents2d const &) const;
