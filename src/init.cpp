@@ -16,7 +16,7 @@ namespace {
             VkDebugUtilsMessageTypeFlagsEXT,
             VkDebugUtilsMessengerCallbackDataEXT const *data,
             void *) {
-        std::cerr << "Validation message: " << data->pMessage << '\n';
+        std::cerr << "Vulkan messenger: " << data->pMessage << '\n';
         return VK_FALSE;
     }
 }
