@@ -13,6 +13,7 @@ namespace planet::vk::engine2d::ui {
     class button : public planet::ui::widget<renderer> {
         R press_value;
         felspar::coro::bus<R> &output_to;
+        std::optional<affine::rectangle2d> position;
 
       public:
         using renderer_type = R;
@@ -33,7 +34,11 @@ namespace planet::vk::engine2d::ui {
         void do_draw_within(
                 renderer &r, affine::rectangle2d const outer) override {
             graphic.draw_within(r, outer);
-            panel.move_to({outer.top_left, graphic.extents()});
+            affine::rectangle2d const p{outer.top_left, graphic.extents()};
+            if (p != position) {
+                panel.move_to(p);
+                position = p;
+            }
         }
 
         felspar::coro::task<void> behaviour() override {
