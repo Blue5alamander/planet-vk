@@ -111,24 +111,30 @@ planet::vk::render_pass planet::vk::engine2d::renderer::create_render_pass() {
 
 felspar::coro::task<std::size_t>
         planet::vk::engine2d::renderer::start(VkClearValue const colour) {
+    constexpr auto wait_time = 5ms;
     // Wait for the previous version of this frame number to finish
     while (not fence[current_frame].is_ready()) {
-        co_await app.sdl.io.sleep(5ms);
+        co_await app.sdl.io.sleep(wait_time);
     }
 
     // Get an image from the swap chain
     image_index = 0;
-    if (auto const acquire = vkAcquireNextImageKHR(
-                app.device.get(), swap_chain.get(),
-                std::numeric_limits<uint64_t>::max(),
+    while (true) {
+        auto result = vkAcquireNextImageKHR(
+                app.device.get(), swap_chain.get(), {},
                 img_avail_semaphore[current_frame].get(), VK_NULL_HANDLE,
                 &image_index);
-        acquire == VK_ERROR_OUT_OF_DATE_KHR or acquire == VK_SUBOPTIMAL_KHR) {
-        app.device.wait_idle();
-        /// TODO Recreate the swap chain with the new window dims
-        planet::vk::worked(acquire);
-    } else {
-        planet::vk::worked(acquire);
+        if (result == VK_TIMEOUT) {
+            co_await app.sdl.io.sleep(wait_time);
+        } else if (result  == VK_ERROR_OUT_OF_DATE_KHR or result == VK_SUBOPTIMAL_KHR) {
+                app.device.wait_idle();
+                /// TODO Recreate the swap chain with the new window dims
+                planet::vk::worked(acquire);
+        } else if (result == VK_SUCCESS) {
+            break;
+        } else {
+            planet::vk::worked(result);
+        }
     }
 
     // We need to wait for the image before we can run the commands to draw
