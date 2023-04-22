@@ -126,10 +126,12 @@ felspar::coro::task<std::size_t>
                 &image_index);
         if (result == VK_TIMEOUT) {
             co_await app.sdl.io.sleep(wait_time);
-        } else if (result  == VK_ERROR_OUT_OF_DATE_KHR or result == VK_SUBOPTIMAL_KHR) {
-                app.device.wait_idle();
-                /// TODO Recreate the swap chain with the new window dims
-                planet::vk::worked(acquire);
+        } else if (
+                result == VK_ERROR_OUT_OF_DATE_KHR
+                or result == VK_SUBOPTIMAL_KHR) {
+            app.device.wait_idle();
+            /// TODO Recreate the swap chain with the new window dims
+            planet::vk::worked(result);
         } else if (result == VK_SUCCESS) {
             break;
         } else {
