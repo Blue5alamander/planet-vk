@@ -42,8 +42,9 @@ namespace planet::vk::engine2d::ui {
         }
 
         felspar::coro::task<void> behaviour() override {
-            while (true) {
-                co_await panel.clicks.next();
+            for (auto clicks = events::identify_clicks(
+                         baseplate->mouse_settings, events.mouse.stream());
+                 co_await clicks.next();) {
                 output_to.push(press_value);
             }
         }
