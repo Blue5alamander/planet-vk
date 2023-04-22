@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/ui/baseplate.hpp>
 #include <planet/vk-sdl.hpp>
 
 
@@ -28,6 +29,8 @@ namespace planet::vk::engine2d {
         planet::vk::extensions extensions{window};
         vk::instance instance;
         vk::device device{instance, extensions};
+
+        planet::ui::baseplate<planet::vk::engine2d::renderer> baseplate;
 
         /// ### Run the provided UI function
         int run(felspar::coro::task<int> (*co_main)(app &, renderer &));
