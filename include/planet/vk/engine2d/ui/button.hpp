@@ -31,6 +31,11 @@ namespace planet::vk::engine2d::ui {
         G graphic;
 
       private:
+        constrained_type do_reflow(constrained_type const &border) override {
+            /// TODO Better implementation
+            return constrained_type{extents(border.extents())};
+        }
+
         void do_draw_within(
                 renderer &r, affine::rectangle2d const outer) override {
             graphic.draw_within(r, outer);
