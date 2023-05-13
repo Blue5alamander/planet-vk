@@ -175,25 +175,3 @@ void planet::vk::engine2d::pipeline::textured::render(
     indexes.clear();
     textures.clear();
 }
-
-
-/// ## `planet::vk::engine2d::pipeline::on_screen`
-
-
-auto planet::vk::engine2d::pipeline::on_screen::extents() const noexcept
-        -> affine::extents2d {
-    return {static_cast<float>(texture.image.width),
-            static_cast<float>(texture.image.height)};
-}
-
-
-auto planet::vk::engine2d::pipeline::on_screen::extents(
-        affine::extents2d const &ex) const -> affine::extents2d {
-    return ui::scaling(extents(), ex, texture.fit);
-}
-
-
-void planet::vk::engine2d::pipeline::on_screen::draw_within(
-        renderer &r, affine::rectangle2d const &bounds) const {
-    r.screen.draw(texture, {bounds.top_left, extents(bounds.extents)}, colour);
-}

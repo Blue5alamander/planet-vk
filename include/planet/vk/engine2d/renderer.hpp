@@ -16,7 +16,7 @@ namespace planet::vk::engine2d {
     /// ## Renderer
     class renderer final {
         template<typename T>
-        friend struct per_frame;
+        friend struct ui::per_frame;
 
         std::size_t current_frame = {};
         vk::render_pass create_render_pass();
@@ -145,21 +145,6 @@ namespace planet::vk::engine2d {
             view<vk::swap_chain>,
             view<vk::render_pass>,
             pipeline_layout);
-
-
-    /// ## Draw wrapper that automatically handles one instance per frame for us
-    template<typename T>
-    struct per_frame final {
-        std::array<T, max_frames_in_flight> frame;
-
-        affine::extents2d extents() { return frame[0].extents(); }
-        affine::extents2d extents(affine::extents2d const &ex) {
-            return frame[0].extents(ex);
-        }
-        void draw_within(renderer &r, affine::rectangle2d const bounds) {
-            frame[r.current_frame].draw_within(r, bounds);
-        }
-    };
 
 
 }
