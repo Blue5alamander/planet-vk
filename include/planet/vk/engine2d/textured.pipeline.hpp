@@ -7,9 +7,6 @@
 namespace planet::vk::engine2d::pipeline {
 
 
-    constexpr vk::colour white{1.0f, 1.0f, 1.0f, 1.0f};
-
-
     /// ## Textured triangle pipeline
     class textured final {
         graphics_pipeline create_pipeline(std::string_view vertex_shader);

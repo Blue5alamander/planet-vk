@@ -21,4 +21,7 @@ namespace planet::vk {
     };
 
 
+    constexpr colour white{1.0f, 1.0f, 1.0f, 1.0f};
+
+
 }
