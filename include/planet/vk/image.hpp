@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/affine/extents2d.hpp>
 #include <planet/vk/memory.hpp>
 
 
@@ -45,6 +46,9 @@ namespace planet::vk {
         auto device_handle() const noexcept { return handle.owner(); }
         auto get() const noexcept { return handle.get(); }
 
+        affine::extents2d extents() const noexcept {
+            return {static_cast<float>(width), static_cast<float>(height)};
+        }
 
         /// ### Image manipulation
 
