@@ -2,57 +2,35 @@
 
 
 #include <planet/vk/engine2d/renderer.hpp>
+#include <planet/vk/engine2d/ui/on_screen.hpp>
 #include <planet/vk/texture.hpp>
-#include <planet/ui/widget.hpp>
+#include <planet/ui/button.hpp>
 
 
 namespace planet::vk::engine2d::ui {
 
 
-    template<typename R, typename G = pipeline::on_screen>
-    class button : public planet::ui::widget<renderer> {
-        R press_value;
-        felspar::coro::bus<R> &output_to;
-        std::optional<affine::rectangle2d> position;
+    template<typename R, typename G = on_screen>
+    class button : public planet::ui::button<renderer, R, G> {
+        using superclass = planet::ui::button<renderer, R, G>;
 
       public:
         using renderer_type = R;
         using graphics_type = G;
 
+        using superclass::graphic;
+        using superclass::position;
+        using superclass::reflow;
+
         button(felspar::coro::bus<R> &o, R v)
-        : press_value{std::move(v)}, output_to{o} {}
+        : superclass{"planet::vk::engine2d::ui::button", o, std::move(v)} {}
         button(G g, felspar::coro::bus<R> &o, R v)
-        : press_value{std::move(v)}, output_to{o}, graphic{std::move(g)} {}
-
-        affine::extents2d extents(affine::extents2d const &ex) {
-            return graphic.extents(ex);
-        }
-
-        G graphic;
+        : superclass{
+                "planet::vk::engine2d::ui::button", std::move(g), o,
+                std::move(v)} {}
 
       private:
-        constrained_type do_reflow(constrained_type const &border) override {
-            /// TODO Better implementation
-            return constrained_type{extents(border.extents())};
-        }
-
-        void do_draw_within(
-                renderer &r, affine::rectangle2d const outer) override {
-            graphic.draw_within(r, outer);
-            affine::rectangle2d const p{outer.top_left, graphic.extents()};
-            if (p != position) {
-                panel.move_to(p);
-                position = p;
-            }
-        }
-
-        felspar::coro::task<void> behaviour() override {
-            for (auto clicks = events::identify_clicks(
-                         baseplate->mouse_settings, events.mouse.stream());
-                 co_await clicks.next();) {
-                output_to.push(press_value);
-            }
-        }
+        void do_draw(renderer &r) override { graphic.draw(r); }
     };
 
 
