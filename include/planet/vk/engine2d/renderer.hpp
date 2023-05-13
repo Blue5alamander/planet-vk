@@ -3,6 +3,7 @@
 
 #include <planet/affine/matrix3d.hpp>
 #include <planet/vk/engine2d/app.hpp>
+#include <planet/vk/engine2d/forward.hpp>
 #include <planet/vk/engine2d/mesh.pipeline.hpp>
 #include <planet/vk/engine2d/textured.pipeline.hpp>
 
@@ -10,10 +11,6 @@
 
 
 namespace planet::vk::engine2d {
-
-
-    template<typename T>
-    struct per_frame;
 
 
     /// ## Renderer
