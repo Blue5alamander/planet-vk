@@ -19,6 +19,7 @@ namespace planet::vk::engine2d::ui {
         using graphics_type = G;
 
         using superclass::graphic;
+        using superclass::move_to;
         using superclass::position;
         using superclass::reflow;
 
