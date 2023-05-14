@@ -24,6 +24,7 @@ namespace planet::vk::engine2d::ui {
             std::array<constrained_type, max_frames_in_flight> const cs{
                     frame[0].reflow(c), frame[1].reflow(c), frame[2].reflow(c)};
 
+            /// TODO Include all the frames in the constraint calculation
             return {{std::max(cs[0].width.min(), cs[1].width.min()),
                      std::max(cs[0].width.value(), cs[1].width.value()),
                      std::min(cs[0].width.max(), cs[1].width.max())},
