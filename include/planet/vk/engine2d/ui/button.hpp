@@ -11,7 +11,7 @@ namespace planet::vk::engine2d::ui {
 
 
     template<typename R, typename G = on_screen>
-    class button : public planet::ui::button<renderer, R, G> {
+    class button final : public planet::ui::button<renderer, R, G> {
         using superclass = planet::ui::button<renderer, R, G>;
 
       public:
