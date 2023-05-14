@@ -24,6 +24,8 @@ namespace planet::vk::engine2d::ui {
 
         button(felspar::coro::bus<R> &o, R v)
         : superclass{"planet::vk::engine2d::ui::button", o, std::move(v)} {}
+        button(std::string_view const n, felspar::coro::bus<R> &o, R v)
+        : superclass{n, o, std::move(v)} {}
         button(G g, felspar::coro::bus<R> &o, R v)
         : superclass{
                 "planet::vk::engine2d::ui::button", std::move(g), o,
