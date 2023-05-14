@@ -31,6 +31,8 @@ namespace planet::vk::engine2d::ui {
         : superclass{
                 "planet::vk::engine2d::ui::button", std::move(g), o,
                 std::move(v)} {}
+        button(std::string_view const n, G g, felspar::coro::bus<R> &o, R v)
+        : superclass{n, std::move(g), o, std::move(v)} {}
 
       private:
         void do_draw(renderer &r) override { graphic.draw(r); }
