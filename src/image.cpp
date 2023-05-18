@@ -68,7 +68,7 @@ void planet::vk::image::transition_layout(
 
     if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED
         && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcAccessMask = 0;
+        barrier.srcAccessMask = VK_ACCESS_NONE;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
         source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
