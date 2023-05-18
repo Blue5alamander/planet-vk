@@ -124,7 +124,7 @@ planet::vk::texture planet::vk::texture::create_without_mip_levels_from(
             cb.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
             &barrier);
-        cb.end_and_submit();
+    cb.end_and_submit();
 
     texture.image_view = {texture.image, VK_IMAGE_ASPECT_COLOR_BIT};
 
