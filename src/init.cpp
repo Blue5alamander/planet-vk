@@ -192,7 +192,7 @@ planet::vk::device::~device() {
 
 
 planet::vk::extensions::extensions() {
-#ifndef NDEBUG
+#if defined(PLANET_VK_VALIDATION) or not defined(NDEBUG)
     validation_layers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
 }

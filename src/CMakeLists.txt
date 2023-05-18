@@ -20,6 +20,11 @@ target_link_libraries(planet-vk PUBLIC
         planet-sdl
         Vulkan::Vulkan
     )
+if (PLANET_VK_VALIDATION)
+    target_compile_definitions(planet-vk PRIVATE
+        PLANET_VK_VALIDATION=1)
+endif()
+
 
 add_library(planet-vk-sdl
         sdl.cpp

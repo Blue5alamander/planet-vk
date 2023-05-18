@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.12)
 project(planet-audio)
 
+
+set(PLANET_VK_VALIDATION NO CACHE BOOL
+        "Enable VK_LAYER_KHRONOS_validation")
+
+
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
     add_custom_target(felspar-check)
     set_property(TARGET felspar-check PROPERTY EXCLUDE_FROM_ALL TRUE)
