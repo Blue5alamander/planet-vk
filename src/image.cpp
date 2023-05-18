@@ -82,7 +82,7 @@ void planet::vk::image::transition_layout(
         source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destination_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     } else {
-        throw std::invalid_argument("unsupported layout transition!");
+        throw felspar::stdexcept::logic_error("Unsupported layout transition!");
     }
 
     vkCmdPipelineBarrier(
