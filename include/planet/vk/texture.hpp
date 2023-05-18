@@ -40,6 +40,13 @@ namespace planet::vk {
                 std::uint32_t width,
                 std::uint32_t height,
                 ui::scale = ui::scale::lock_aspect);
+        static texture create_without_mip_levels_from(
+                device_memory_allocator &,
+                command_pool &,
+                buffer<std::byte> const &,
+                std::uint32_t width,
+                std::uint32_t height,
+                ui::scale = ui::scale::lock_aspect);
 
 
         /// ### Attributes

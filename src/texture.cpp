@@ -75,6 +75,41 @@ planet::vk::texture planet::vk::texture::create_with_mip_levels_from(
 }
 
 
+planet::vk::texture planet::vk::texture::create_without_mip_levels_from(
+        device_memory_allocator &allocator,
+        command_pool &cp,
+        vk::buffer<std::byte> const &buffer,
+        std::uint32_t const width,
+        std::uint32_t const height,
+        ui::scale const fit) {
+    vk::texture texture;
+
+    texture.fit = fit;
+
+    texture.image = {
+            allocator,
+            width,
+            height,
+            1,
+            VK_SAMPLE_COUNT_1_BIT,
+            VK_FORMAT_R8G8B8A8_SRGB,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+                    | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+    texture.image.transition_layout(
+            cp, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1);
+    texture.image.copy_from(cp, buffer);
+
+    texture.image_view = {texture.image, VK_IMAGE_ASPECT_COLOR_BIT};
+
+    texture.sampler = {allocator.device, 1};
+
+    return texture;
+}
+
+
 planet::vk::texture::operator bool() const noexcept {
     return image.get() and image_view.get() and sampler.get();
 }

@@ -77,7 +77,40 @@ planet::vk::sdl::window::window(
 /// ## Font and texture writing
 
 
-planet::vk::texture planet::vk::sdl::create_texture(
+planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
+        device_memory_allocator &allocator,
+        command_pool &cp,
+        planet::sdl::surface const &surface) {
+    if (surface.get()->format->format != SDL_PIXELFORMAT_ARGB8888) {
+        throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
+    }
+
+    std::size_t const byte_count = surface.height() * surface.width() * 4;
+
+    buffer<std::byte> staging{
+            allocator.device().staging_memory, byte_count,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+
+    auto mapped{staging.map()};
+    std::byte *const dest_base = mapped.get();
+    std::byte const *const src_base =
+            reinterpret_cast<std::byte const *>(surface.get()->pixels);
+    std::size_t const line_bytes = surface.width() * 4;
+    for (std::size_t line{}; line < surface.height(); ++line) {
+        std::size_t const dest_offset = line * line_bytes;
+        std::size_t const src_offset = line * surface.get()->pitch;
+        std::memcpy(dest_base + dest_offset, src_base + src_offset, line_bytes);
+    }
+
+    return planet::vk::texture::create_without_mip_levels_from(
+            allocator, cp, staging, surface.width(), surface.height(),
+            surface.fit);
+}
+
+
+planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
         device_memory_allocator &allocator,
         command_pool &cp,
         planet::sdl::surface const &surface) {
