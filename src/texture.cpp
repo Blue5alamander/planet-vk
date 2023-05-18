@@ -1,3 +1,4 @@
+#include <planet/vk/commands.hpp>
 #include <planet/vk/device.hpp>
 #include <planet/vk/instance.hpp>
 #include <planet/vk/texture.hpp>
@@ -101,6 +102,29 @@ planet::vk::texture planet::vk::texture::create_without_mip_levels_from(
             cp, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             1);
     texture.image.copy_from(cp, buffer);
+
+    auto cb = planet::vk::command_buffer::single_use(cp);
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.image = texture.image.get();
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.subresourceRange.levelCount = 1;
+
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(
+            cb.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+            &barrier);
+        cb.end_and_submit();
 
     texture.image_view = {texture.image, VK_IMAGE_ASPECT_COLOR_BIT};
 
