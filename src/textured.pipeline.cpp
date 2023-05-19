@@ -161,10 +161,10 @@ void planet::vk::engine2d::pipeline::textured::render(
                 pipeline.layout.get(), 1, 1,
                 &texture_sets[current_frame][index], 0, nullptr);
 
-        constexpr std::uint32_t index_count = 6;
-        constexpr std::uint32_t instance_count = 1;
-        constexpr std::int32_t vertex_offset = 0;
-        constexpr std::uint32_t first_instance = 0;
+        static constexpr std::uint32_t index_count = 6;
+        static constexpr std::uint32_t instance_count = 1;
+        static constexpr std::int32_t vertex_offset = 0;
+        static constexpr std::uint32_t first_instance = 0;
         vkCmdDrawIndexed(
                 cb.get(), index_count, instance_count, index * index_count,
                 vertex_offset, first_instance);
