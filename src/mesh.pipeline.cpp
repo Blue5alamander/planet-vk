@@ -54,7 +54,7 @@ planet::vk::graphics_pipeline
             app, "planet-vk-engine2d/mesh.vert.spirv",
             "planet-vk-engine2d/mesh.frag.spirv", binding_description,
             attribute_description, swap_chain, render_pass,
-            {app.device, ubo_layout});
+            pipeline_layout{app.device, ubo_layout});
 }
 
 

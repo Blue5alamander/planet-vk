@@ -16,10 +16,14 @@ namespace planet::vk {
         handle_type handle;
 
       public:
-        pipeline_layout(vk::device &);
-        pipeline_layout(vk::device &, descriptor_set_layout const &);
-        pipeline_layout(vk::device &, std::span<VkDescriptorSetLayout const>);
-        pipeline_layout(vk::device &, VkPipelineLayoutCreateInfo const &);
+        explicit pipeline_layout(vk::device &);
+        explicit pipeline_layout(vk::device &, descriptor_set_layout const &);
+        explicit pipeline_layout(
+                vk::device &,
+                std::span<VkDescriptorSetLayout const>,
+                std::span<VkPushConstantRange const> = {});
+        explicit pipeline_layout(
+                vk::device &, VkPipelineLayoutCreateInfo const &);
 
         device_view device;
         auto get() const noexcept { return handle.get(); }

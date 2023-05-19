@@ -81,7 +81,9 @@ planet::vk::graphics_pipeline
     return planet::vk::engine2d::create_graphics_pipeline(
             app, vertex_shader, "planet-vk-engine2d/textured.frag.spirv",
             binding_description, attribute_description, swap_chain, render_pass,
-            {app.device, std::array{vp_layout.get(), texture_layout.get()}});
+            pipeline_layout{
+                    app.device,
+                    std::array{vp_layout.get(), texture_layout.get()}});
 }
 
 

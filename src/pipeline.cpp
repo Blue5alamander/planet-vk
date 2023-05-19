@@ -26,12 +26,16 @@ planet::vk::pipeline_layout::pipeline_layout(
 
 
 planet::vk::pipeline_layout::pipeline_layout(
-        vk::device &d, std::span<VkDescriptorSetLayout const> const s)
+        vk::device &d,
+        std::span<VkDescriptorSetLayout const> const s,
+        std::span<VkPushConstantRange const> const p)
 : device{d} {
     VkPipelineLayoutCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     info.setLayoutCount = s.size();
     info.pSetLayouts = s.data();
+    info.pushConstantRangeCount = p.size();
+    info.pPushConstantRanges = p.data();
     handle.create<vkCreatePipelineLayout>(device.get(), info);
 }
 
