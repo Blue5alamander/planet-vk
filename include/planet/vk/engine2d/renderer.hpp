@@ -5,6 +5,7 @@
 #include <planet/vk/engine2d/app.hpp>
 #include <planet/vk/engine2d/forward.hpp>
 #include <planet/vk/engine2d/mesh.pipeline.hpp>
+#include <planet/vk/engine2d/sprite.pipeline.hpp>
 #include <planet/vk/engine2d/textured.pipeline.hpp>
 
 #include <planet/affine/matrix3d.hpp>
@@ -58,6 +59,9 @@ namespace planet::vk::engine2d {
         pipeline::textured screen{
                 app, swap_chain, render_pass, ubo_layout,
                 "planet-vk-engine2d/texture.screen.vert.spirv"};
+        pipeline::sprite sprite{
+                app, swap_chain, render_pass, ubo_layout,
+                "planet-vk-engine2d/sprite.screen.vert.spirv"};
 
 
         /// ### Drawing API
