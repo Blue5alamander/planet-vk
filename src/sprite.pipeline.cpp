@@ -80,7 +80,7 @@ planet::vk::graphics_pipeline
                 std::string_view const vertex_shader) {
     /// TODO Add push constant
     return planet::vk::engine2d::create_graphics_pipeline(
-            app, vertex_shader, "planet-vk-engine2d/textured.frag.spirv",
+            app, vertex_shader, "planet-vk-engine2d/sprite.frag.spirv",
             binding_description, attribute_description, swap_chain, render_pass,
             pipeline_layout{
                     app.device,
