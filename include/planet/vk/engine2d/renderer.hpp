@@ -61,7 +61,7 @@ namespace planet::vk::engine2d {
                 "planet-vk-engine2d/texture.screen.vert.spirv"};
         pipeline::sprite sprite{
                 app, swap_chain, render_pass, ubo_layout,
-                "planet-vk-engine2d/sprite.screen.vert.spirv"};
+                "planet-vk-engine2d/sprite.world.vert.spirv"};
 
 
         /// ### Drawing API
