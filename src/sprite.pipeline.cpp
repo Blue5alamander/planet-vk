@@ -98,9 +98,10 @@ void planet::vk::engine2d::pipeline::sprite::draw(
     }
 
     auto const pos = affine::rectangle2d{
-            {0, loc.size.height},
+            affine::point2d{0, loc.size.height} - loc.centre,
             affine::extents2d{loc.size.width, -loc.size.height}};
     std::size_t const quad_index = quads.size();
+
     quads.push_back(
             {{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}, colour});
     quads.push_back(
