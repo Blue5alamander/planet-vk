@@ -78,13 +78,17 @@ planet::vk::engine2d::pipeline::sprite::sprite(
 planet::vk::graphics_pipeline
         planet::vk::engine2d::pipeline::sprite::create_pipeline(
                 std::string_view const vertex_shader) {
-    /// TODO Add push constant
+    VkPushConstantRange pc;
+    pc.offset = 0;
+    pc.size = sizeof(push_constant);
+    pc.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     return planet::vk::engine2d::create_graphics_pipeline(
             app, vertex_shader, "planet-vk-engine2d/sprite.frag.spirv",
             binding_description, attribute_description, swap_chain, render_pass,
             pipeline_layout{
                     app.device,
-                    std::array{vp_layout.get(), texture_layout.get()}});
+                    std::array{vp_layout.get(), texture_layout.get()},
+                    std::array{pc}});
 }
 
 
@@ -122,7 +126,9 @@ void planet::vk::engine2d::pipeline::sprite::draw(
     textures.back().imageView = texture.image_view.get();
     textures.back().sampler = texture.sampler.get();
 
-    /// TODO Calculate transform matrix for push constant
+    transforms.push_back({planet::affine::matrix3d{
+            planet::affine::matrix2d::translate(loc.offset)
+            * planet::affine::matrix2d::rotate(loc.rotation)}});
 }
 
 
@@ -167,7 +173,9 @@ void planet::vk::engine2d::pipeline::sprite::render(
                 pipeline.layout.get(), 1, 1,
                 &texture_sets[current_frame][index], 0, nullptr);
 
-        /// TODO Add push constant for transform matrix
+        vkCmdPushConstants(
+                cb.get(), pipeline.layout.get(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                sizeof(push_constant), &transforms[index]);
 
         static constexpr std::uint32_t index_count = 6;
         static constexpr std::uint32_t instance_count = 1;
@@ -184,4 +192,5 @@ void planet::vk::engine2d::pipeline::sprite::render(
     quads.clear();
     indexes.clear();
     textures.clear();
+    transforms.clear();
 }

@@ -80,6 +80,7 @@ namespace planet::vk::engine2d::pipeline {
         std::vector<vertex> quads;
         std::vector<std::uint32_t> indexes;
         std::vector<VkDescriptorImageInfo> textures;
+        std::vector<push_constant> transforms;
 
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
