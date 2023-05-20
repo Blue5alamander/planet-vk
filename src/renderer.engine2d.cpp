@@ -178,25 +178,19 @@ void planet::vk::engine2d::renderer::submit_and_present() {
             sizeof(coordinate_space));
 
     auto const rp = [&](auto &pl) {
+        vkCmdBindPipeline(
+                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.pipeline.get());
         vkCmdBindDescriptorSets(
                 cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                 pl.pipeline.layout.get(), 0, 1, &ubo_sets[current_frame], 0,
                 nullptr);
-        vkCmdBindPipeline(
-                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.pipeline.get());
         pl.render(*this, cb, current_frame);
     };
 
     rp(mesh);
     rp(sprite);
-
-    vkCmdBindPipeline(
-            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, textured.pipeline.get());
-    textured.render(*this, cb, current_frame);
-
-    vkCmdBindPipeline(
-            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, screen.pipeline.get());
-    screen.render(*this, cb, current_frame);
+    rp(textured);
+    rp(screen);
 
     vkCmdEndRenderPass(cb.get());
     planet::vk::worked(vkEndCommandBuffer(cb.get()));
