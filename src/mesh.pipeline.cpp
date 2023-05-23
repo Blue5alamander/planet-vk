@@ -1,8 +1,8 @@
-#include <planet/vk/engine2d/mesh.pipeline.hpp>
-#include <planet/vk/engine2d/renderer.hpp>
+#include <planet/vk/engine/mesh.pipeline.hpp>
+#include <planet/vk/engine/renderer.hpp>
 
 
-/// ## `planet::vk::engine2d::pipeline::mesh`
+/// ## `planet::vk::engine::pipeline::mesh`
 
 
 namespace {
@@ -12,8 +12,7 @@ namespace {
         VkVertexInputBindingDescription description{};
 
         description.binding = 0;
-        description.stride =
-                sizeof(planet::vk::engine2d::pipeline::mesh::vertex);
+        description.stride = sizeof(planet::vk::engine::pipeline::mesh::vertex);
         description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         return std::array{description};
@@ -25,13 +24,13 @@ namespace {
         attrs[0].location = 0;
         attrs[0].format = VK_FORMAT_R32G32_SFLOAT;
         attrs[0].offset =
-                offsetof(planet::vk::engine2d::pipeline::mesh::vertex, p);
+                offsetof(planet::vk::engine::pipeline::mesh::vertex, p);
 
         attrs[1].binding = 0;
         attrs[1].location = 1;
         attrs[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attrs[1].offset =
-                offsetof(planet::vk::engine2d::pipeline::mesh::vertex, c);
+                offsetof(planet::vk::engine::pipeline::mesh::vertex, c);
 
         return attrs;
     }()};
@@ -40,8 +39,8 @@ namespace {
 }
 
 
-planet::vk::engine2d::pipeline::mesh::mesh(
-        engine2d::app &a,
+planet::vk::engine::pipeline::mesh::mesh(
+        engine::app &a,
         vk::swap_chain &sc,
         vk::render_pass &rp,
         vk::descriptor_set_layout &dsl)
@@ -49,23 +48,23 @@ planet::vk::engine2d::pipeline::mesh::mesh(
 
 
 planet::vk::graphics_pipeline
-        planet::vk::engine2d::pipeline::mesh::create_mesh_pipeline() {
-    return planet::vk::engine2d::create_graphics_pipeline(
-            app, "planet-vk-engine2d/mesh.vert.spirv",
-            "planet-vk-engine2d/mesh.frag.spirv", binding_description,
+        planet::vk::engine::pipeline::mesh::create_mesh_pipeline() {
+    return planet::vk::engine::create_graphics_pipeline(
+            app, "planet-vk-engine/mesh.vert.spirv",
+            "planet-vk-engine/mesh.frag.spirv", binding_description,
             attribute_description, swap_chain, render_pass,
             pipeline_layout{app.device, ubo_layout});
 }
 
 
-void planet::vk::engine2d::pipeline::mesh::draw(
+void planet::vk::engine::pipeline::mesh::draw(
         std::span<vertex const> const vertices,
         std::span<std::uint32_t const> const indices) {
     auto const start_index = triangles.size();
     for (auto const &v : vertices) { triangles.push_back(v); }
     for (auto const &i : indices) { indexes.push_back(start_index + i); }
 }
-void planet::vk::engine2d::pipeline::mesh::draw(
+void planet::vk::engine::pipeline::mesh::draw(
         std::span<vertex const> const vertices,
         std::span<std::uint32_t const> const indices,
         pos const p) {
@@ -73,7 +72,7 @@ void planet::vk::engine2d::pipeline::mesh::draw(
     for (auto const &v : vertices) { triangles.push_back({v.p + p, v.c}); }
     for (auto const &i : indices) { indexes.push_back(start_index + i); }
 }
-void planet::vk::engine2d::pipeline::mesh::draw(
+void planet::vk::engine::pipeline::mesh::draw(
         std::span<vertex const> const vertices,
         std::span<std::uint32_t const> const indices,
         pos const p,
@@ -84,8 +83,8 @@ void planet::vk::engine2d::pipeline::mesh::draw(
 }
 
 
-void planet::vk::engine2d::pipeline::mesh::render(
-        engine2d::renderer &renderer,
+void planet::vk::engine::pipeline::mesh::render(
+        engine::renderer &renderer,
         command_buffer &cb,
         std::size_t const current_frame) {
     if (triangles.empty()) { return; }

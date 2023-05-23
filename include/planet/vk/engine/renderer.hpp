@@ -2,16 +2,16 @@
 
 
 #include <planet/affine/matrix3d.hpp>
-#include <planet/vk/engine2d/app.hpp>
-#include <planet/vk/engine2d/forward.hpp>
-#include <planet/vk/engine2d/mesh.pipeline.hpp>
-#include <planet/vk/engine2d/sprite.pipeline.hpp>
-#include <planet/vk/engine2d/textured.pipeline.hpp>
+#include <planet/vk/engine/app.hpp>
+#include <planet/vk/engine/forward.hpp>
+#include <planet/vk/engine/mesh.pipeline.hpp>
+#include <planet/vk/engine/sprite.pipeline.hpp>
+#include <planet/vk/engine/textured.pipeline.hpp>
 
 #include <planet/affine/matrix3d.hpp>
 
 
-namespace planet::vk::engine2d {
+namespace planet::vk::engine {
 
 
     /// ## Renderer
@@ -23,10 +23,10 @@ namespace planet::vk::engine2d {
         vk::render_pass create_render_pass();
 
       public:
-        renderer(engine2d::app &);
+        renderer(engine::app &);
         ~renderer();
 
-        engine2d::app &app;
+        engine::app &app;
 
 
         /// ### Per-frame memory allocator
@@ -55,13 +55,13 @@ namespace planet::vk::engine2d {
         pipeline::mesh mesh{app, swap_chain, render_pass, ubo_layout};
         pipeline::textured textured{
                 app, swap_chain, render_pass, ubo_layout,
-                "planet-vk-engine2d/texture.world.vert.spirv"};
+                "planet-vk-engine/texture.world.vert.spirv"};
         pipeline::textured screen{
                 app, swap_chain, render_pass, ubo_layout,
-                "planet-vk-engine2d/texture.screen.vert.spirv"};
+                "planet-vk-engine/texture.screen.vert.spirv"};
         pipeline::sprite sprite{
                 app, swap_chain, render_pass, ubo_layout,
-                "planet-vk-engine2d/sprite.world.vert.spirv"};
+                "planet-vk-engine/sprite.world.vert.spirv"};
 
 
         /// ### Drawing API

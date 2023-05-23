@@ -2,16 +2,16 @@
 
 
 #include <planet/ui/reflowable.hpp>
-#include <planet/vk/engine2d/forward.hpp>
+#include <planet/vk/engine/forward.hpp>
 
 
-namespace planet::vk::engine2d::ui {
+namespace planet::vk::engine::ui {
 
 
     /// ## Draw wrapper that automatically handles one instance per frame for us
     template<typename T>
     struct per_frame final : public planet::ui::reflowable {
-        per_frame() : reflowable{"planet::vk::engine2d::ui::per_frame"} {}
+        per_frame() : reflowable{"planet::vk::engine::ui::per_frame"} {}
 
         using constrained_type = planet::ui::reflowable::constrained_type;
 

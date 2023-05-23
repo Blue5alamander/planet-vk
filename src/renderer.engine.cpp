@@ -1,4 +1,4 @@
-#include <planet/vk/engine2d/renderer.hpp>
+#include <planet/vk/engine/renderer.hpp>
 
 #include <cstring>
 
@@ -6,7 +6,7 @@
 using namespace std::literals;
 
 
-planet::vk::engine2d::renderer::renderer(engine2d::app &a)
+planet::vk::engine::renderer::renderer(engine::app &a)
 : app{a},
   screen_space{
           affine::transform2d{}
@@ -58,7 +58,7 @@ planet::vk::engine2d::renderer::renderer(engine2d::app &a)
         ++index;
     }
 }
-planet::vk::engine2d::renderer::~renderer() {
+planet::vk::engine::renderer::~renderer() {
     /// Because images can be in flight when we're destructed, we have to wait
     /// for them
     for (auto &f : fence) {
@@ -70,13 +70,13 @@ planet::vk::engine2d::renderer::~renderer() {
 }
 
 
-void planet::vk::engine2d::renderer::reset_world_coordinates(
+void planet::vk::engine::renderer::reset_world_coordinates(
         affine::matrix3d const &m) {
     coordinates.world = m;
 }
 
 
-planet::vk::render_pass planet::vk::engine2d::renderer::create_render_pass() {
+planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
     VkAttachmentDescription color_attachment = {};
     color_attachment.format = swap_chain.image_format;
     color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -110,7 +110,7 @@ planet::vk::render_pass planet::vk::engine2d::renderer::create_render_pass() {
 
 
 felspar::coro::task<std::size_t>
-        planet::vk::engine2d::renderer::start(VkClearValue const colour) {
+        planet::vk::engine::renderer::start(VkClearValue const colour) {
     constexpr auto wait_time = 5ms;
     // Wait for the previous version of this frame number to finish
     while (not fence[current_frame].is_ready()) {
@@ -170,7 +170,7 @@ felspar::coro::task<std::size_t>
 }
 
 
-void planet::vk::engine2d::renderer::submit_and_present() {
+void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
 
     std::memcpy(
@@ -231,8 +231,8 @@ void planet::vk::engine2d::renderer::submit_and_present() {
 }
 
 
-planet::vk::graphics_pipeline planet::vk::engine2d::create_graphics_pipeline(
-        engine2d::app &app,
+planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
+        engine::app &app,
         std::string_view vert,
         std::string_view frag,
         std::span<VkVertexInputBindingDescription const> binding_description,

@@ -1,9 +1,9 @@
-#include <planet/vk/engine2d/app.hpp>
-#include <planet/vk/engine2d/renderer.hpp>
+#include <planet/vk/engine/app.hpp>
+#include <planet/vk/engine/renderer.hpp>
 #include <SDL_vulkan.h>
 
 
-planet::vk::engine2d::app::app(int, char const *argv[], char const *name)
+planet::vk::engine::app::app(int, char const *argv[], char const *name)
 : warden{std::make_unique<felspar::io::poll_warden>()},
   asset_manager{argv[0]},
   sdl{*warden, name},
@@ -26,12 +26,12 @@ planet::vk::engine2d::app::app(int, char const *argv[], char const *name)
   }()} {}
 
 
-int planet::vk::engine2d::app::run(
+int planet::vk::engine::app::run(
         felspar::coro::task<int> (*co_main)(app &, renderer &)) {
     auto const wrapper = [](felspar::io::warden &, app *papp,
                             felspar::coro::task<int> (*cm)(app &, renderer &))
             -> felspar::io::warden::task<int> {
-        planet::vk::engine2d::renderer renderer{*papp};
+        planet::vk::engine::renderer renderer{*papp};
         co_return co_await cm(*papp, renderer);
     };
     return warden->run(+wrapper, this, co_main);

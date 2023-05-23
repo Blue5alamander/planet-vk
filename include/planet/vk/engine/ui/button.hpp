@@ -1,13 +1,13 @@
 #pragma once
 
 
-#include <planet/vk/engine2d/renderer.hpp>
-#include <planet/vk/engine2d/ui/on_screen.hpp>
+#include <planet/vk/engine/renderer.hpp>
+#include <planet/vk/engine/ui/on_screen.hpp>
 #include <planet/vk/texture.hpp>
 #include <planet/ui/button.hpp>
 
 
-namespace planet::vk::engine2d::ui {
+namespace planet::vk::engine::ui {
 
 
     template<typename R, typename G = on_screen>
@@ -24,12 +24,12 @@ namespace planet::vk::engine2d::ui {
         using superclass::reflow;
 
         button(felspar::coro::bus<R> &o, R v)
-        : superclass{"planet::vk::engine2d::ui::button", o, std::move(v)} {}
+        : superclass{"planet::vk::engine::ui::button", o, std::move(v)} {}
         button(std::string_view const n, felspar::coro::bus<R> &o, R v)
         : superclass{n, o, std::move(v)} {}
         button(G g, felspar::coro::bus<R> &o, R v)
         : superclass{
-                "planet::vk::engine2d::ui::button", std::move(g), o,
+                "planet::vk::engine::ui::button", std::move(g), o,
                 std::move(v)} {}
         button(std::string_view const n, G g, felspar::coro::bus<R> &o, R v)
         : superclass{n, std::move(g), o, std::move(v)} {}

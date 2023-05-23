@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <planet/vk/engine2d/app.hpp>
+#include <planet/vk/engine/app.hpp>
 
 
-namespace planet::vk::engine2d::pipeline {
+namespace planet::vk::engine::pipeline {
 
 
     /// ## 2D triangle mesh with per-vertex colour
@@ -12,12 +12,12 @@ namespace planet::vk::engine2d::pipeline {
         vk::graphics_pipeline create_mesh_pipeline();
 
       public:
-        mesh(engine2d::app &,
+        mesh(engine::app &,
              vk::swap_chain &,
              vk::render_pass &,
              vk::descriptor_set_layout &);
 
-        engine2d::app &app;
+        engine::app &app;
         view<vk::swap_chain> swap_chain;
         view<vk::render_pass> render_pass;
         view<vk::descriptor_set_layout> ubo_layout;

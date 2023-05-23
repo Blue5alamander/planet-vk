@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace planet::vk::engine2d {
+namespace planet::vk::engine {
 
 
     class renderer;

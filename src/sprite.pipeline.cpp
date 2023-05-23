@@ -1,8 +1,8 @@
-#include <planet/vk/engine2d/renderer.hpp>
-#include <planet/vk/engine2d/sprite.pipeline.hpp>
+#include <planet/vk/engine/renderer.hpp>
+#include <planet/vk/engine/sprite.pipeline.hpp>
 
 
-/// ## `planet::vk::engine2d::pipeline::sprite`
+/// ## `planet::vk::engine::pipeline::sprite`
 
 
 namespace {
@@ -13,7 +13,7 @@ namespace {
 
         description.binding = 0;
         description.stride =
-                sizeof(planet::vk::engine2d::pipeline::sprite::vertex);
+                sizeof(planet::vk::engine::pipeline::sprite::vertex);
         description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         return std::array{description};
@@ -25,19 +25,19 @@ namespace {
         attrs[0].location = 0;
         attrs[0].format = VK_FORMAT_R32G32_SFLOAT;
         attrs[0].offset =
-                offsetof(planet::vk::engine2d::pipeline::sprite::vertex, p);
+                offsetof(planet::vk::engine::pipeline::sprite::vertex, p);
 
         attrs[1].binding = 0;
         attrs[1].location = 1;
         attrs[1].format = VK_FORMAT_R32G32_SFLOAT;
         attrs[1].offset =
-                offsetof(planet::vk::engine2d::pipeline::sprite::vertex, uv);
+                offsetof(planet::vk::engine::pipeline::sprite::vertex, uv);
 
         attrs[2].binding = 0;
         attrs[2].location = 2;
         attrs[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attrs[2].offset =
-                offsetof(planet::vk::engine2d::pipeline::sprite::vertex, col);
+                offsetof(planet::vk::engine::pipeline::sprite::vertex, col);
 
         return attrs;
     }()};
@@ -46,8 +46,8 @@ namespace {
 }
 
 
-planet::vk::engine2d::pipeline::sprite::sprite(
-        engine2d::app &a,
+planet::vk::engine::pipeline::sprite::sprite(
+        engine::app &a,
         vk::swap_chain &sc,
         vk::render_pass &rp,
         vk::descriptor_set_layout &dsl,
@@ -76,14 +76,14 @@ planet::vk::engine2d::pipeline::sprite::sprite(
 
 
 planet::vk::graphics_pipeline
-        planet::vk::engine2d::pipeline::sprite::create_pipeline(
+        planet::vk::engine::pipeline::sprite::create_pipeline(
                 std::string_view const vertex_shader) {
     VkPushConstantRange pc;
     pc.offset = 0;
     pc.size = sizeof(push_constant);
     pc.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    return planet::vk::engine2d::create_graphics_pipeline(
-            app, vertex_shader, "planet-vk-engine2d/sprite.frag.spirv",
+    return planet::vk::engine::create_graphics_pipeline(
+            app, vertex_shader, "planet-vk-engine/sprite.frag.spirv",
             binding_description, attribute_description, swap_chain, render_pass,
             pipeline_layout{
                     app.device,
@@ -92,7 +92,7 @@ planet::vk::graphics_pipeline
 }
 
 
-void planet::vk::engine2d::pipeline::sprite::draw(
+void planet::vk::engine::pipeline::sprite::draw(
         vk::texture const &texture,
         location const &loc,
         vk::colour const &colour) {
@@ -132,8 +132,8 @@ void planet::vk::engine2d::pipeline::sprite::draw(
 }
 
 
-void planet::vk::engine2d::pipeline::sprite::render(
-        engine2d::renderer &renderer,
+void planet::vk::engine::pipeline::sprite::render(
+        engine::renderer &renderer,
         command_buffer &cb,
         std::size_t const current_frame) {
     if (quads.empty()) { return; }

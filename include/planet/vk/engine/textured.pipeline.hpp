@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <planet/vk/engine2d/app.hpp>
+#include <planet/vk/engine/app.hpp>
 
 
-namespace planet::vk::engine2d::pipeline {
+namespace planet::vk::engine::pipeline {
 
 
     /// ## Textured triangle pipeline
@@ -13,13 +13,13 @@ namespace planet::vk::engine2d::pipeline {
 
       public:
         textured(
-                engine2d::app &,
+                engine::app &,
                 vk::swap_chain &,
                 vk::render_pass &,
                 vk::descriptor_set_layout &,
                 std::string_view vertex_shader);
 
-        engine2d::app &app;
+        engine::app &app;
         view<vk::swap_chain> swap_chain;
         view<vk::render_pass> render_pass;
         view<vk::descriptor_set_layout> vp_layout;

@@ -5,7 +5,7 @@
 #include <planet/vk-sdl.hpp>
 
 
-namespace planet::vk::engine2d {
+namespace planet::vk::engine {
 
 
     class renderer;
@@ -30,7 +30,7 @@ namespace planet::vk::engine2d {
         vk::instance instance;
         vk::device device{instance, extensions};
 
-        planet::ui::baseplate<planet::vk::engine2d::renderer> baseplate;
+        planet::ui::baseplate<planet::vk::engine::renderer> baseplate;
 
         /// ### Run the provided UI function
         int run(felspar::coro::task<int> (*co_main)(app &, renderer &));

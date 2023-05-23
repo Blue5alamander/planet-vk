@@ -1,18 +1,18 @@
-#include <planet/vk/engine2d.hpp>
+#include <planet/vk/engine.hpp>
 
 
 namespace {
     felspar::coro::task<int> render_loop(
-            planet::vk::engine2d::app &app,
-            planet::vk::engine2d::renderer &renderer) {
+            planet::vk::engine::app &app,
+            planet::vk::engine::renderer &renderer) {
         constexpr std::array vertices{
-                planet::vk::engine2d::pipeline::mesh::vertex{
+                planet::vk::engine::pipeline::mesh::vertex{
                         {-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                planet::vk::engine2d::pipeline::mesh::vertex{
+                planet::vk::engine::pipeline::mesh::vertex{
                         {0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                planet::vk::engine2d::pipeline::mesh::vertex{
+                planet::vk::engine::pipeline::mesh::vertex{
                         {0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                planet::vk::engine2d::pipeline::mesh::vertex{
+                planet::vk::engine::pipeline::mesh::vertex{
                         {-0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}}};
         constexpr std::array<std::uint32_t, 6> indices{0, 1, 2, 2, 3, 0};
 
@@ -45,7 +45,7 @@ namespace {
 
 
 int main(int const argc, char const *argv[]) {
-    return planet::vk::engine2d::app{
+    return planet::vk::engine::app{
             argc, argv, "blue5alamander/planet-vk/2d-example"}
             .run(render_loop);
 }
