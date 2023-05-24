@@ -184,7 +184,7 @@ void planet::vk::engine::renderer::submit_and_present() {
                 cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                 pl.pipeline.layout.get(), 0, 1, &ubo_sets[current_frame], 0,
                 nullptr);
-        pl.render(*this, cb, current_frame);
+        pl.render({*this, cb, current_frame});
     };
 
     rp(mesh);

@@ -95,9 +95,6 @@ namespace planet::vk::engine::pipeline {
 
         /// ### Add draw commands to command buffer
         void render(render_parameters);
-        void render(renderer &r, command_buffer &cb, std::size_t const cf) {
-            render({r, cb, cf});
-        }
     };
 
 
