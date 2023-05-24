@@ -190,7 +190,6 @@ void planet::vk::engine::renderer::submit_and_present() {
 
     auto const rp = [&](auto &pl) { pl.render(bind(pl.pipeline)); };
 
-    rp(sprite);
     rp(textured);
     rp(screen);
 
