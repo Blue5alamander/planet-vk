@@ -4,6 +4,7 @@
 namespace planet::vk::engine {
 
 
+    class app;
     class renderer;
 
 
