@@ -83,21 +83,18 @@ void planet::vk::engine::pipeline::mesh::draw(
 }
 
 
-void planet::vk::engine::pipeline::mesh::render(
-        engine::renderer &renderer,
-        command_buffer &cb,
-        std::size_t const current_frame) {
+void planet::vk::engine::pipeline::mesh::render(render_parameters rp) {
     if (triangles.empty()) { return; }
 
-    auto &vertex_buffer = vertex_buffers[current_frame];
+    auto &vertex_buffer = vertex_buffers[rp.current_frame];
     vertex_buffer = {
-            renderer.per_frame_memory, triangles,
+            rp.renderer.per_frame_memory, triangles,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-    auto &index_buffer = index_buffers[current_frame];
+    auto &index_buffer = index_buffers[rp.current_frame];
     index_buffer = {
-            renderer.per_frame_memory, indexes,
+            rp.renderer.per_frame_memory, indexes,
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -106,10 +103,11 @@ void planet::vk::engine::pipeline::mesh::render(
     std::array offset{VkDeviceSize{}};
 
     vkCmdBindVertexBuffers(
-            cb.get(), 0, buffers.size(), buffers.data(), offset.data());
-    vkCmdBindIndexBuffer(cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
+            rp.cb.get(), 0, buffers.size(), buffers.data(), offset.data());
+    vkCmdBindIndexBuffer(
+            rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
     vkCmdDrawIndexed(
-            cb.get(), static_cast<uint32_t>(indexes.size()), 1, 0, 0, 0);
+            rp.cb.get(), static_cast<uint32_t>(indexes.size()), 1, 0, 0, 0);
 
     triangles.clear();
     indexes.clear();

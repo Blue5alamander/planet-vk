@@ -166,16 +166,16 @@ felspar::coro::task<std::size_t>
     vkCmdBeginRenderPass(
             cb.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
+    std::memcpy(
+            viewport_mapping[current_frame].get(), &coordinates,
+            sizeof(coordinate_space));
+
     co_return current_frame;
 }
 
 
 void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
-
-    std::memcpy(
-            viewport_mapping[current_frame].get(), &coordinates,
-            sizeof(coordinate_space));
 
     auto const rp = [&](auto &pl) {
         vkCmdBindPipeline(

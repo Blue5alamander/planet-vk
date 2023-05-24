@@ -120,20 +120,18 @@ void planet::vk::engine::pipeline::textured::draw(
 }
 
 
-void planet::vk::engine::pipeline::textured::render(
-        engine::renderer &renderer,
-        command_buffer &cb,
-        std::size_t const current_frame) {
+void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     if (quads.empty()) { return; }
 
-    auto &vertex_buffer = vertex_buffers[current_frame];
+    auto &vertex_buffer = vertex_buffers[rp.current_frame];
     vertex_buffer = {
-            renderer.per_frame_memory, quads, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            rp.renderer.per_frame_memory, quads,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-    auto &index_buffer = index_buffers[current_frame];
+    auto &index_buffer = index_buffers[rp.current_frame];
     index_buffer = {
-            renderer.per_frame_memory, indexes,
+            rp.renderer.per_frame_memory, indexes,
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -142,14 +140,15 @@ void planet::vk::engine::pipeline::textured::render(
     std::array offset{VkDeviceSize{}};
 
     vkCmdBindVertexBuffers(
-            cb.get(), 0, buffers.size(), buffers.data(), offset.data());
-    vkCmdBindIndexBuffer(cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
+            rp.cb.get(), 0, buffers.size(), buffers.data(), offset.data());
+    vkCmdBindIndexBuffer(
+            rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
     for (std::size_t index{}; auto const &tx : textures) {
         VkWriteDescriptorSet wds{};
         wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        wds.dstSet = texture_sets[current_frame][index];
+        wds.dstSet = texture_sets[rp.current_frame][index];
         wds.dstBinding = 0;
         wds.dstArrayElement = 0;
         wds.descriptorCount = 1;
@@ -157,16 +156,16 @@ void planet::vk::engine::pipeline::textured::render(
         vkUpdateDescriptorSets(app.device.get(), 1, &wds, 0, nullptr);
 
         vkCmdBindDescriptorSets(
-                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                 pipeline.layout.get(), 1, 1,
-                &texture_sets[current_frame][index], 0, nullptr);
+                &texture_sets[rp.current_frame][index], 0, nullptr);
 
         static constexpr std::uint32_t index_count = 6;
         static constexpr std::uint32_t instance_count = 1;
         static constexpr std::int32_t vertex_offset = 0;
         static constexpr std::uint32_t first_instance = 0;
         vkCmdDrawIndexed(
-                cb.get(), index_count, instance_count, index * index_count,
+                rp.cb.get(), index_count, instance_count, index * index_count,
                 vertex_offset, first_instance);
 
         ++index;

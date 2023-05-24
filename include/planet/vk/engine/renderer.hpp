@@ -5,6 +5,7 @@
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/engine/mesh.pipeline.hpp>
+#include <planet/vk/engine/render_parameters.hpp>
 #include <planet/vk/engine/sprite.pipeline.hpp>
 #include <planet/vk/engine/textured.pipeline.hpp>
 
@@ -73,6 +74,9 @@ namespace planet::vk::engine {
          */
         felspar::coro::task<std::size_t> start(VkClearValue);
 
+        /// #### Bind pipeline
+        render_parameters bind(vk::pipeline_layout const &);
+
         /// #### Submit and present the frame
         /// This blocks until the frame is complete
         void submit_and_present();
@@ -103,6 +107,7 @@ namespace planet::vk::engine {
          */
         affine::transform2d screen_space;
 
+
         /// ### Transformation into and out of corrected Vulkan space
         /**
          * The Vulkan coordinate system maps both width and height to -1 to +1.
@@ -112,6 +117,7 @@ namespace planet::vk::engine {
 
          */
         affine::transform2d logical_vulkan_space;
+
 
       private:
         /// ### Data we need to track whilst in the render loop
