@@ -4,7 +4,6 @@
 #include <planet/affine/matrix3d.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/forward.hpp>
-#include <planet/vk/engine/mesh.pipeline.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 #include <planet/vk/engine/sprite.pipeline.hpp>
 #include <planet/vk/engine/textured.pipeline.hpp>
@@ -53,7 +52,6 @@ namespace planet::vk::engine {
 
         /// ### Pipelines
 
-        pipeline::mesh mesh{app, swap_chain, render_pass, ubo_layout};
         pipeline::textured textured{
                 app, swap_chain, render_pass, ubo_layout,
                 "planet-vk-engine/texture.world.vert.spirv"};
@@ -74,8 +72,8 @@ namespace planet::vk::engine {
          */
         felspar::coro::task<std::size_t> start(VkClearValue);
 
-        /// #### Bind pipeline
-        render_parameters bind(vk::pipeline_layout const &);
+        /// #### Bind graphics pipeline
+        render_parameters bind(vk::graphics_pipeline &);
 
         /// #### Submit and present the frame
         /// This blocks until the frame is complete

@@ -174,20 +174,22 @@ felspar::coro::task<std::size_t>
 }
 
 
+auto planet::vk::engine::renderer::bind(planet::vk::graphics_pipeline &pl)
+        -> planet::vk::engine::render_parameters {
+    auto &cb = command_buffers[current_frame];
+    vkCmdBindPipeline(cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.get());
+    vkCmdBindDescriptorSets(
+            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.layout.get(), 0, 1,
+            &ubo_sets[current_frame], 0, nullptr);
+    return {*this, cb, current_frame};
+}
+
+
 void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
 
-    auto const rp = [&](auto &pl) {
-        vkCmdBindPipeline(
-                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.pipeline.get());
-        vkCmdBindDescriptorSets(
-                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pl.pipeline.layout.get(), 0, 1, &ubo_sets[current_frame], 0,
-                nullptr);
-        pl.render({*this, cb, current_frame});
-    };
+    auto const rp = [&](auto &pl) { pl.render(bind(pl.pipeline)); };
 
-    rp(mesh);
     rp(sprite);
     rp(textured);
     rp(screen);
