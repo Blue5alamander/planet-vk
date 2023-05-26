@@ -37,73 +37,63 @@ planet::vk::sampler::sampler(vk::device &d, std::uint32_t const mip_levels)
 /// ## `planet::vk::texture`
 
 
-planet::vk::texture planet::vk::texture::create_with_mip_levels_from(
-        device_memory_allocator &allocator,
-        command_pool &cp,
-        vk::buffer<std::byte> const &buffer,
-        std::uint32_t const width,
-        std::uint32_t const height,
-        ui::scale const fit) {
-    auto const mhw = std::max(width, height);
+planet::vk::texture
+        planet::vk::texture::create_with_mip_levels_from(texture::args args) {
+    auto const mhw = std::max(args.width, args.height);
     std::uint32_t const mip_levels = 1 + std::floor(std::log2(mhw));
 
     vk::texture texture;
 
-    texture.fit = fit;
+    texture.fit = args.scale;
 
     texture.image = {
-            allocator,
-            width,
-            height,
+            args.allocator,
+            args.width,
+            args.height,
             mip_levels,
             VK_SAMPLE_COUNT_1_BIT,
-            VK_FORMAT_B8G8R8A8_SRGB,
+            args.format,
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                     | VK_IMAGE_USAGE_SAMPLED_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
     texture.image.transition_layout(
-            cp, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            mip_levels);
-    texture.image.copy_from(cp, buffer);
-    texture.image.generate_mip_maps(cp, mip_levels);
+            args.command_pool, VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mip_levels);
+    texture.image.copy_from(args.command_pool, args.buffer);
+    texture.image.generate_mip_maps(args.command_pool, mip_levels);
 
     texture.image_view = {texture.image, VK_IMAGE_ASPECT_COLOR_BIT};
 
-    texture.sampler = {allocator.device, mip_levels};
+    texture.sampler = {args.allocator.device, mip_levels};
 
     return texture;
 }
 
 
 planet::vk::texture planet::vk::texture::create_without_mip_levels_from(
-        device_memory_allocator &allocator,
-        command_pool &cp,
-        vk::buffer<std::byte> const &buffer,
-        std::uint32_t const width,
-        std::uint32_t const height,
-        ui::scale const fit) {
+        texture::args args) {
     vk::texture texture;
 
-    texture.fit = fit;
+    texture.fit = args.scale;
 
     texture.image = {
-            allocator,
-            width,
-            height,
+            args.allocator,
+            args.width,
+            args.height,
             1,
             VK_SAMPLE_COUNT_1_BIT,
-            VK_FORMAT_B8G8R8A8_SRGB,
+            args.format,
             VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                     | VK_IMAGE_USAGE_SAMPLED_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
     texture.image.transition_layout(
-            cp, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1);
-    texture.image.copy_from(cp, buffer);
+            args.command_pool, VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+    texture.image.copy_from(args.command_pool, args.buffer);
 
-    auto cb = planet::vk::command_buffer::single_use(cp);
+    auto cb = planet::vk::command_buffer::single_use(args.command_pool);
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.image = texture.image.get();
@@ -128,7 +118,7 @@ planet::vk::texture planet::vk::texture::create_without_mip_levels_from(
 
     texture.image_view = {texture.image, VK_IMAGE_ASPECT_COLOR_BIT};
 
-    texture.sampler = {allocator.device, 1};
+    texture.sampler = {args.allocator.device, 1};
 
     return texture;
 }

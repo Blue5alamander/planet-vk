@@ -105,8 +105,9 @@ planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
     }
 
     return planet::vk::texture::create_without_mip_levels_from(
-            allocator, cp, staging, surface.width(), surface.height(),
-            surface.fit);
+            {allocator, cp, staging,
+             static_cast<std::uint32_t>(surface.width()),
+             static_cast<std::uint32_t>(surface.height()), surface.fit});
 }
 
 
@@ -138,6 +139,7 @@ planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
     }
 
     return planet::vk::texture::create_with_mip_levels_from(
-            allocator, cp, staging, surface.width(), surface.height(),
-            surface.fit);
+            {allocator, cp, staging,
+             static_cast<std::uint32_t>(surface.width()),
+             static_cast<std::uint32_t>(surface.height()), surface.fit});
 }

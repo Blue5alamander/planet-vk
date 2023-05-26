@@ -579,9 +579,12 @@ class HelloTriangleApplication {
         stbi_image_free(pixels);
 
         texture = planet::vk::texture::create_with_mip_levels_from(
-                device.startup_memory, commandPool, stagingBuffer,
-                static_cast<uint32_t>(texWidth),
-                static_cast<uint32_t>(texHeight));
+                {.allocator = device.startup_memory,
+                 .command_pool = commandPool,
+                 .buffer = stagingBuffer,
+                 .width = static_cast<std::uint32_t>(texWidth),
+                 .height = static_cast<std::uint32_t>(texHeight),
+                 .format = VK_FORMAT_R8G8B8A8_SRGB});
     }
 
     VkSampleCountFlagBits getMaxUsableSampleCount() {

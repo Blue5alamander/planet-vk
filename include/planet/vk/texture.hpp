@@ -33,20 +33,17 @@ namespace planet::vk {
     class texture final {
       public:
         /// ### Construction
-        static texture create_with_mip_levels_from(
-                device_memory_allocator &,
-                command_pool &,
-                buffer<std::byte> const &,
-                std::uint32_t width,
-                std::uint32_t height,
-                ui::scale = ui::scale::lock_aspect);
-        static texture create_without_mip_levels_from(
-                device_memory_allocator &,
-                command_pool &,
-                buffer<std::byte> const &,
-                std::uint32_t width,
-                std::uint32_t height,
-                ui::scale = ui::scale::lock_aspect);
+        struct args {
+            device_memory_allocator &allocator;
+            vk::command_pool &command_pool;
+            vk::buffer<std::byte> const &buffer;
+            std::uint32_t width;
+            std::uint32_t height;
+            ui::scale scale = ui::scale::lock_aspect;
+            VkFormat format = VK_FORMAT_B8G8R8A8_SRGB;
+        };
+        static texture create_with_mip_levels_from(args);
+        static texture create_without_mip_levels_from(args);
 
 
         /// ### Attributes
