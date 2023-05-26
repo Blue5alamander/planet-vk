@@ -5,6 +5,10 @@ namespace {
     felspar::coro::task<int> render_loop(
             planet::vk::engine::app &app,
             planet::vk::engine::renderer &renderer) {
+        planet::vk::engine::pipeline::mesh mesh{
+                app, renderer.swap_chain, renderer.render_pass,
+                renderer.ubo_layout};
+
         constexpr std::array vertices{
                 planet::vk::engine::pipeline::mesh::vertex{
                         {-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
@@ -34,8 +38,8 @@ namespace {
 
             co_await renderer.start({{{0.f, 0.f, 0.f, 1.f}}});
 
-            renderer.mesh.draw(vertices, indices);
-            renderer.mesh.draw(vertices, indices, {0.75f, 0.75f});
+            mesh.draw(vertices, indices);
+            mesh.draw(vertices, indices, {0.75f, 0.75f});
 
             renderer.submit_and_present();
         }

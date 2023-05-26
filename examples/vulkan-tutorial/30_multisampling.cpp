@@ -365,7 +365,7 @@ class HelloTriangleApplication {
 
         return planet::vk::graphics_pipeline(
                 device, pipelineInfo, renderPass,
-                {device, descriptorSetLayout});
+                planet::vk::pipeline_layout{device, descriptorSetLayout});
     }()};
 
     planet::vk::command_pool commandPool{device, instance.surface};
