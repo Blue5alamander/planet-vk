@@ -2,7 +2,6 @@
 
 
 #include <planet/vk/engine/renderer.hpp>
-#include <planet/vk/engine/ui/on_screen.hpp>
 #include <planet/vk/texture.hpp>
 #include <planet/ui/button.hpp>
 
@@ -10,7 +9,7 @@
 namespace planet::vk::engine::ui {
 
 
-    template<typename R, typename G = on_screen>
+    template<typename R, typename G>
     class button final : public planet::ui::button<renderer, R, G> {
         using superclass = planet::ui::button<renderer, R, G>;
 

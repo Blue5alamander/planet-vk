@@ -38,7 +38,6 @@ add_library(planet-vk-engine
         renderer.engine.cpp
         sprite.pipeline.cpp
         textured.pipeline.cpp
-        ui.engine.cpp
     )
 vk_shader(planet-vk-engine mesh.frag)
 vk_shader(planet-vk-engine mesh.vert)
