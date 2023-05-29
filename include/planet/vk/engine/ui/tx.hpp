@@ -23,7 +23,8 @@ namespace planet::vk::engine::ui {
         : reflowable{n}, pl{p}, texture{std::move(tx)} {}
         tx(Pipeline &p, vk::texture tx, vk::colour const &c)
         : reflowable{"planet::vk::engine::ui::on_screen"},
-          pl{p} texture{std::move(tx)},
+          pl{p},
+          texture{std::move(tx)},
           colour{c} {}
         tx(Pipeline &p,
            std::string_view const n,
