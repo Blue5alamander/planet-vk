@@ -9,12 +9,12 @@
 namespace planet::vk::engine::ui {
 
 
-    template<typename R, typename G>
+    template<typename R, typename G = planet::vk::engine::ui::tx<>>
     class button final : public planet::ui::button<renderer, R, G> {
         using superclass = planet::ui::button<renderer, R, G>;
 
       public:
-        using renderer_type = R;
+        using value_type = R;
         using graphics_type = G;
 
         using superclass::graphic;
@@ -22,15 +22,20 @@ namespace planet::vk::engine::ui {
         using superclass::position;
         using superclass::reflow;
 
-        button(felspar::coro::bus<R> &o, R v)
+        button(felspar::coro::bus<value_type> &o, value_type v)
         : superclass{"planet::vk::engine::ui::button", o, std::move(v)} {}
-        button(std::string_view const n, felspar::coro::bus<R> &o, R v)
+        button(std::string_view const n,
+               felspar::coro::bus<value_type> &o,
+               value_type v)
         : superclass{n, o, std::move(v)} {}
-        button(G g, felspar::coro::bus<R> &o, R v)
+        button(graphics_type g, felspar::coro::bus<value_type> &o, value_type v)
         : superclass{
                 "planet::vk::engine::ui::button", std::move(g), o,
                 std::move(v)} {}
-        button(std::string_view const n, G g, felspar::coro::bus<R> &o, R v)
+        button(std::string_view const n,
+               graphics_type g,
+               felspar::coro::bus<value_type> &o,
+               value_type v)
         : superclass{n, std::move(g), o, std::move(v)} {}
 
       private:
