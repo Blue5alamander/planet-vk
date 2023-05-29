@@ -12,6 +12,10 @@ namespace planet::vk::engine::ui {
     template<typename T>
     struct per_frame final : public planet::ui::reflowable {
         per_frame() : reflowable{"planet::vk::engine::ui::per_frame"} {}
+        template<typename... Args>
+        per_frame(Args &&...args)
+        : reflowable{"planet::vk::engine::ui::per_frame"},
+          frame{T{args...}, T{args...}, T{args...}} {}
 
         using constrained_type = planet::ui::reflowable::constrained_type;
 
