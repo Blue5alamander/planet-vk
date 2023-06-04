@@ -39,6 +39,10 @@ namespace {
 }
 
 
+planet::vk::engine::pipeline::mesh::mesh(engine::app &a, engine::renderer &r)
+: mesh{a, r.swap_chain, r.render_pass, r.ubo_layout} {}
+
+
 planet::vk::engine::pipeline::mesh::mesh(
         engine::app &a,
         vk::swap_chain &sc,

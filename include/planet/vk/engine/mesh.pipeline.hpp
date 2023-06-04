@@ -13,6 +13,7 @@ namespace planet::vk::engine::pipeline {
         vk::graphics_pipeline create_mesh_pipeline();
 
       public:
+        mesh(engine::app &, engine::renderer &);
         mesh(engine::app &,
              vk::swap_chain &,
              vk::render_pass &,
