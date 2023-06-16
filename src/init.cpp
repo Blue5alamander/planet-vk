@@ -1,10 +1,9 @@
+#include <planet/log.hpp>
 #include <planet/vk/device.hpp>
 #include <planet/vk/extensions.hpp>
 #include <planet/vk/instance.hpp>
 
 #include <felspar/memory/small_vector.hpp>
-
-#include <iostream>
 
 
 /// ## `planet::vk::debug_messenger`
@@ -12,11 +11,24 @@
 
 namespace {
     VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
-            VkDebugUtilsMessageSeverityFlagBitsEXT,
+            VkDebugUtilsMessageSeverityFlagBitsEXT const severity,
             VkDebugUtilsMessageTypeFlagsEXT,
             VkDebugUtilsMessengerCallbackDataEXT const *data,
             void *) {
-        std::cerr << "Vulkan messenger: " << data->pMessage << '\n';
+        switch (severity) {
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+                planet::log::debug("Vulkan", data->pMessage);
+                break;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+                planet::log::warning("Vulkan", data->pMessage);
+                break;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+                planet::log::error("Vulkan", data->pMessage);
+                break;
+            default:
+                planet::log::warning("Vulkan (unknown severity)", data->pMessage);
+                break;
+        }
         return VK_FALSE;
     }
 }
