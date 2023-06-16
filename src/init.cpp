@@ -16,18 +16,18 @@ namespace {
             VkDebugUtilsMessengerCallbackDataEXT const *data,
             void *) {
         switch (severity) {
-            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-                planet::log::debug("Vulkan", data->pMessage);
-                break;
-            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-                planet::log::warning("Vulkan", data->pMessage);
-                break;
-            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-                planet::log::error("Vulkan", data->pMessage);
-                break;
-            default:
-                planet::log::warning("Vulkan (unknown severity)", data->pMessage);
-                break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+            planet::log::debug("Vulkan", data->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+            planet::log::warning("Vulkan", data->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            planet::log::error("Vulkan", data->pMessage);
+            break;
+        default:
+            planet::log::warning("Vulkan (unknown severity)", data->pMessage);
+            break;
         }
         return VK_FALSE;
     }

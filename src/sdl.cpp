@@ -1,3 +1,4 @@
+#include <planet/log.hpp>
 #include <planet/sdl/init.hpp>
 #include <planet/vk/buffer.hpp>
 #include <planet/vk/commands.hpp>
@@ -12,7 +13,6 @@
 #include <SDL_vulkan.h>
 
 #include <cstring>
-#include <iostream>
 
 
 using namespace std::literals;
@@ -67,10 +67,10 @@ planet::vk::sdl::window::window(
     if (not pw.get()) {
         throw felspar::stdexcept::runtime_error{"SDL_CreateWindow failed"};
     }
-    std::cout << "Window created\n";
     int ww{}, wh{};
     SDL_Vulkan_GetDrawableSize(pw.get(), &ww, &wh);
     size = {float(ww), float(wh)};
+    planet::log::info("Window created", ww, wh);
 }
 
 
