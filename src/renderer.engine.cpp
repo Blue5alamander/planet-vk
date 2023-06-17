@@ -1,3 +1,5 @@
+#include <planet/telemetry/counter.hpp>
+#include <planet/telemetry/rate.hpp>
 #include <planet/vk/engine/renderer.hpp>
 
 #include <cstring>
@@ -185,6 +187,10 @@ auto planet::vk::engine::renderer::bind(planet::vk::graphics_pipeline &pl)
 }
 
 
+namespace {
+    planet::telemetry::counter frame_count{"renderer_frame_count"};
+    planet::telemetry::real_time_rate frame_rate{"renderer_frame_rate", 500ms};
+}
 void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
 
@@ -229,6 +235,8 @@ void planet::vk::engine::renderer::submit_and_present() {
             vkQueuePresentKHR(app.device.present_queue, &present_info));
 
     current_frame = (current_frame + 1) % max_frames_in_flight;
+    ++frame_count;
+    frame_rate.tick();
 }
 
 
