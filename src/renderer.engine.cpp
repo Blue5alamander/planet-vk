@@ -111,11 +111,18 @@ planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
 }
 
 
+namespace {
+    planet::telemetry::real_time_rate fence_wait{
+            "planet_vk_engine_renderer_fence_wait", 500ms};
+    planet::telemetry::real_time_rate acquire_wait{
+            "planet_vk_engine_renderer_acquire_next_image_wait", 500ms};
+}
 felspar::coro::task<std::size_t>
         planet::vk::engine::renderer::start(VkClearValue const colour) {
     constexpr auto wait_time = 5ms;
     // Wait for the previous version of this frame number to finish
     while (not fence[current_frame].is_ready()) {
+        fence_wait.tick();
         co_await app.sdl.io.sleep(wait_time);
     }
 
@@ -127,6 +134,7 @@ felspar::coro::task<std::size_t>
                 img_avail_semaphore[current_frame].get(), VK_NULL_HANDLE,
                 &image_index);
         if (result == VK_TIMEOUT) {
+            acquire_wait.tick();
             co_await app.sdl.io.sleep(wait_time);
         } else if (
                 result == VK_ERROR_OUT_OF_DATE_KHR
@@ -188,8 +196,9 @@ auto planet::vk::engine::renderer::bind(planet::vk::graphics_pipeline &pl)
 
 
 namespace {
-    planet::telemetry::counter frame_count{"renderer_frame_count"};
-    planet::telemetry::real_time_rate frame_rate{"renderer_frame_rate", 500ms};
+    planet::telemetry::counter frame_count{"planet_vk_engine_renderer_frame"};
+    planet::telemetry::real_time_rate frame_rate{
+            "planet_vk_engine_renderer_frame", 500ms};
 }
 void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
