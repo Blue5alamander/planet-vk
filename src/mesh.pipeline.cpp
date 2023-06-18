@@ -39,25 +39,32 @@ namespace {
 }
 
 
-planet::vk::engine::pipeline::mesh::mesh(engine::app &a, engine::renderer &r)
-: mesh{a, r.swap_chain, r.render_pass, r.ubo_layout} {}
+planet::vk::engine::pipeline::mesh::mesh(
+        engine::app &a, engine::renderer &r, blend_mode const bm)
+: mesh{a, r.swap_chain, r.render_pass, r.ubo_layout, bm} {}
 
 
 planet::vk::engine::pipeline::mesh::mesh(
         engine::app &a,
         vk::swap_chain &sc,
         vk::render_pass &rp,
-        vk::descriptor_set_layout &dsl)
-: app{a}, swap_chain{sc}, render_pass{rp}, ubo_layout{dsl} {}
+        vk::descriptor_set_layout &dsl,
+        blend_mode const bm)
+: app{a},
+  swap_chain{sc},
+  render_pass{rp},
+  ubo_layout{dsl},
+  pipeline{create_mesh_pipeline(bm)} {}
 
 
 planet::vk::graphics_pipeline
-        planet::vk::engine::pipeline::mesh::create_mesh_pipeline() {
+        planet::vk::engine::pipeline::mesh::create_mesh_pipeline(
+                blend_mode const bm) {
     return planet::vk::engine::create_graphics_pipeline(
             app, "planet-vk-engine/mesh.vert.spirv",
             "planet-vk-engine/mesh.frag.spirv", binding_description,
             attribute_description, swap_chain, render_pass,
-            pipeline_layout{app.device, ubo_layout});
+            pipeline_layout{app.device, ubo_layout}, bm);
 }
 
 

@@ -10,21 +10,24 @@ namespace planet::vk::engine::pipeline {
 
     /// ## 2D triangle mesh with per-vertex colour
     class mesh final {
-        vk::graphics_pipeline create_mesh_pipeline();
+        vk::graphics_pipeline create_mesh_pipeline(blend_mode);
 
       public:
-        mesh(engine::app &, engine::renderer &);
+        mesh(engine::app &,
+             engine::renderer &,
+             blend_mode = blend_mode::multiply);
         mesh(engine::app &,
              vk::swap_chain &,
              vk::render_pass &,
-             vk::descriptor_set_layout &);
+             vk::descriptor_set_layout &,
+             blend_mode = blend_mode::multiply);
 
         engine::app &app;
         view<vk::swap_chain> swap_chain;
         view<vk::render_pass> render_pass;
         view<vk::descriptor_set_layout> ubo_layout;
 
-        vk::graphics_pipeline pipeline{create_mesh_pipeline()};
+        vk::graphics_pipeline pipeline;
 
 
         struct pos {

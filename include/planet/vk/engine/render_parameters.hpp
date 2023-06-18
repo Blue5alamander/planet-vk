@@ -17,4 +17,8 @@ namespace planet::vk::engine {
     };
 
 
+    /// ## Blend mode for render pipeline
+    enum class blend_mode { none, multiply, add };
+
+
 }
