@@ -140,6 +140,10 @@ namespace planet::vk::engine {
 
 
     /// ## Create a graphics pipeline
+
+    /// ### Blend mode to set on the pipeline
+    enum class blend_mode { none, multiply, add };
+
     graphics_pipeline create_graphics_pipeline(
             app &,
             std::string_view vert,
@@ -148,7 +152,8 @@ namespace planet::vk::engine {
             std::span<VkVertexInputAttributeDescription const>,
             view<vk::swap_chain>,
             view<vk::render_pass>,
-            pipeline_layout);
+            pipeline_layout,
+            blend_mode = blend_mode::multiply);
 
 
 }

@@ -257,7 +257,8 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
         std::span<VkVertexInputAttributeDescription const> attribute_description,
         view<vk::swap_chain> swap_chain,
         view<vk::render_pass> render_pass,
-        vk::pipeline_layout pipeline_layout) {
+        vk::pipeline_layout pipeline_layout,
+        blend_mode const blending) {
     planet::vk::shader_module vertex_shader_module{
             app.device, app.asset_manager.file_data(vert)};
     planet::vk::shader_module fragment_shader_module{
@@ -327,23 +328,32 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    VkPipelineColorBlendAttachmentState blend_mode = {};
-    blend_mode.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
+    VkPipelineColorBlendAttachmentState blend_state = {};
+    blend_state.blendEnable = VK_TRUE;
+    blend_state.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
             | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT
             | VK_COLOR_COMPONENT_A_BIT;
-    blend_mode.blendEnable = VK_TRUE;
-    blend_mode.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    blend_mode.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    blend_mode.colorBlendOp = VK_BLEND_OP_ADD;
-    blend_mode.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    blend_mode.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    blend_mode.alphaBlendOp = VK_BLEND_OP_ADD;
+    blend_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blend_state.colorBlendOp = VK_BLEND_OP_ADD;
+    blend_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blend_state.alphaBlendOp = VK_BLEND_OP_ADD;
+    switch (blending) {
+    case blend_mode::none: blend_state.blendEnable = VK_FALSE; break;
+    case blend_mode::multiply:
+        blend_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        blend_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        break;
+    case blend_mode::add:
+        blend_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+        blend_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        break;
+    }
 
     VkPipelineColorBlendStateCreateInfo blend_info = {};
     blend_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     blend_info.logicOpEnable = VK_FALSE;
     blend_info.attachmentCount = 1;
-    blend_info.pAttachments = &blend_mode;
+    blend_info.pAttachments = &blend_state;
 
     VkGraphicsPipelineCreateInfo graphics_pipeline_info = {};
     graphics_pipeline_info.sType =
