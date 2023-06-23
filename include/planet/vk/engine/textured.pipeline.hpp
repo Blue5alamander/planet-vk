@@ -39,20 +39,6 @@ namespace planet::vk::engine::pipeline {
             colour col = white;
         };
 
-
-        static constexpr std::size_t max_textures_per_frame = 10240;
-
-        vk::descriptor_pool texture_pool{
-                app.device, max_frames_in_flight *max_textures_per_frame};
-        std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
-
-        std::vector<vertex> quads;
-        std::vector<std::uint32_t> indexes;
-        std::vector<VkDescriptorImageInfo> textures;
-
-        std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
-        std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
-
         /// ### Drawing API
 
         /// #### Draw texture stretched to the axis aligned rectangle
@@ -64,6 +50,21 @@ namespace planet::vk::engine::pipeline {
 
         /// ### Add draw commands to command buffer
         void render(render_parameters);
+
+
+      private:
+        static constexpr std::size_t max_textures_per_frame = 10240;
+
+        vk::descriptor_pool texture_pool{
+                app.device, max_frames_in_flight *max_textures_per_frame};
+        std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
+
+        std::vector<vertex> triangles;
+        std::vector<std::uint32_t> indexes;
+        std::vector<VkDescriptorImageInfo> textures;
+
+        std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
+        std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
     };
 
 

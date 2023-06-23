@@ -96,14 +96,14 @@ void planet::vk::engine::pipeline::textured::draw(
                 "Have run out of texture slots for this frame"};
     }
 
-    std::size_t const quad_index = quads.size();
+    std::size_t const quad_index = triangles.size();
 
-    quads.push_back(
+    triangles.push_back(
             {{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}, colour});
-    quads.push_back(
+    triangles.push_back(
             {{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}, colour});
-    quads.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}, colour});
-    quads.push_back(
+    triangles.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}, colour});
+    triangles.push_back(
             {{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}, colour});
 
     indexes.push_back(quad_index);
@@ -121,11 +121,11 @@ void planet::vk::engine::pipeline::textured::draw(
 
 
 void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
-    if (quads.empty()) { return; }
+    if (triangles.empty()) { return; }
 
     auto &vertex_buffer = vertex_buffers[rp.current_frame];
     vertex_buffer = {
-            rp.renderer.per_frame_memory, quads,
+            rp.renderer.per_frame_memory, triangles,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -172,7 +172,7 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     }
 
     // Clear out data from this frame
-    quads.clear();
+    triangles.clear();
     indexes.clear();
     textures.clear();
 }
