@@ -9,7 +9,13 @@
 namespace planet::vk::engine::pipeline {
 
 
-    /// ## Textured triangle pipeline
+    /// ## Draw sprites
+    /**
+     * A sprite is a texture drawn on a quad at a particular location with a
+     * provided rotation about a provided centre. These are typically used for
+     * game characters, shots etc. that need to be drawn in world coordinate
+     * space.
+     */
     class sprite final {
         graphics_pipeline create_pipeline(std::string_view vertex_shader);
 
