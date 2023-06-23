@@ -203,11 +203,6 @@ namespace {
 void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
 
-    auto const rp = [&](auto &pl) { pl.render(bind(pl.pipeline)); };
-
-    rp(textured);
-    rp(screen);
-
     vkCmdEndRenderPass(cb.get());
     planet::vk::worked(vkEndCommandBuffer(cb.get()));
 

@@ -5,7 +5,6 @@
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
-#include <planet/vk/engine/textured.pipeline.hpp>
 
 #include <planet/affine/matrix3d.hpp>
 
@@ -47,16 +46,6 @@ namespace planet::vk::engine {
                 render_finished_semaphore{app.device, app.device, app.device};
         std::array<vk::fence, max_frames_in_flight> fence{
                 app.device, app.device, app.device};
-
-
-        /// ### Pipelines
-
-        pipeline::textured textured{
-                app, swap_chain, render_pass, ubo_layout,
-                "planet-vk-engine/texture.world.vert.spirv"};
-        pipeline::textured screen{
-                app, swap_chain, render_pass, ubo_layout,
-                "planet-vk-engine/texture.screen.vert.spirv"};
 
 
         /// ### Drawing API
