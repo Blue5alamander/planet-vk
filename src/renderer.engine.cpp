@@ -287,8 +287,8 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     VkViewport viewport = {};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = app.window.zwidth();
-    viewport.height = app.window.zheight();
+    viewport.width = app.window.uzwidth();
+    viewport.height = app.window.uzheight();
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 

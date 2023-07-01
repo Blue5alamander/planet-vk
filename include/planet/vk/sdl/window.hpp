@@ -34,8 +34,8 @@ namespace planet::vk::sdl {
         affine::rectangle2d rectangle() const noexcept {
             return {{0, 0}, size};
         }
-        std::size_t zwidth() const noexcept { return size.zwidth(); }
-        std::size_t zheight() const noexcept { return size.zheight(); }
+        std::size_t uzwidth() const noexcept { return size.uzwidth(); }
+        std::size_t uzheight() const noexcept { return size.uzheight(); }
         float width() const noexcept { return size.width; }
         float height() const noexcept { return size.height; }
 
