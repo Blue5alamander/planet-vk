@@ -38,7 +38,12 @@ namespace planet::vk::engine::ui {
         vk::texture texture;
         vk::colour colour = white;
 
-        void draw(renderer &) { pl.draw(texture, position(), colour); }
+        void
+                draw(renderer &,
+                     felspar::source_location const & =
+                             felspar::source_location::current()) {
+            pl.draw(texture, position(), colour);
+        }
 
       private:
         constrained_type do_reflow(constrained_type const &c) override {

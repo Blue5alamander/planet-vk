@@ -21,7 +21,12 @@ namespace planet::vk::engine::ui {
 
         std::array<T, max_frames_in_flight> frame;
 
-        void draw(renderer &r) { frame[r.current_frame].draw(r); }
+        void
+                draw(renderer &r,
+                     felspar::source_location const &loc =
+                             felspar::source_location::current()) {
+            frame[r.current_frame].draw(r, loc);
+        }
 
       private:
         constrained_type do_reflow(constrained_type const &c) override {
