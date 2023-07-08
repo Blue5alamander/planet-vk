@@ -2,6 +2,7 @@
 
 
 #include <planet/vk/helpers.hpp>
+#include <planet/vk/view.hpp>
 
 #include <span>
 

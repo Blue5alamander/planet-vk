@@ -2,6 +2,9 @@
 
 
 #include <planet/vk/helpers.hpp>
+#include <planet/vk/view.hpp>
+
+#include <vector>
 
 
 namespace planet::vk {
@@ -12,6 +15,7 @@ namespace planet::vk {
     class surface;
 
 
+    /// ## Command buffer
     class command_buffer final {
         friend class command_buffers;
         /// These instances are owned by the command_buffers type
@@ -25,6 +29,7 @@ namespace planet::vk {
         bool self_owned = false;
         /// Used when the `command_buffers` instance owns the handles
         command_buffer(vk::command_pool &, VkCommandBuffer);
+
 
       public:
         explicit command_buffer(
@@ -65,9 +70,11 @@ namespace planet::vk {
     };
 
 
+    /// ## Command buffers
     class command_buffers final {
         std::vector<VkCommandBuffer> handles;
         std::vector<command_buffer> buffers;
+
 
       public:
         command_buffers(
@@ -91,6 +98,7 @@ namespace planet::vk {
     };
 
 
+    /// ## Command pool
     class command_pool final {
         using handle_type = device_handle<VkCommandPool, vkDestroyCommandPool>;
         handle_type handle;

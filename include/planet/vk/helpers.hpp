@@ -99,36 +99,9 @@ namespace planet::vk {
     };
 
 
-    /// Shorter names for common owners of handles
+    /// ## Shorter names for common owners of handles
     template<typename T, void (*D)(VkDevice, T, VkAllocationCallbacks const *)>
     using device_handle = owned_handle<VkDevice, T, D>;
-
-
-    /// ## View
-    template<typename Underlying>
-    class view {
-        Underlying *pd = nullptr;
-
-      public:
-        view() {}
-        view(Underlying &d) : pd{&d} {}
-
-        view(view &&v) : pd{std::exchange(v.pd, nullptr)} {}
-        view(view const &) = default;
-        view &operator=(view &&v) {
-            pd = std::exchange(v.pd, nullptr);
-            return *this;
-        }
-        view &operator=(view const &) = default;
-
-        auto get() const { return pd->get(); }
-        operator Underlying &() { return *pd; }
-        operator Underlying const &() const { return *pd; }
-
-        Underlying &operator()() { return *pd; }
-    };
-
-    using device_view = view<device>;
 
 
 }
