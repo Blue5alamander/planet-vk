@@ -73,7 +73,17 @@ planet::vk::command_buffer::command_buffer(command_buffer &&b)
   command_pool{std::move(b.command_pool)} {}
 
 
-planet::vk::command_buffer::~command_buffer() {
+auto planet::vk::command_buffer::operator=(command_buffer &&cb)
+        -> command_buffer & {
+    reset();
+    handle = std::exchange(cb.handle, VK_NULL_HANDLE);
+    device = std::move(cb.device);
+    command_pool = std::move(cb.command_pool);
+    return *this;
+}
+
+
+void planet::vk::command_buffer::reset() {
     if (handle and self_owned) {
         std::array handles{handle};
         vkFreeCommandBuffers(

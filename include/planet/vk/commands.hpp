@@ -32,15 +32,16 @@ namespace planet::vk {
 
 
       public:
+        command_buffer() {}
         explicit command_buffer(
                 vk::command_pool &,
                 VkCommandBufferLevel = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
         command_buffer(command_buffer const &) = delete;
         command_buffer(command_buffer &&);
-        ~command_buffer();
+        ~command_buffer() { reset(); }
 
         command_buffer &operator=(command_buffer const &) = delete;
-        command_buffer &operator=(command_buffer &&) = delete;
+        command_buffer &operator=(command_buffer &&);
 
         device_view device;
         view<vk::command_pool> command_pool;
@@ -67,6 +68,10 @@ namespace planet::vk {
         void end();
         /// #### `vkQueueSubmit`
         void submit(VkQueue);
+
+
+      private:
+        void reset();
     };
 
 
