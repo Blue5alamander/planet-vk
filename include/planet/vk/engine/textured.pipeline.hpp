@@ -2,6 +2,7 @@
 
 
 #include <planet/vk/engine/app.hpp>
+#include <planet/vk/engine/render_parameters.hpp>
 
 
 namespace planet::vk::engine::pipeline {
