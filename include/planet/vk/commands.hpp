@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/vk/forward.hpp>
 #include <planet/vk/owned_handle.hpp>
 #include <planet/vk/view.hpp>
 
@@ -8,11 +9,6 @@
 
 
 namespace planet::vk {
-
-
-    class command_pool;
-    class device;
-    class surface;
 
 
     /// ## Command buffer
