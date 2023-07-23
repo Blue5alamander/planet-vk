@@ -1,3 +1,4 @@
+#include <planet/telemetry/counter.hpp>
 #include <planet/vk/engine/mesh.pipeline.hpp>
 #include <planet/vk/engine/renderer.hpp>
 
@@ -113,8 +114,17 @@ void planet::vk::engine::pipeline::mesh::draw(
 }
 
 
+namespace {
+    planet::telemetry::counter vertex_count{
+            "planet_vk_engine_pipeline_mesh_render_vertices"};
+    planet::telemetry::counter index_count{
+            "planet_vk_engine_pipeline_mesh_render_indices"};
+}
 void planet::vk::engine::pipeline::mesh::render(render_parameters rp) {
     if (triangles.empty()) { return; }
+
+    vertex_count += triangles.size();
+    index_count += indexes.size();
 
     auto &vertex_buffer = vertex_buffers[rp.current_frame];
     vertex_buffer = {
