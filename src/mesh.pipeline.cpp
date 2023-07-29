@@ -128,6 +128,12 @@ void planet::vk::engine::pipeline::mesh::render(render_parameters rp) {
 }
 
 
+void planet::vk::engine::pipeline::mesh::draw(
+        planet::vk::engine::pipeline::mesh::data const &d) {
+    draw_data.draw(d.vertices, d.indices);
+}
+
+
 /// ## `planet::vk::engine::pipeline::mesh::data`
 
 

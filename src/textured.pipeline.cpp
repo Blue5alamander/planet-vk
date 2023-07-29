@@ -143,6 +143,12 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
 }
 
 
+void planet::vk::engine::pipeline::textured::draw(
+        planet::vk::engine::pipeline::textured::data const &) {
+    /// TODO Work out what this needs to look like
+}
+
+
 /// ## `planet::vk::engine::pipeline::textured::data`
 
 
