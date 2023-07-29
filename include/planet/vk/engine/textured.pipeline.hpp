@@ -40,13 +40,46 @@ namespace planet::vk::engine::pipeline {
             colour col = white;
         };
 
-        /// ### Drawing API
 
-        /// #### Draw texture stretched to the axis aligned rectangle
+        /// ### Texture data to be drawn
+        class data {
+            friend class textured;
+            std::vector<vertex> vertices;
+            std::vector<std::uint32_t> indices;
+            std::vector<VkDescriptorImageInfo> textures;
+
+
+          public:
+            void clear() {
+                vertices.clear();
+                indices.clear();
+                textures.clear();
+            }
+            [[nodiscard]] bool empty() const noexcept {
+                return vertices.empty();
+            }
+
+
+            /// ### Drawing API
+
+            /// #### Draw texture stretched to the axis aligned rectangle
+            void
+                    draw(vk::texture const &,
+                         affine::rectangle2d const &,
+                         colour const & = white);
+        };
+
+
+        /// ### Draw captured textured data
+        void draw(data const &);
+
+        /// #### Forward to the internal textured data
         void
-                draw(vk::texture const &,
-                     affine::rectangle2d const &,
-                     colour const & = white);
+                draw(vk::texture const &tx,
+                     affine::rectangle2d const &r,
+                     colour const &c = white) {
+            draw_data.draw(tx, r, c);
+        }
 
 
         /// ### Add draw commands to command buffer
@@ -60,9 +93,7 @@ namespace planet::vk::engine::pipeline {
                 app.device, max_frames_in_flight *max_textures_per_frame};
         std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
 
-        std::vector<vertex> triangles;
-        std::vector<std::uint32_t> indexes;
-        std::vector<VkDescriptorImageInfo> textures;
+        data draw_data;
 
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;

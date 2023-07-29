@@ -87,51 +87,18 @@ planet::vk::graphics_pipeline
 }
 
 
-void planet::vk::engine::pipeline::textured::draw(
-        vk::texture const &texture,
-        affine::rectangle2d const &pos,
-        vk::colour const &colour) {
-    if (textures.size() == max_textures_per_frame) {
-        throw felspar::stdexcept::runtime_error{
-                "Have run out of texture slots for this frame"};
-    }
-
-    std::size_t const quad_index = triangles.size();
-
-    triangles.push_back(
-            {{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}, colour});
-    triangles.push_back(
-            {{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}, colour});
-    triangles.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}, colour});
-    triangles.push_back(
-            {{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}, colour});
-
-    indexes.push_back(quad_index);
-    indexes.push_back(quad_index + 2);
-    indexes.push_back(quad_index + 1);
-    indexes.push_back(quad_index);
-    indexes.push_back(quad_index + 3);
-    indexes.push_back(quad_index + 2);
-
-    textures.emplace_back();
-    textures.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    textures.back().imageView = texture.image_view.get();
-    textures.back().sampler = texture.sampler.get();
-}
-
-
 void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
-    if (triangles.empty()) { return; }
+    if (draw_data.empty()) { return; }
 
     auto &vertex_buffer = vertex_buffers[rp.current_frame];
     vertex_buffer = {
-            rp.renderer.per_frame_memory, triangles,
+            rp.renderer.per_frame_memory, draw_data.vertices,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     auto &index_buffer = index_buffers[rp.current_frame];
     index_buffer = {
-            rp.renderer.per_frame_memory, indexes,
+            rp.renderer.per_frame_memory, draw_data.indices,
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -144,7 +111,7 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     vkCmdBindIndexBuffer(
             rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
-    for (std::size_t index{}; auto const &tx : textures) {
+    for (std::size_t index{}; auto const &tx : draw_data.textures) {
         VkWriteDescriptorSet wds{};
         wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -172,7 +139,41 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     }
 
     // Clear out data from this frame
-    triangles.clear();
-    indexes.clear();
-    textures.clear();
+    draw_data.clear();
+}
+
+
+/// ## `planet::vk::engine::pipeline::textured::data`
+
+
+void planet::vk::engine::pipeline::textured::data::draw(
+        vk::texture const &texture,
+        affine::rectangle2d const &pos,
+        vk::colour const &colour) {
+    if (textures.size() == max_textures_per_frame) {
+        throw felspar::stdexcept::runtime_error{
+                "Have run out of texture slots for this frame"};
+    }
+
+    std::size_t const quad_index = vertices.size();
+
+    vertices.push_back(
+            {{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}, colour});
+    vertices.push_back(
+            {{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}, colour});
+    vertices.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}, colour});
+    vertices.push_back(
+            {{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}, colour});
+
+    indices.push_back(quad_index);
+    indices.push_back(quad_index + 2);
+    indices.push_back(quad_index + 1);
+    indices.push_back(quad_index);
+    indices.push_back(quad_index + 3);
+    indices.push_back(quad_index + 2);
+
+    textures.emplace_back();
+    textures.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    textures.back().imageView = texture.image_view.get();
+    textures.back().sampler = texture.sampler.get();
 }

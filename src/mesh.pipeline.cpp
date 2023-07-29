@@ -88,32 +88,6 @@ planet::vk::graphics_pipeline
 }
 
 
-void planet::vk::engine::pipeline::mesh::draw(
-        std::span<vertex const> const vertices,
-        std::span<std::uint32_t const> const indices) {
-    auto const start_index = triangles.size();
-    for (auto const &v : vertices) { triangles.push_back(v); }
-    for (auto const &i : indices) { indexes.push_back(start_index + i); }
-}
-void planet::vk::engine::pipeline::mesh::draw(
-        std::span<vertex const> const vertices,
-        std::span<std::uint32_t const> const indices,
-        pos const p) {
-    auto const start_index = triangles.size();
-    for (auto const &v : vertices) { triangles.push_back({v.p + p, v.c}); }
-    for (auto const &i : indices) { indexes.push_back(start_index + i); }
-}
-void planet::vk::engine::pipeline::mesh::draw(
-        std::span<vertex const> const vertices,
-        std::span<std::uint32_t const> const indices,
-        pos const p,
-        colour const &c) {
-    auto const start_index = triangles.size();
-    for (auto const &v : vertices) { triangles.push_back({v.p + p, c}); }
-    for (auto const &i : indices) { indexes.push_back(start_index + i); }
-}
-
-
 namespace {
     planet::telemetry::counter vertex_count{
             "planet_vk_engine_pipeline_mesh_render_vertices"};
@@ -121,20 +95,20 @@ namespace {
             "planet_vk_engine_pipeline_mesh_render_indices"};
 }
 void planet::vk::engine::pipeline::mesh::render(render_parameters rp) {
-    if (triangles.empty()) { return; }
+    if (draw_data.empty()) { return; }
 
-    vertex_count += triangles.size();
-    index_count += indexes.size();
+    vertex_count += draw_data.vertices.size();
+    index_count += draw_data.indices.size();
 
     auto &vertex_buffer = vertex_buffers[rp.current_frame];
     vertex_buffer = {
-            rp.renderer.per_frame_memory, triangles,
+            rp.renderer.per_frame_memory, draw_data.vertices,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     auto &index_buffer = index_buffers[rp.current_frame];
     index_buffer = {
-            rp.renderer.per_frame_memory, indexes,
+            rp.renderer.per_frame_memory, draw_data.indices,
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -147,8 +121,37 @@ void planet::vk::engine::pipeline::mesh::render(render_parameters rp) {
     vkCmdBindIndexBuffer(
             rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
     vkCmdDrawIndexed(
-            rp.cb.get(), static_cast<uint32_t>(indexes.size()), 1, 0, 0, 0);
+            rp.cb.get(), static_cast<uint32_t>(draw_data.indices.size()), 1, 0,
+            0, 0);
 
-    triangles.clear();
-    indexes.clear();
+    draw_data.clear();
+}
+
+
+/// ## `planet::vk::engine::pipeline::mesh::data`
+
+
+void planet::vk::engine::pipeline::mesh::data::draw(
+        std::span<vertex const> const vs,
+        std::span<std::uint32_t const> const ix) {
+    auto const start_index = vertices.size();
+    for (auto const &v : vs) { vertices.push_back(v); }
+    for (auto const &i : ix) { indices.push_back(start_index + i); }
+}
+void planet::vk::engine::pipeline::mesh::data::draw(
+        std::span<vertex const> const vs,
+        std::span<std::uint32_t const> const ix,
+        pos const p) {
+    auto const start_index = vertices.size();
+    for (auto const &v : vs) { vertices.push_back({v.p + p, v.c}); }
+    for (auto const &i : ix) { indices.push_back(start_index + i); }
+}
+void planet::vk::engine::pipeline::mesh::data::draw(
+        std::span<vertex const> const vs,
+        std::span<std::uint32_t const> const ix,
+        pos const p,
+        colour const &c) {
+    auto const start_index = vertices.size();
+    for (auto const &v : vs) { vertices.push_back({v.p + p, c}); }
+    for (auto const &i : ix) { indices.push_back(start_index + i); }
 }

@@ -52,14 +52,59 @@ namespace planet::vk::engine::pipeline {
         };
 
 
-        /// ### Draw a 2D triangle mesh with an optional positional offset
-        void draw(std::span<vertex const>, std::span<std::uint32_t const>);
-        void draw(std::span<vertex const>, std::span<std::uint32_t const>, pos);
+        /// ### Mesh data to be drawn
+        class data {
+            friend class mesh;
+            std::vector<vertex> vertices;
+            std::vector<std::uint32_t> indices;
+
+
+          public:
+            void clear() {
+                vertices.clear();
+                indices.clear();
+            }
+            [[nodiscard]] bool empty() const noexcept {
+                return vertices.empty();
+            }
+
+
+            /// #### Draw a 2D triangle mesh with an optional positional offset
+            void draw(std::span<vertex const>, std::span<std::uint32_t const>);
+            void
+                    draw(std::span<vertex const>,
+                         std::span<std::uint32_t const>,
+                         pos);
+            void
+                    draw(std::span<vertex const>,
+                         std::span<std::uint32_t const>,
+                         pos,
+                         colour const &);
+        };
+
+
+        /// ### Draw captured mesh data
+        void draw(data const &);
+
+        /// #### Forward to the internal mesh data
         void
-                draw(std::span<vertex const>,
-                     std::span<std::uint32_t const>,
-                     pos,
-                     colour const &);
+                draw(std::span<vertex const> const v,
+                     std::span<std::uint32_t const> const i) {
+            draw_data.draw(v, i);
+        }
+        void
+                draw(std::span<vertex const> const v,
+                     std::span<std::uint32_t const> const i,
+                     pos const o) {
+            draw_data.draw(v, i, o);
+        }
+        void
+                draw(std::span<vertex const> const v,
+                     std::span<std::uint32_t const> const i,
+                     pos const o,
+                     colour const &c) {
+            draw_data.draw(v, i, o, c);
+        }
 
 
         /// ### Add draw commands to command buffer
@@ -67,10 +112,9 @@ namespace planet::vk::engine::pipeline {
 
 
       private:
-        std::vector<vertex> triangles;
+        data draw_data;
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
 
-        std::vector<std::uint32_t> indexes;
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
     };
 
