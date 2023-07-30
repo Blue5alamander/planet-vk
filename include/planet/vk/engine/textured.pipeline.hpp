@@ -67,6 +67,11 @@ namespace planet::vk::engine::pipeline {
                     draw(vk::texture const &,
                          affine::rectangle2d const &,
                          colour const & = white);
+            /// #### Draw a textured mesh
+            void
+                    draw(std::span<vertex const>,
+                         std::span<std::uint32_t const>,
+                         std::span<VkDescriptorImageInfo const>);
         };
 
 

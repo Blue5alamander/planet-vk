@@ -144,12 +144,23 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
 
 
 void planet::vk::engine::pipeline::textured::draw(
-        planet::vk::engine::pipeline::textured::data const &) {
-    /// TODO Work out what this needs to look like
+        planet::vk::engine::pipeline::textured::data const &d) {
+    draw_data.draw(d.vertices, d.indices, d.textures);
 }
 
 
 /// ## `planet::vk::engine::pipeline::textured::data`
+
+
+void planet::vk::engine::pipeline::textured::data::draw(
+        std::span<vertex const> const vs,
+        std::span<std::uint32_t const> const ix,
+        std::span<VkDescriptorImageInfo const> const tx) {
+    auto const start_index = vertices.size();
+    for (auto const &v : vs) { vertices.push_back(v); }
+    for (auto const &i : ix) { indices.push_back(start_index + i); }
+    for (auto const &t : tx) { textures.push_back(t); }
+}
 
 
 void planet::vk::engine::pipeline::textured::data::draw(
