@@ -78,6 +78,14 @@ planet::vk::sdl::window::window(
 
 
 planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
+        device_memory_allocator &image_allocator,
+        command_pool &cp,
+        planet::sdl::surface const &surface) {
+    return create_texture_without_mip_levels(
+            image_allocator.device->staging_memory, image_allocator, cp,
+            surface);
+}
+planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
         device_memory_allocator &staging_allocator,
         device_memory_allocator &image_allocator,
         command_pool &cp,
@@ -112,6 +120,14 @@ planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
 }
 
 
+planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
+        device_memory_allocator &image_allocator,
+        command_pool &cp,
+        planet::sdl::surface const &surface) {
+    return create_texture_with_mip_levels(
+            image_allocator.device->staging_memory, image_allocator, cp,
+            surface);
+}
 planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
         device_memory_allocator &staging_allocator,
         device_memory_allocator &image_allocator,
