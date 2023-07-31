@@ -6,6 +6,8 @@ namespace planet::vk {
 
     class command_pool;
     class device;
+    class device_memory;
+    class device_memory_allocator;
     class surface;
 
 

@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/vk/forward.hpp>
 #include <planet/vk/owned_handle.hpp>
 #include <planet/vk/view.hpp>
 
@@ -9,11 +10,6 @@
 
 
 namespace planet::vk {
-
-
-    class device;
-    class device_memory;
-    class device_memory_allocator;
 
 
     /// ## Memory allocation configuration
