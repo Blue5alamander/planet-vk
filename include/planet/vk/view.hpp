@@ -18,22 +18,23 @@ namespace planet::vk {
         Underlying *pd = nullptr;
 
       public:
-        view() {}
-        view(Underlying &d) : pd{&d} {}
+        view() noexcept {}
+        view(Underlying &d) noexcept : pd{&d} {}
 
         view(view &&v) : pd{std::exchange(v.pd, nullptr)} {}
-        view(view const &) = default;
-        view &operator=(view &&v) {
+        view(view const &) noexcept = default;
+        view &operator=(view &&v) noexcept {
             pd = std::exchange(v.pd, nullptr);
             return *this;
         }
-        view &operator=(view const &) = default;
+        view &operator=(view const &) noexcept = default;
 
-        auto get() const { return pd->get(); }
-        operator Underlying &() { return *pd; }
-        operator Underlying const &() const { return *pd; }
+        auto get() const noexcept { return pd->get(); }
+        operator Underlying &() noexcept { return *pd; }
+        operator Underlying const &() const noexcept { return *pd; }
 
-        Underlying &operator()() { return *pd; }
+        Underlying *operator->() noexcept { return pd; }
+        Underlying &operator()() noexcept { return *pd; }
     };
 
     using device_view = view<device>;
