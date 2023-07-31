@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(planet-audio)
+project(planet-vk)
 
 
 set(PLANET_VK_VALIDATION NO CACHE BOOL
