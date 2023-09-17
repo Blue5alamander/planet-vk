@@ -22,19 +22,19 @@ namespace planet::vk::engine::ui {
         using superclass::position;
         using superclass::reflow;
 
-        button(felspar::coro::bus<value_type> &o, value_type v)
+        button(typename superclass::queue_type &o, value_type v)
         : superclass{"planet::vk::engine::ui::button", o, std::move(v)} {}
         button(std::string_view const n,
-               felspar::coro::bus<value_type> &o,
+               typename superclass::queue_type &o,
                value_type v)
         : superclass{n, o, std::move(v)} {}
-        button(graphics_type g, felspar::coro::bus<value_type> &o, value_type v)
+        button(graphics_type g, typename superclass::queue_type &o, value_type v)
         : superclass{
                 "planet::vk::engine::ui::button", std::move(g), o,
                 std::move(v)} {}
         button(std::string_view const n,
                graphics_type g,
-               felspar::coro::bus<value_type> &o,
+               typename superclass::queue_type &o,
                value_type v)
         : superclass{n, std::move(g), o, std::move(v)} {}
 
