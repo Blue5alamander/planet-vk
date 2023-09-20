@@ -8,6 +8,9 @@
 using namespace std::literals;
 
 
+/// ## `planet::vk::engine::renderer`
+
+
 planet::vk::engine::renderer::renderer(engine::app &a)
 : app{a},
   screen_space{
@@ -153,6 +156,10 @@ felspar::coro::task<std::size_t>
     // to it, and signal the render finished one when we're done
     fence[current_frame].reset();
 
+    // Resume any processing waiting for the frames to cycle around
+    for (auto h : render_cycle_coroutines[current_frame]) { h.resume(); }
+    render_cycle_coroutines[current_frame].clear();
+
     // Start to record command buffers
     auto &cb = command_buffers[current_frame];
     vkResetCommandBuffer(cb.get(), {});
@@ -242,6 +249,18 @@ void planet::vk::engine::renderer::submit_and_present() {
     ++frame_count;
     frame_rate.tick();
 }
+
+
+/// ## `planet::vk::engine::renderer::render_cycle_awaitable`
+
+
+void planet::vk::engine::renderer::render_cycle_awaitable::await_suspend(
+        felspar::coro::coroutine_handle<> h) const {
+    renderer.render_cycle_coroutines[renderer.current_frame].push_back(h);
+}
+
+
+/// ## `planet::vk::engine`
 
 
 planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(

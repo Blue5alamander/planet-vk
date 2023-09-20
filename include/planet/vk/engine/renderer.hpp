@@ -97,15 +97,31 @@ namespace planet::vk::engine {
          * This corrects the width and height so that the narrowest dimension is
          * in the range -1 to +1 and the widest is adjusted to give a square
          * aspect.
-
          */
         affine::transform2d logical_vulkan_space;
 
 
+        /// ### Wait for the next render cycle
+        /**
+         * Waits until all frames have gone through the render cycle.
+         *
+         * This is useful if there is a resource being used by the current
+         * frame, it can be freed after a full cycle has been completed.
+         */
+        struct render_cycle_awaitable {
+            engine::renderer &renderer;
+
+            bool await_ready() const noexcept { return false; }
+            void await_suspend(felspar::coro::coroutine_handle<>) const;
+            void await_resume() const noexcept {}
+        };
+        render_cycle_awaitable full_render_cycle() { return {*this}; }
+
+
       private:
         /// ### Data we need to track whilst in the render loop
-
         std::uint32_t image_index = {};
+
 
         /// ### View port transformation matrix and UBO
 
@@ -125,6 +141,12 @@ namespace planet::vk::engine {
         vk::descriptor_pool ubo_pool{app.device, max_frames_in_flight};
         vk::descriptor_sets ubo_sets{
                 ubo_pool, ubo_layout, max_frames_in_flight};
+
+
+        std::array<
+                std::vector<felspar::coro::coroutine_handle<>>,
+                max_frames_in_flight>
+                render_cycle_coroutines;
     };
 
 
