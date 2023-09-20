@@ -35,7 +35,7 @@ std::uint32_t planet::vk::swap_chain::create(VkExtent2D const wsize) {
 
     if (surface.graphics_queue_index() != surface.presentation_queue_index()) {
         info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        info.queueFamilyIndexCount = 2;
+        info.queueFamilyIndexCount = queues.size();
         info.pQueueFamilyIndices = queues.data();
     } else {
         info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
