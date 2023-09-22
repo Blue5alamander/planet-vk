@@ -2,6 +2,7 @@
 #include <planet/telemetry/rate.hpp>
 #include <planet/vk/engine/renderer.hpp>
 
+#include <algorithm>
 #include <cstring>
 
 
@@ -157,8 +158,11 @@ felspar::coro::task<std::size_t>
     fence[current_frame].reset();
 
     // Resume any processing waiting for the frames to cycle around
-    for (auto h : render_cycle_coroutines[current_frame]) { h.resume(); }
-    render_cycle_coroutines[current_frame].clear();
+    for (auto h : render_cycle_coroutines.front()) { h.resume(); }
+    render_cycle_coroutines.front().clear();
+    std::rotate(
+            render_cycle_coroutines.begin(),
+            render_cycle_coroutines.begin() + 1, render_cycle_coroutines.end());
 
     // Start to record command buffers
     auto &cb = command_buffers[current_frame];
@@ -256,7 +260,7 @@ void planet::vk::engine::renderer::submit_and_present() {
 
 void planet::vk::engine::renderer::render_cycle_awaitable::await_suspend(
         felspar::coro::coroutine_handle<> h) const {
-    renderer.render_cycle_coroutines[renderer.current_frame].push_back(h);
+    renderer.render_cycle_coroutines.back().push_back(h);
 }
 
 

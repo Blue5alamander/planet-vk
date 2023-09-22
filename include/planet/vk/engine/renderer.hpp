@@ -145,7 +145,7 @@ namespace planet::vk::engine {
 
         std::array<
                 std::vector<felspar::coro::coroutine_handle<>>,
-                max_frames_in_flight>
+                max_frames_in_flight + 1>
                 render_cycle_coroutines;
     };
 
