@@ -88,17 +88,17 @@ planet::vk::graphics_pipeline
 
 
 void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
-    if (draw_data.empty()) { return; }
+    if (this_frame.empty()) { return; }
 
     auto &vertex_buffer = vertex_buffers[rp.current_frame];
     vertex_buffer = {
-            rp.renderer.per_frame_memory, draw_data.vertices,
+            rp.renderer.per_frame_memory, this_frame.vertices,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     auto &index_buffer = index_buffers[rp.current_frame];
     index_buffer = {
-            rp.renderer.per_frame_memory, draw_data.indices,
+            rp.renderer.per_frame_memory, this_frame.indices,
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -111,7 +111,7 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     vkCmdBindIndexBuffer(
             rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
-    for (std::size_t index{}; auto const &tx : draw_data.textures) {
+    for (std::size_t index{}; auto const &tx : this_frame.textures) {
         VkWriteDescriptorSet wds{};
         wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -139,13 +139,7 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     }
 
     // Clear out data from this frame
-    draw_data.clear();
-}
-
-
-void planet::vk::engine::pipeline::textured::draw(
-        planet::vk::engine::pipeline::textured::data const &d) {
-    draw_data.draw(d.vertices, d.indices, d.textures);
+    this_frame.clear();
 }
 
 
@@ -164,7 +158,7 @@ void planet::vk::engine::pipeline::textured::data::draw(
 
 
 void planet::vk::engine::pipeline::textured::data::draw(
-        vk::texture const &texture,
+        std::pair<vk::texture const &, affine::rectangle2d> texture,
         affine::rectangle2d const &pos,
         vk::colour const &colour) {
     if (textures.size() == max_textures_per_frame) {
@@ -175,12 +169,22 @@ void planet::vk::engine::pipeline::textured::data::draw(
     std::size_t const quad_index = vertices.size();
 
     vertices.push_back(
-            {{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}, colour});
+            {{pos.bottom_right().x(), pos.bottom_right().y()},
+             {texture.second.bottom_right().x(),
+              texture.second.bottom_right().y()},
+             colour});
     vertices.push_back(
-            {{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}, colour});
-    vertices.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}, colour});
+            {{pos.bottom_right().x(), pos.top_left.y()},
+             {texture.second.bottom_right().x(), texture.second.top_left.y()},
+             colour});
     vertices.push_back(
-            {{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}, colour});
+            {{pos.top_left.x(), pos.top_left.y()},
+             {texture.second.top_left.x(), texture.second.top_left.y()},
+             colour});
+    vertices.push_back(
+            {{pos.top_left.x(), pos.bottom_right().y()},
+             {texture.second.top_left.x(), texture.second.bottom_right().y()},
+             colour});
 
     indices.push_back(quad_index);
     indices.push_back(quad_index + 2);
@@ -191,6 +195,6 @@ void planet::vk::engine::pipeline::textured::data::draw(
 
     textures.emplace_back();
     textures.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    textures.back().imageView = texture.image_view.get();
-    textures.back().sampler = texture.sampler.get();
+    textures.back().imageView = texture.first.image_view.get();
+    textures.back().sampler = texture.first.sampler.get();
 }

@@ -64,7 +64,13 @@ namespace planet::vk::engine::pipeline {
 
             /// #### Draw texture stretched to the axis aligned rectangle
             void
-                    draw(vk::texture const &,
+                    draw(vk::texture const &t,
+                         affine::rectangle2d const &r,
+                         colour const &c = white) {
+                draw({t, {{0, 0}, affine::extents2d{1, 1}}}, r, c);
+            }
+            void
+                    draw(std::pair<vk::texture const &, affine::rectangle2d>,
                          affine::rectangle2d const &,
                          colour const & = white);
             /// #### Draw a textured mesh
@@ -75,16 +81,8 @@ namespace planet::vk::engine::pipeline {
         };
 
 
-        /// ### Draw captured textured data
-        void draw(data const &);
-
-        /// #### Forward to the internal textured data
-        void
-                draw(vk::texture const &tx,
-                     affine::rectangle2d const &r,
-                     colour const &c = white) {
-            draw_data.draw(tx, r, c);
-        }
+        /// ### This frame's draw data and commands
+        data this_frame;
 
 
         /// ### Add draw commands to command buffer
@@ -97,8 +95,6 @@ namespace planet::vk::engine::pipeline {
         vk::descriptor_pool texture_pool{
                 app.device, max_frames_in_flight *max_textures_per_frame};
         std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
-
-        data draw_data;
 
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;

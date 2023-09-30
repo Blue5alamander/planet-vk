@@ -43,7 +43,7 @@ namespace planet::vk::engine::ui {
                 draw(renderer &,
                      felspar::source_location const & =
                              felspar::source_location::current()) {
-            pl.draw(texture, position(), colour);
+            pl.this_frame.draw(texture, position(), colour);
         }
 
       private:
