@@ -78,6 +78,9 @@ namespace planet::vk::engine::pipeline {
                     draw(std::span<vertex const>,
                          std::span<std::uint32_t const>,
                          std::span<VkDescriptorImageInfo const>);
+            void draw(data const &d) {
+                draw(d.vertices, d.indices, d.textures);
+            }
         };
 
 
