@@ -93,7 +93,7 @@ planet::vk::graphics_pipeline
 
 
 void planet::vk::engine::pipeline::sprite::draw(
-        vk::texture const &texture,
+        std::pair<vk::texture const &, affine::rectangle2d> texture,
         location const &loc,
         vk::colour const &colour) {
     if (textures.size() == max_textures_per_frame) {
@@ -107,12 +107,22 @@ void planet::vk::engine::pipeline::sprite::draw(
     std::size_t const quad_index = quads.size();
 
     quads.push_back(
-            {{pos.bottom_right().x(), pos.bottom_right().y()}, {1, 1}, colour});
+            {{pos.bottom_right().x(), pos.bottom_right().y()},
+             {texture.second.bottom_right().x(),
+              texture.second.bottom_right().y()},
+             colour});
     quads.push_back(
-            {{pos.bottom_right().x(), pos.top_left.y()}, {1, 0}, colour});
-    quads.push_back({{pos.top_left.x(), pos.top_left.y()}, {0, 0}, colour});
+            {{pos.bottom_right().x(), pos.top_left.y()},
+             {texture.second.bottom_right().x(), texture.second.top_left.y()},
+             colour});
     quads.push_back(
-            {{pos.top_left.x(), pos.bottom_right().y()}, {0, 1}, colour});
+            {{pos.top_left.x(), pos.top_left.y()},
+             {texture.second.top_left.x(), texture.second.top_left.y()},
+             colour});
+    quads.push_back(
+            {{pos.top_left.x(), pos.bottom_right().y()},
+             {texture.second.top_left.x(), texture.second.bottom_right().y()},
+             colour});
 
     indexes.push_back(quad_index);
     indexes.push_back(quad_index + 2);
@@ -123,8 +133,8 @@ void planet::vk::engine::pipeline::sprite::draw(
 
     textures.emplace_back();
     textures.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    textures.back().imageView = texture.image_view.get();
-    textures.back().sampler = texture.sampler.get();
+    textures.back().imageView = texture.first.image_view.get();
+    textures.back().sampler = texture.first.sampler.get();
 
     transforms.push_back({planet::affine::matrix3d{
             planet::affine::matrix2d::translate(loc.offset)

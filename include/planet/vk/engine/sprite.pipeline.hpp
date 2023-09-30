@@ -96,7 +96,16 @@ namespace planet::vk::engine::pipeline {
         /// ### Drawing API
 
         /// #### Draw texture stretched to the axis aligned rectangle
-        void draw(vk::texture const &, location const &, colour const & = white);
+        void
+                draw(std::pair<vk::texture const &, affine::rectangle2d>,
+                     location const &,
+                     colour const & = white);
+        void
+                draw(vk::texture const &t,
+                     location const &l,
+                     colour const &c = white) {
+            draw({t, {{0, 0}, affine::extents2d{1, 1}}}, l, c);
+        }
 
 
         /// ### Add draw commands to command buffer
