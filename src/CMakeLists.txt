@@ -34,6 +34,7 @@ target_link_libraries(planet-vk-sdl planet-vk)
 
 add_library(planet-vk-engine
         app.engine.cpp
+        depth_buffer.engine.cpp
         mesh.pipeline.cpp
         renderer.engine.cpp
         sprite.pipeline.cpp

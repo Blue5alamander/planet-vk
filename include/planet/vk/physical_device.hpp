@@ -1,13 +1,11 @@
 #pragma once
 
 
+#include <planet/vk/forward.hpp>
 #include <planet/vk/helpers.hpp>
 
 
 namespace planet::vk {
-
-
-    class instance;
 
 
     /// ## Vulkan physical device
@@ -22,6 +20,7 @@ namespace planet::vk {
         VkPhysicalDeviceProperties properties = {};
         VkPhysicalDeviceFeatures features = {};
         VkPhysicalDeviceMemoryProperties memory_properties = {};
+
 
         /// ### API wrappers
 

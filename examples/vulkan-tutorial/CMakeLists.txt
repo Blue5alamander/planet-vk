@@ -16,7 +16,7 @@ if(TARGET planet-examples)
     vk_shader(vulkan-tutorial 27_shader_depth.vert)
     target_include_directories (vulkan-tutorial PRIVATE ${STB_INCLUDEDIR})
     target_link_libraries(vulkan-tutorial PUBLIC
-            planet-vk
+            planet-vk-engine
 
             glfw
             glm::glm

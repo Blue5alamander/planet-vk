@@ -5,6 +5,7 @@ namespace planet::vk::engine {
 
 
     class app;
+    struct depth_buffer;
     class renderer;
 
 

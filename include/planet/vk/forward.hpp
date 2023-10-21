@@ -8,6 +8,8 @@ namespace planet::vk {
     class device;
     class device_memory;
     class device_memory_allocator;
+    class instance;
+    class physical_device;
     class surface;
 
 
