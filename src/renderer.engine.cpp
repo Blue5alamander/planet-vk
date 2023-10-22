@@ -85,7 +85,7 @@ void planet::vk::engine::renderer::reset_world_coordinates(
 planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
     VkAttachmentDescription color_attachment = {};
     color_attachment.format = swap_chain.image_format;
-    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    color_attachment.samples = app.instance.gpu().msaa_samples;
     color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;

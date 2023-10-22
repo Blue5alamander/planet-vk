@@ -21,6 +21,7 @@ namespace planet::vk {
         VkPhysicalDeviceFeatures features = {};
         VkPhysicalDeviceMemoryProperties memory_properties = {};
 
+        VkSampleCountFlagBits msaa_samples = VK_SAMPLE_COUNT_1_BIT;
 
         /// ### API wrappers
 

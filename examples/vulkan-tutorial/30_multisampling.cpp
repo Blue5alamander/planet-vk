@@ -147,7 +147,6 @@ class HelloTriangleApplication {
                 }};
     }();
 
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
     planet::vk::device device = [this]() {
         pickPhysicalDevice();
         return planet::vk::device{instance, extensions};
@@ -184,7 +183,7 @@ class HelloTriangleApplication {
     planet::vk::render_pass renderPass{[this]() {
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = swapChain.image_format;
-        colorAttachment.samples = msaaSamples;
+        colorAttachment.samples = instance.gpu().msaa_samples;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -196,7 +195,7 @@ class HelloTriangleApplication {
         depthAttachment.format =
                 planet::vk::engine::depth_buffer::default_format(
                         instance.gpu());
-        depthAttachment.samples = msaaSamples;
+        depthAttachment.samples = instance.gpu().msaa_samples;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -314,7 +313,7 @@ class HelloTriangleApplication {
         multisampling.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = msaaSamples;
+        multisampling.rasterizationSamples = instance.gpu().msaa_samples;
 
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType =
@@ -477,7 +476,6 @@ class HelloTriangleApplication {
         for (auto const &device : devices) {
             if (isDeviceSuitable(device)) {
                 instance.use_gpu(device);
-                msaaSamples = getMaxUsableSampleCount();
                 return;
             }
         }
@@ -499,7 +497,7 @@ class HelloTriangleApplication {
                 swapChain.extents.width,
                 swapChain.extents.height,
                 1,
-                msaaSamples,
+                instance.gpu().msaa_samples,
                 colorFormat,
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
@@ -517,7 +515,7 @@ class HelloTriangleApplication {
                 swapChain.extents.width,
                 swapChain.extents.height,
                 1,
-                msaaSamples,
+                instance.gpu().msaa_samples,
                 depthFormat,
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -555,20 +553,6 @@ class HelloTriangleApplication {
                  .width = static_cast<std::uint32_t>(texWidth),
                  .height = static_cast<std::uint32_t>(texHeight),
                  .format = VK_FORMAT_R8G8B8A8_SRGB});
-    }
-
-    VkSampleCountFlagBits getMaxUsableSampleCount() {
-        VkSampleCountFlags counts =
-                instance.gpu().properties.limits.framebufferColorSampleCounts
-                & instance.gpu().properties.limits.framebufferDepthSampleCounts;
-        if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
-        if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
-        if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
-        if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
-        if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
-        if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
-
-        return VK_SAMPLE_COUNT_1_BIT;
     }
 
     void loadModel() {

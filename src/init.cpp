@@ -322,6 +322,25 @@ planet::vk::physical_device::physical_device(VkPhysicalDevice h, VkSurfaceKHR)
     vkGetPhysicalDeviceProperties(handle, &properties);
     vkGetPhysicalDeviceFeatures(handle, &features);
     vkGetPhysicalDeviceMemoryProperties(handle, &memory_properties);
+
+    VkSampleCountFlags counts = properties.limits.framebufferColorSampleCounts
+            bitand properties.limits.framebufferDepthSampleCounts;
+
+    if (counts bitand VK_SAMPLE_COUNT_64_BIT) {
+        msaa_samples = VK_SAMPLE_COUNT_64_BIT;
+    } else if (counts bitand VK_SAMPLE_COUNT_32_BIT) {
+        msaa_samples = VK_SAMPLE_COUNT_32_BIT;
+    } else if (counts bitand VK_SAMPLE_COUNT_16_BIT) {
+        msaa_samples = VK_SAMPLE_COUNT_16_BIT;
+    } else if (counts bitand VK_SAMPLE_COUNT_8_BIT) {
+        msaa_samples = VK_SAMPLE_COUNT_8_BIT;
+    } else if (counts bitand VK_SAMPLE_COUNT_4_BIT) {
+        msaa_samples = VK_SAMPLE_COUNT_4_BIT;
+    } else if (counts bitand VK_SAMPLE_COUNT_2_BIT) {
+        msaa_samples = VK_SAMPLE_COUNT_2_BIT;
+    } else {
+        msaa_samples = VK_SAMPLE_COUNT_1_BIT;
+    }
 }
 
 
