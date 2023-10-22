@@ -3,6 +3,7 @@
 
 #include <planet/affine/matrix3d.hpp>
 #include <planet/vk/engine/app.hpp>
+#include <planet/vk/engine/colour_attachment.hpp>
 #include <planet/vk/engine/depth_buffer.hpp>
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
@@ -37,12 +38,14 @@ namespace planet::vk::engine {
         vk::descriptor_set_layout ubo_layout{
                 vk::descriptor_set_layout::for_uniform_buffer_object(
                         app.device)};
-        vk::render_pass render_pass{create_render_pass()};
 
         vk::command_pool command_pool{app.device, app.instance.surface};
         vk::command_buffers command_buffers{command_pool, max_frames_in_flight};
 
+        engine::colour_attachment colour_attachment{swap_chain};
         engine::depth_buffer depth_buffer{swap_chain};
+
+        vk::render_pass render_pass{create_render_pass()};
 
         std::array<vk::semaphore, max_frames_in_flight> img_avail_semaphore{
                 app.device, app.device, app.device},

@@ -83,34 +83,35 @@ void planet::vk::engine::renderer::reset_world_coordinates(
 
 
 planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
-    VkAttachmentDescription color_attachment = {};
-    color_attachment.format = swap_chain.image_format;
-    color_attachment.samples = app.instance.gpu().msaa_samples;
-    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    auto attachments = std::array{
+            colour_attachment.attachment_description(app.instance.gpu()),
+            swap_chain.attachment_description()};
 
-    VkAttachmentReference color_attachment_ref = {};
-    color_attachment_ref.attachment = 0;
-    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkAttachmentReference colour_attachment_ref = {};
+    colour_attachment_ref.attachment = 0;
+    colour_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference colour_resolve_attachment_ref{};
+    colour_resolve_attachment_ref.attachment = 1;
+    colour_resolve_attachment_ref.layout =
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &color_attachment_ref;
+    subpass.pColorAttachments = &colour_attachment_ref;
+    subpass.pResolveAttachments = &colour_resolve_attachment_ref;
 
     VkRenderPassCreateInfo render_pass_info = {};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    render_pass_info.attachmentCount = 1;
-    render_pass_info.pAttachments = &color_attachment;
+    render_pass_info.attachmentCount = attachments.size();
+    render_pass_info.pAttachments = attachments.data();
     render_pass_info.subpassCount = 1;
     render_pass_info.pSubpasses = &subpass;
 
     planet::vk::render_pass render_pass{app.device, render_pass_info};
-    swap_chain.create_frame_buffers(render_pass);
+    swap_chain.create_frame_buffers(
+            render_pass, colour_attachment.image_view.get());
     return render_pass;
 }
 
@@ -344,7 +345,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     multisampling.sType =
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampling.rasterizationSamples = app.instance.gpu().msaa_samples;
 
     VkPipelineColorBlendAttachmentState blend_state = {};
     blend_state.blendEnable = VK_TRUE;

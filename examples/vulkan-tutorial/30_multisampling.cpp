@@ -1,5 +1,6 @@
 #include <planet/asset_manager.hpp>
 #include <planet/vk.hpp>
+#include <planet/vk/engine/colour_attachment.hpp>
 #include <planet/vk/engine/depth_buffer.hpp>
 
 
@@ -153,6 +154,7 @@ class HelloTriangleApplication {
     }();
 
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
+    planet::vk::engine::colour_attachment colorAttachment{swapChain};
     planet::vk::engine::depth_buffer depthBuffer{swapChain};
 
     planet::vk::descriptor_set_layout descriptorSetLayout = [this]() {
@@ -182,16 +184,6 @@ class HelloTriangleApplication {
     }();
 
     planet::vk::render_pass renderPass{[this]() {
-        VkAttachmentDescription colorAttachment{};
-        colorAttachment.format = swapChain.image_format;
-        colorAttachment.samples = instance.gpu().msaa_samples;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format = depthBuffer.image.format;
         depthAttachment.samples = instance.gpu().msaa_samples;
@@ -236,8 +228,8 @@ class HelloTriangleApplication {
                 | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
         std::array attachments{
-                colorAttachment, depthAttachment,
-                swapChain.attachment_description()};
+                colorAttachment.attachment_description(instance.gpu()),
+                depthAttachment, swapChain.attachment_description()};
         VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount =
@@ -362,9 +354,6 @@ class HelloTriangleApplication {
 
     planet::vk::command_pool commandPool{device, instance.surface};
 
-    planet::vk::image colorImage;
-    planet::vk::image_view colorImageView;
-
     planet::vk::texture texture;
 
     std::vector<Vertex> vertices;
@@ -409,9 +398,8 @@ class HelloTriangleApplication {
 
     void initVulkan() {
         createSwapChain();
-        createColorResources();
         swapChain.create_frame_buffers(
-                graphicsPipeline.render_pass, colorImageView.get(),
+                graphicsPipeline.render_pass, colorAttachment.image_view.get(),
                 depthBuffer.image_view.get());
         createTextureImage();
         loadModel();
@@ -448,10 +436,10 @@ class HelloTriangleApplication {
         device.wait_idle();
 
         createSwapChain();
-        createColorResources();
+        colorAttachment = {swapChain};
         depthBuffer = {swapChain};
         swapChain.create_frame_buffers(
-                graphicsPipeline.render_pass, colorImageView.get(),
+                graphicsPipeline.render_pass, colorAttachment.image_view.get(),
                 depthBuffer.image_view.get());
     }
 
@@ -472,23 +460,6 @@ class HelloTriangleApplication {
         instance.surface.refresh_characteristics(instance.gpu());
         VkExtent2D extent = chooseSwapExtent();
         swapChain.recreate(extent);
-    }
-
-    void createColorResources() {
-        VkFormat colorFormat = swapChain.image_format;
-
-        colorImage = {
-                device.startup_memory,
-                swapChain.extents.width,
-                swapChain.extents.height,
-                1,
-                instance.gpu().msaa_samples,
-                colorFormat,
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
-                        | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
-        colorImageView = {colorImage, VK_IMAGE_ASPECT_COLOR_BIT};
     }
 
     void createTextureImage() {
