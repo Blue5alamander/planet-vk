@@ -62,18 +62,18 @@ std::uint32_t planet::vk::swap_chain::create(affine::extents2d const wsize) {
 
 VkExtent2D planet::vk::swap_chain::calculate_extents(
         vk::device const &device, affine::extents2d const ex) {
-    auto const &surface = device.instance.surface;
-    if (surface.capabilities.currentExtent.width
+    auto const &capabilities = device.instance.surface.capabilities;
+    if (capabilities.currentExtent.width
         != std::numeric_limits<std::uint32_t>::max()) {
-        return surface.capabilities.currentExtent;
+        return capabilities.currentExtent;
     } else {
         return VkExtent2D{
                 std::clamp<std::uint32_t>(
-                        ex.width, surface.capabilities.minImageExtent.width,
-                        surface.capabilities.maxImageExtent.width),
+                        ex.width, capabilities.minImageExtent.width,
+                        capabilities.maxImageExtent.width),
                 std::clamp<std::uint32_t>(
-                        ex.height, surface.capabilities.minImageExtent.height,
-                        surface.capabilities.maxImageExtent.height)};
+                        ex.height, capabilities.minImageExtent.height,
+                        capabilities.maxImageExtent.height)};
     }
 }
 
