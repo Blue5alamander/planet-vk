@@ -85,14 +85,20 @@ void planet::vk::engine::renderer::reset_world_coordinates(
 planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
     auto attachments = std::array{
             colour_attachment.attachment_description(app.instance.gpu()),
+            depth_buffer.attachment_description(app.instance.gpu()),
             swap_chain.attachment_description()};
 
     VkAttachmentReference colour_attachment_ref = {};
     colour_attachment_ref.attachment = 0;
     colour_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+    VkAttachmentReference depth_attachment_ref{};
+    depth_attachment_ref.attachment = 1;
+    depth_attachment_ref.layout =
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     VkAttachmentReference colour_resolve_attachment_ref{};
-    colour_resolve_attachment_ref.attachment = 1;
+    colour_resolve_attachment_ref.attachment = 2;
     colour_resolve_attachment_ref.layout =
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
@@ -100,7 +106,19 @@ planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colour_attachment_ref;
+    subpass.pDepthStencilAttachment = &depth_attachment_ref;
     subpass.pResolveAttachments = &colour_resolve_attachment_ref;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+            | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+            | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+            | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
     VkRenderPassCreateInfo render_pass_info = {};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -108,10 +126,13 @@ planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
     render_pass_info.pAttachments = attachments.data();
     render_pass_info.subpassCount = 1;
     render_pass_info.pSubpasses = &subpass;
+    render_pass_info.dependencyCount = 1;
+    render_pass_info.pDependencies = &dependency;
 
     planet::vk::render_pass render_pass{app.device, render_pass_info};
     swap_chain.create_frame_buffers(
-            render_pass, colour_attachment.image_view.get());
+            render_pass, colour_attachment.image_view.get(),
+            depth_buffer.image_view.get());
     return render_pass;
 }
 
@@ -182,8 +203,10 @@ felspar::coro::task<std::size_t>
     render_pass_info.renderArea.offset.y = 0;
     render_pass_info.renderArea.extent = swap_chain.extents;
 
-    render_pass_info.clearValueCount = 1;
-    render_pass_info.pClearValues = &colour;
+    std::array<VkClearValue, 2> clear_values{
+            colour, {.depthStencil = {1.0f, 0}}};
+    render_pass_info.clearValueCount = clear_values.size();
+    render_pass_info.pClearValues = clear_values.data();
 
     vkCmdBeginRenderPass(
             cb.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -374,6 +397,15 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     blend_info.attachmentCount = 1;
     blend_info.pAttachments = &blend_state;
 
+    VkPipelineDepthStencilStateCreateInfo depth_stencil{};
+    depth_stencil.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth_stencil.depthTestEnable = VK_TRUE;
+    depth_stencil.depthWriteEnable = VK_TRUE;
+    depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depth_stencil.depthBoundsTestEnable = VK_FALSE;
+    depth_stencil.stencilTestEnable = VK_FALSE;
+
     VkGraphicsPipelineCreateInfo graphics_pipeline_info = {};
     graphics_pipeline_info.sType =
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -384,6 +416,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     graphics_pipeline_info.pViewportState = &viewport_state_info;
     graphics_pipeline_info.pRasterizationState = &rasterizer_info;
     graphics_pipeline_info.pMultisampleState = &multisampling;
+    graphics_pipeline_info.pDepthStencilState = &depth_stencil;
     graphics_pipeline_info.pColorBlendState = &blend_info;
     graphics_pipeline_info.subpass = 0;
 
