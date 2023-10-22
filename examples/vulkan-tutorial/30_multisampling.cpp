@@ -153,6 +153,7 @@ class HelloTriangleApplication {
     }();
 
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
+    planet::vk::engine::depth_buffer depthBuffer{swapChain};
 
     planet::vk::descriptor_set_layout descriptorSetLayout = [this]() {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -192,9 +193,7 @@ class HelloTriangleApplication {
         colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkAttachmentDescription depthAttachment{};
-        depthAttachment.format =
-                planet::vk::engine::depth_buffer::default_format(
-                        instance.gpu());
+        depthAttachment.format = depthBuffer.image.format;
         depthAttachment.samples = instance.gpu().msaa_samples;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -376,9 +375,6 @@ class HelloTriangleApplication {
     planet::vk::image colorImage;
     planet::vk::image_view colorImageView;
 
-    planet::vk::image depthImage;
-    planet::vk::image_view depthImageView;
-
     planet::vk::texture texture;
 
     std::vector<Vertex> vertices;
@@ -424,10 +420,9 @@ class HelloTriangleApplication {
     void initVulkan() {
         createSwapChain();
         createColorResources();
-        createDepthResources();
         swapChain.create_frame_buffers(
                 graphicsPipeline.render_pass, colorImageView.get(),
-                depthImageView.get());
+                depthBuffer.image_view.get());
         createTextureImage();
         loadModel();
         createVertexBuffer();
@@ -464,10 +459,10 @@ class HelloTriangleApplication {
 
         createSwapChain();
         createColorResources();
-        createDepthResources();
+        depthBuffer = {swapChain};
         swapChain.create_frame_buffers(
                 graphicsPipeline.render_pass, colorImageView.get(),
-                depthImageView.get());
+                depthBuffer.image_view.get());
     }
 
     void pickPhysicalDevice() {
@@ -504,23 +499,6 @@ class HelloTriangleApplication {
                         | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
         colorImageView = {colorImage, VK_IMAGE_ASPECT_COLOR_BIT};
-    }
-
-    void createDepthResources() {
-        VkFormat depthFormat = planet::vk::engine::depth_buffer::default_format(
-                instance.gpu());
-
-        depthImage = {
-                device.startup_memory,
-                swapChain.extents.width,
-                swapChain.extents.height,
-                1,
-                instance.gpu().msaa_samples,
-                depthFormat,
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
-        depthImageView = {depthImage, VK_IMAGE_ASPECT_DEPTH_BIT};
     }
 
     void createTextureImage() {

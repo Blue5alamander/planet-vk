@@ -42,7 +42,7 @@ namespace planet::vk::engine {
         vk::command_pool command_pool{app.device, app.instance.surface};
         vk::command_buffers command_buffers{command_pool, max_frames_in_flight};
 
-        engine::depth_buffer depth_buffer;
+        engine::depth_buffer depth_buffer{swap_chain};
 
         std::array<vk::semaphore, max_frames_in_flight> img_avail_semaphore{
                 app.device, app.device, app.device},
