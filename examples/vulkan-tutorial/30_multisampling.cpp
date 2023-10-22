@@ -193,7 +193,9 @@ class HelloTriangleApplication {
         colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkAttachmentDescription depthAttachment{};
-        depthAttachment.format = findDepthFormat();
+        depthAttachment.format =
+                planet::vk::engine::depth_buffer::default_format(
+                        instance.gpu());
         depthAttachment.samples = msaaSamples;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -507,7 +509,8 @@ class HelloTriangleApplication {
     }
 
     void createDepthResources() {
-        VkFormat depthFormat = findDepthFormat();
+        VkFormat depthFormat = planet::vk::engine::depth_buffer::default_format(
+                instance.gpu());
 
         depthImage = {
                 device.startup_memory,
@@ -520,21 +523,6 @@ class HelloTriangleApplication {
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
         depthImageView = {depthImage, VK_IMAGE_ASPECT_DEPTH_BIT};
-    }
-
-    VkFormat findDepthFormat() {
-        return planet::vk::engine::depth_buffer::find_supported_format(
-                instance.gpu(),
-                std::array{
-                        VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
-                        VK_FORMAT_D24_UNORM_S8_UINT},
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    }
-
-    bool hasStencilComponent(VkFormat format) {
-        return format == VK_FORMAT_D32_SFLOAT_S8_UINT
-                || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
     void createTextureImage() {
