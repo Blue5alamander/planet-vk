@@ -11,47 +11,62 @@
 namespace planet::vk {
 
 
-    /// A swap chain
+    /// ## A swap chain
     class swap_chain final {
         using handle_type =
                 device_handle<VkSwapchainKHR, vkDestroySwapchainKHR>;
         handle_type handle;
 
-        /// (Re-)create the swap chain and its attendant items
+        /// ### (Re-)create the swap chain and its attendant items
         std::uint32_t create(VkExtent2D);
         std::uint32_t create(affine::extents2d);
 
+
       public:
+        /// ### Creation
         template<typename Ex>
         swap_chain(vk::device &d, Ex const ex) : device{d} {
             create(ex);
         }
 
+
+        /// ### Queries
         device_view device;
         VkSwapchainKHR get() const noexcept { return handle.get(); }
 
-        /// Recreate the swap chain and everything dependant on it, for example
-        /// if the window has changed dimensions. Returns the number of images
-        /// to use
+
+        /// ### Recreation
+        /**
+         * Recreate the swap chain and everything dependant on it, for example
+         * if the window has changed dimensions. Returns the number of images to
+         * use
+         */
         template<typename Ex>
         std::uint32_t recreate(Ex const ex) {
             device().wait_idle();
             return create(ex);
         }
 
-        /// Calculate suitable extents to use for the swap chain given the
-        /// current window size
+        /// ### Extents
+
+        /// #### Calculation
+        /**
+         * Calculate suitable extents to use for the swap chain given the
+         * current window size
+         */
         static VkExtent2D
                 calculate_extents(vk::device const &, affine::extents2d);
-        /// The extents the current swap chain has been created for
+        /// #### The extents the current swap chain has been created for
         VkExtent2D extents;
 
-        /// The swap chain images, and their views
+
+        /// ### The swap chain images, and their views
         VkFormat image_format;
         std::vector<VkImage> images;
         std::vector<image_view> image_views;
 
-        /// Frame buffers
+
+        /// ### Frame buffers
         std::vector<frame_buffer> frame_buffers;
         template<typename... Attachments>
         void create_frame_buffers(render_pass const &rp, Attachments... extra) {
@@ -69,6 +84,10 @@ namespace planet::vk {
                 frame_buffers.emplace_back(device, info);
             }
         }
+
+
+        /// ### Resolve attachment
+        VkAttachmentDescription attachment_description() const;
     };
 
 

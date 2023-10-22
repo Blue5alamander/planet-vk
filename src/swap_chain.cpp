@@ -76,3 +76,17 @@ VkExtent2D planet::vk::swap_chain::calculate_extents(
                         surface.capabilities.maxImageExtent.height)};
     }
 }
+
+
+VkAttachmentDescription planet::vk::swap_chain::attachment_description() const {
+    VkAttachmentDescription ca{};
+    ca.format = image_format;
+    ca.samples = VK_SAMPLE_COUNT_1_BIT;
+    ca.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    ca.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    ca.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    ca.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    ca.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    ca.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    return ca;
+}

@@ -203,17 +203,6 @@ class HelloTriangleApplication {
         depthAttachment.finalLayout =
                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-        VkAttachmentDescription colorAttachmentResolve{};
-        colorAttachmentResolve.format = swapChain.image_format;
-        colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachmentResolve.stencilStoreOp =
-                VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
         VkAttachmentReference colorAttachmentRef{};
         colorAttachmentRef.attachment = 0;
         colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -247,7 +236,8 @@ class HelloTriangleApplication {
                 | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
         std::array attachments{
-                colorAttachment, depthAttachment, colorAttachmentResolve};
+                colorAttachment, depthAttachment,
+                swapChain.attachment_description()};
         VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount =
