@@ -8,7 +8,7 @@ namespace planet::vk::engine {
 
 
     struct colour_attachment {
-        colour_attachment(swap_chain &);
+        colour_attachment(device_memory_allocator &, swap_chain &);
 
         vk::image image;
         vk::image_view image_view;

@@ -29,8 +29,24 @@ namespace planet::vk::engine {
         engine::app &app;
 
 
-        /// ### Per-frame memory allocator
+        /// ### Allocators
+        /// **NB** There are also allocators on the [device](../device.hpp).
+
+        /// #### Per-frame memory allocator
+        /**
+         * This allocator should be used for anything that will only last a
+         * single rendered frame. In practice this means that the memory won't
+         * be freed until the same frame index comes back around to be rendered.
+         */
         device_memory_allocator per_frame_memory{app.device};
+        /// #### Per-swap chain
+        /**
+         * Certain events will cause the swap chain to be re-configured. These
+         * include changes in window size and certain graphics settings. This
+         * allocator should be used for things like depth buffers and colour
+         * attachments that are created in response to a swap chain reset.
+         */
+        device_memory_allocator per_swap_chain_memory{app.device};
 
 
         /// ### Swap chain, command buffers and synchronisation
@@ -42,8 +58,9 @@ namespace planet::vk::engine {
         vk::command_pool command_pool{app.device, app.instance.surface};
         vk::command_buffers command_buffers{command_pool, max_frames_in_flight};
 
-        engine::colour_attachment colour_attachment{swap_chain};
-        engine::depth_buffer depth_buffer{swap_chain};
+        engine::colour_attachment colour_attachment{
+                per_swap_chain_memory, swap_chain};
+        engine::depth_buffer depth_buffer{per_swap_chain_memory, swap_chain};
 
         vk::render_pass render_pass{create_render_pass()};
 

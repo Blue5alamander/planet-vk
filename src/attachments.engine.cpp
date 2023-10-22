@@ -9,8 +9,8 @@
 
 
 planet::vk::engine::colour_attachment::colour_attachment(
-        vk::swap_chain &swap_chain)
-: image{swap_chain.device->startup_memory,
+        device_memory_allocator &allocator, vk::swap_chain &swap_chain)
+: image{allocator,
         swap_chain.extents.width,
         swap_chain.extents.height,
         1,
@@ -42,8 +42,9 @@ VkAttachmentDescription
 /// ## `planet::vk::engine::depth_buffer`
 
 
-planet::vk::engine::depth_buffer::depth_buffer(vk::swap_chain &swap_chain)
-: image{swap_chain.device->startup_memory,
+planet::vk::engine::depth_buffer::depth_buffer(
+        device_memory_allocator &allocator, vk::swap_chain &swap_chain)
+: image{allocator,
         swap_chain.extents.width,
         swap_chain.extents.height,
         1,

@@ -11,7 +11,7 @@ namespace planet::vk::engine {
 
 
     struct depth_buffer {
-        depth_buffer(swap_chain &);
+        depth_buffer(device_memory_allocator &, swap_chain &);
 
         vk::image image;
         vk::image_view image_view;

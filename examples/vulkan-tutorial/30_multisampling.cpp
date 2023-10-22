@@ -154,8 +154,10 @@ class HelloTriangleApplication {
     }();
 
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
-    planet::vk::engine::colour_attachment colorAttachment{swapChain};
-    planet::vk::engine::depth_buffer depthBuffer{swapChain};
+    planet::vk::engine::colour_attachment colorAttachment{
+            device.startup_memory, swapChain};
+    planet::vk::engine::depth_buffer depthBuffer{
+            device.startup_memory, swapChain};
 
     planet::vk::descriptor_set_layout descriptorSetLayout = [this]() {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -426,8 +428,8 @@ class HelloTriangleApplication {
         device.wait_idle();
 
         createSwapChain();
-        colorAttachment = {swapChain};
-        depthBuffer = {swapChain};
+        colorAttachment = {device.startup_memory, swapChain};
+        depthBuffer = {device.startup_memory, swapChain};
         swapChain.create_frame_buffers(
                 graphicsPipeline.render_pass, colorAttachment.image_view.get(),
                 depthBuffer.image_view.get());
