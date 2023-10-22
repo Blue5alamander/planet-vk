@@ -184,17 +184,6 @@ class HelloTriangleApplication {
     }();
 
     planet::vk::render_pass renderPass{[this]() {
-        VkAttachmentDescription depthAttachment{};
-        depthAttachment.format = depthBuffer.image.format;
-        depthAttachment.samples = instance.gpu().msaa_samples;
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout =
-                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
         VkAttachmentReference colorAttachmentRef{};
         colorAttachmentRef.attachment = 0;
         colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -229,7 +218,8 @@ class HelloTriangleApplication {
 
         std::array attachments{
                 colorAttachment.attachment_description(instance.gpu()),
-                depthAttachment, swapChain.attachment_description()};
+                depthBuffer.attachment_description(instance.gpu()),
+                swapChain.attachment_description()};
         VkRenderPassCreateInfo renderPassInfo{};
         renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassInfo.attachmentCount =

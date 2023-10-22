@@ -49,3 +49,18 @@ VkFormat planet::vk::engine::depth_buffer::default_format(
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
+
+
+VkAttachmentDescription planet::vk::engine::depth_buffer::attachment_description(
+        physical_device const &device) const {
+    VkAttachmentDescription da{};
+    da.format = image.format;
+    da.samples = device.msaa_samples;
+    da.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    da.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    da.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    da.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    da.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    da.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    return da;
+}

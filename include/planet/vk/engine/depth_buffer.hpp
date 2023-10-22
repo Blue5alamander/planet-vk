@@ -33,6 +33,9 @@ namespace planet::vk::engine {
                 VkFormatFeatureFlags const f) {
             return find_supported_format(pd, std::span{candidates}, t, f);
         }
+
+        VkAttachmentDescription
+                attachment_description(physical_device const &) const;
     };
 
 
