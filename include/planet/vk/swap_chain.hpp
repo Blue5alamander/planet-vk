@@ -55,6 +55,7 @@ namespace planet::vk {
         std::vector<frame_buffer> frame_buffers;
         template<typename... Attachments>
         void create_frame_buffers(render_pass const &rp, Attachments... extra) {
+            frame_buffers.clear();
             for (auto const &view : image_views) {
                 std::array attachments{VkImageView{extra}..., view.get()};
                 VkFramebufferCreateInfo info = {};
