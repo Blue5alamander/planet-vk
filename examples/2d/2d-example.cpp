@@ -11,13 +11,13 @@ namespace {
 
         constexpr std::array vertices{
                 planet::vk::engine::pipeline::mesh::vertex{
-                        {-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                        {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
                 planet::vk::engine::pipeline::mesh::vertex{
-                        {0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                        {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
                 planet::vk::engine::pipeline::mesh::vertex{
-                        {0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                        {0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
                 planet::vk::engine::pipeline::mesh::vertex{
-                        {-0.5f, 0.5f}, {1.0f, 0.0f, 1.0f}}};
+                        {-0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 1.0f}}};
         constexpr std::array<std::uint32_t, 6> indices{0, 1, 2, 2, 3, 0};
 
         for (bool done = false; not done;) {
@@ -39,7 +39,7 @@ namespace {
             co_await renderer.start({{{0.f, 0.f, 0.f, 1.f}}});
 
             mesh.draw(vertices, indices);
-            mesh.draw(vertices, indices, {0.75f, 0.75f});
+            mesh.draw(vertices, indices, {0.75f, 0.75f, 0.0f});
 
             renderer.submit_and_present();
         }

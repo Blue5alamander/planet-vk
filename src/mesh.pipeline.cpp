@@ -23,7 +23,7 @@ namespace {
 
         attrs[0].binding = 0;
         attrs[0].location = 0;
-        attrs[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attrs[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attrs[0].offset =
                 offsetof(planet::vk::engine::pipeline::mesh::vertex, p);
 
@@ -147,7 +147,7 @@ void planet::vk::engine::pipeline::mesh::data::draw(
 void planet::vk::engine::pipeline::mesh::data::draw(
         std::span<vertex const> const vs,
         std::span<std::uint32_t const> const ix,
-        pos const p) {
+        planet::affine::point3d const &p) {
     auto const start_index = vertices.size();
     for (auto const &v : vs) { vertices.push_back({v.p + p, v.c}); }
     for (auto const &i : ix) { indices.push_back(start_index + i); }
@@ -155,7 +155,7 @@ void planet::vk::engine::pipeline::mesh::data::draw(
 void planet::vk::engine::pipeline::mesh::data::draw(
         std::span<vertex const> const vs,
         std::span<std::uint32_t const> const ix,
-        pos const p,
+        planet::affine::point3d const &p,
         colour const &c) {
     auto const start_index = vertices.size();
     for (auto const &v : vs) { vertices.push_back({v.p + p, c}); }

@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/affine/point3d.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 
@@ -40,14 +41,8 @@ namespace planet::vk::engine::pipeline {
         vk::graphics_pipeline pipeline;
 
 
-        struct pos {
-            float x, y;
-            friend constexpr pos operator+(pos const l, pos const r) {
-                return {l.x + r.x, l.y + r.y};
-            }
-        };
         struct vertex {
-            pos p;
+            planet::affine::point3d p;
             colour c;
         };
 
@@ -74,11 +69,11 @@ namespace planet::vk::engine::pipeline {
             void
                     draw(std::span<vertex const>,
                          std::span<std::uint32_t const>,
-                         pos);
+                         planet::affine::point3d const &);
             void
                     draw(std::span<vertex const>,
                          std::span<std::uint32_t const>,
-                         pos,
+                         planet::affine::point3d const &,
                          colour const &);
         };
 
@@ -95,13 +90,13 @@ namespace planet::vk::engine::pipeline {
         void
                 draw(std::span<vertex const> const v,
                      std::span<std::uint32_t const> const i,
-                     pos const o) {
+                     planet::affine::point3d const &o) {
             draw_data.draw(v, i, o);
         }
         void
                 draw(std::span<vertex const> const v,
                      std::span<std::uint32_t const> const i,
-                     pos const o,
+                     planet::affine::point3d const &o,
                      colour const &c) {
             draw_data.draw(v, i, o, c);
         }
