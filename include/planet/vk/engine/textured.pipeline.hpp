@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/affine/point3d.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 
@@ -36,8 +37,9 @@ namespace planet::vk::engine::pipeline {
             }
         };
         struct vertex {
-            pos p, uv;
+            planet::affine::point3d p;
             colour col = white;
+            pos uv;
         };
 
 
@@ -66,13 +68,15 @@ namespace planet::vk::engine::pipeline {
             void
                     draw(vk::texture const &t,
                          affine::rectangle2d const &r,
-                         colour const &c = white) {
-                draw({t, {{0, 0}, affine::extents2d{1, 1}}}, r, c);
+                         colour const &c = white,
+                         float z = {}) {
+                draw({t, {{0, 0}, affine::extents2d{1, 1}}}, r, c, z);
             }
             void
                     draw(std::pair<vk::texture const &, affine::rectangle2d>,
                          affine::rectangle2d const &,
-                         colour const & = white);
+                         colour const & = white,
+                         float z = {});
             /// #### Draw a textured mesh
             void
                     draw(std::span<vertex const>,

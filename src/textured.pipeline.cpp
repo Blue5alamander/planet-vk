@@ -23,21 +23,21 @@ namespace {
 
         attrs[0].binding = 0;
         attrs[0].location = 0;
-        attrs[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attrs[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attrs[0].offset =
                 offsetof(planet::vk::engine::pipeline::textured::vertex, p);
 
         attrs[1].binding = 0;
         attrs[1].location = 1;
-        attrs[1].format = VK_FORMAT_R32G32_SFLOAT;
+        attrs[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attrs[1].offset =
-                offsetof(planet::vk::engine::pipeline::textured::vertex, uv);
+                offsetof(planet::vk::engine::pipeline::textured::vertex, col);
 
         attrs[2].binding = 0;
         attrs[2].location = 2;
-        attrs[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
         attrs[2].offset =
-                offsetof(planet::vk::engine::pipeline::textured::vertex, col);
+                offsetof(planet::vk::engine::pipeline::textured::vertex, uv);
 
         return attrs;
     }()};
@@ -160,7 +160,8 @@ void planet::vk::engine::pipeline::textured::data::draw(
 void planet::vk::engine::pipeline::textured::data::draw(
         std::pair<vk::texture const &, affine::rectangle2d> texture,
         affine::rectangle2d const &pos,
-        vk::colour const &colour) {
+        vk::colour const &colour,
+float const z) {
     if (textures.size() == max_textures_per_frame) {
         throw felspar::stdexcept::runtime_error{
                 "Have run out of texture slots for this frame"};
@@ -169,22 +170,24 @@ void planet::vk::engine::pipeline::textured::data::draw(
     std::size_t const quad_index = vertices.size();
 
     vertices.push_back(
-            {{pos.bottom_right().x(), pos.bottom_right().y()},
+            {planet::affine::point3d{pos.bottom_right(), z},
+             colour,
              {texture.second.bottom_right().x(),
-              texture.second.bottom_right().y()},
-             colour});
+              texture.second.bottom_right().y()}});
     vertices.push_back(
-            {{pos.bottom_right().x(), pos.top_left.y()},
-             {texture.second.bottom_right().x(), texture.second.top_left.y()},
-             colour});
+            {planet::affine::point3d{
+                     pos.bottom_right().x(), pos.top_left.y(), z},
+             colour,
+             {texture.second.bottom_right().x(), texture.second.top_left.y()}});
     vertices.push_back(
-            {{pos.top_left.x(), pos.top_left.y()},
-             {texture.second.top_left.x(), texture.second.top_left.y()},
-             colour});
+            {planet::affine::point3d{pos.top_left, z},
+             colour,
+             {texture.second.top_left.x(), texture.second.top_left.y()}});
     vertices.push_back(
-            {{pos.top_left.x(), pos.bottom_right().y()},
-             {texture.second.top_left.x(), texture.second.bottom_right().y()},
-             colour});
+            {planet::affine::point3d{
+                     pos.top_left.x(), pos.bottom_right().y(), z},
+             colour,
+             {texture.second.top_left.x(), texture.second.bottom_right().y()}});
 
     indices.push_back(quad_index);
     indices.push_back(quad_index + 2);
