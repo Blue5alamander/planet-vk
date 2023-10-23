@@ -2,6 +2,7 @@
 
 
 #include <planet/affine/matrix3d.hpp>
+#include <planet/affine/point3d.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 
@@ -65,6 +66,8 @@ namespace planet::vk::engine::pipeline {
             /// ##### Rotation
             /// Measured in anti-clockwise turns
             float rotation = {};
+            /// ##### Z height
+            float z_height = {};
         };
 
         struct pos {
@@ -74,8 +77,9 @@ namespace planet::vk::engine::pipeline {
             }
         };
         struct vertex {
-            pos p, uv;
+            planet::affine::point3d p;
             colour col = white;
+            pos uv;
         };
 
 

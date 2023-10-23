@@ -204,7 +204,7 @@ felspar::coro::task<std::size_t>
     render_pass_info.renderArea.extent = swap_chain.extents;
 
     std::array<VkClearValue, 2> clear_values{
-            colour, {.depthStencil = {1.0f, 0}}};
+            colour, {.depthStencil = {0.0f, 0}}};
     render_pass_info.clearValueCount = clear_values.size();
     render_pass_info.pClearValues = clear_values.data();
 
@@ -402,7 +402,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depth_stencil.depthTestEnable = VK_TRUE;
     depth_stencil.depthWriteEnable = VK_TRUE;
-    depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depth_stencil.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL;
     depth_stencil.depthBoundsTestEnable = VK_FALSE;
     depth_stencil.stencilTestEnable = VK_FALSE;
 

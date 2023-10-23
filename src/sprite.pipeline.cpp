@@ -23,21 +23,21 @@ namespace {
 
         attrs[0].binding = 0;
         attrs[0].location = 0;
-        attrs[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attrs[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attrs[0].offset =
                 offsetof(planet::vk::engine::pipeline::sprite::vertex, p);
 
         attrs[1].binding = 0;
         attrs[1].location = 1;
-        attrs[1].format = VK_FORMAT_R32G32_SFLOAT;
+        attrs[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attrs[1].offset =
-                offsetof(planet::vk::engine::pipeline::sprite::vertex, uv);
+                offsetof(planet::vk::engine::pipeline::sprite::vertex, col);
 
         attrs[2].binding = 0;
         attrs[2].location = 2;
-        attrs[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
         attrs[2].offset =
-                offsetof(planet::vk::engine::pipeline::sprite::vertex, col);
+                offsetof(planet::vk::engine::pipeline::sprite::vertex, uv);
 
         return attrs;
     }()};
@@ -107,22 +107,22 @@ void planet::vk::engine::pipeline::sprite::draw(
     std::size_t const quad_index = quads.size();
 
     quads.push_back(
-            {{pos.bottom_right().x(), pos.bottom_right().y()},
+            {{pos.bottom_right().x(), pos.bottom_right().y(), loc.z_height},
+             colour,
              {texture.second.bottom_right().x(),
-              texture.second.bottom_right().y()},
-             colour});
+              texture.second.bottom_right().y()}});
     quads.push_back(
-            {{pos.bottom_right().x(), pos.top_left.y()},
-             {texture.second.bottom_right().x(), texture.second.top_left.y()},
-             colour});
+            {{pos.bottom_right().x(), pos.top_left.y(), loc.z_height},
+             colour,
+             {texture.second.bottom_right().x(), texture.second.top_left.y()}});
     quads.push_back(
-            {{pos.top_left.x(), pos.top_left.y()},
-             {texture.second.top_left.x(), texture.second.top_left.y()},
-             colour});
+            {{pos.top_left.x(), pos.top_left.y(), loc.z_height},
+             colour,
+             {texture.second.top_left.x(), texture.second.top_left.y()}});
     quads.push_back(
-            {{pos.top_left.x(), pos.bottom_right().y()},
-             {texture.second.top_left.x(), texture.second.bottom_right().y()},
-             colour});
+            {{pos.top_left.x(), pos.bottom_right().y(), loc.z_height},
+             colour,
+             {texture.second.top_left.x(), texture.second.bottom_right().y()}});
 
     indexes.push_back(quad_index);
     indexes.push_back(quad_index + 2);
@@ -137,7 +137,7 @@ void planet::vk::engine::pipeline::sprite::draw(
     textures.back().sampler = texture.first.sampler.get();
 
     transforms.push_back({planet::affine::matrix3d{
-            planet::affine::matrix2d::translate(loc.offset)
+            planet::affine::matrix2d::translate({loc.offset.xh, loc.offset.yh, loc.offset.h})
             * planet::affine::matrix2d::rotate(loc.rotation)}});
 }
 
