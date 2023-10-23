@@ -161,7 +161,7 @@ void planet::vk::engine::pipeline::textured::data::draw(
         std::pair<vk::texture const &, affine::rectangle2d> texture,
         affine::rectangle2d const &pos,
         vk::colour const &colour,
-float const z) {
+        float const z) {
     if (textures.size() == max_textures_per_frame) {
         throw felspar::stdexcept::runtime_error{
                 "Have run out of texture slots for this frame"};

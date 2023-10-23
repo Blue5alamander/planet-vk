@@ -137,7 +137,8 @@ void planet::vk::engine::pipeline::sprite::draw(
     textures.back().sampler = texture.first.sampler.get();
 
     transforms.push_back({planet::affine::matrix3d{
-            planet::affine::matrix2d::translate({loc.offset.xh, loc.offset.yh, loc.offset.h})
+            planet::affine::matrix2d::translate(
+                    {loc.offset.xh, loc.offset.yh, loc.offset.h})
             * planet::affine::matrix2d::rotate(loc.rotation)}});
 }
 
