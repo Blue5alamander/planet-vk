@@ -42,7 +42,7 @@ namespace {
 
 planet::vk::engine::pipeline::mesh::mesh(
         engine::app &a, engine::renderer &r, blend_mode const bm)
-: mesh{a, r.swap_chain, r.render_pass, r.ubo_layout, bm} {}
+: mesh{a, r, r.swap_chain, r.render_pass, r.ubo_layout, bm} {}
 
 
 planet::vk::engine::pipeline::mesh::mesh(
@@ -50,21 +50,23 @@ planet::vk::engine::pipeline::mesh::mesh(
         engine::renderer &r,
         std::string_view const vertex_spirv_filename,
         blend_mode const bm)
-: mesh{a, r.swap_chain, r.render_pass, r.ubo_layout, vertex_spirv_filename,
+: mesh{a, r, r.swap_chain, r.render_pass, r.ubo_layout, vertex_spirv_filename,
        bm} {}
 
 
 planet::vk::engine::pipeline::mesh::mesh(
         engine::app &a,
+        engine::renderer &r,
         vk::swap_chain &sc,
         vk::render_pass &rp,
         vk::descriptor_set_layout &dsl,
         blend_mode const bm)
-: mesh{a, sc, rp, dsl, "planet-vk-engine/mesh.world.vert.spirv", bm} {}
+: mesh{a, r, sc, rp, dsl, "planet-vk-engine/mesh.world.vert.spirv", bm} {}
 
 
 planet::vk::engine::pipeline::mesh::mesh(
         engine::app &a,
+        engine::renderer &r,
         vk::swap_chain &sc,
         vk::render_pass &rp,
         vk::descriptor_set_layout &dsl,
@@ -74,17 +76,25 @@ planet::vk::engine::pipeline::mesh::mesh(
   swap_chain{sc},
   render_pass{rp},
   ubo_layout{dsl},
-  pipeline{create_mesh_pipeline(vertex_spirv_filename, bm)} {}
+  pipeline{create_mesh_pipeline(r, vertex_spirv_filename, bm)} {}
 
 
 planet::vk::graphics_pipeline
         planet::vk::engine::pipeline::mesh::create_mesh_pipeline(
+                engine::renderer &r,
                 std::string_view const vert_spirv_filename,
                 blend_mode const bm) {
     return planet::vk::engine::create_graphics_pipeline(
-            app, vert_spirv_filename, "planet-vk-engine/mesh.frag.spirv",
-            binding_description, attribute_description, swap_chain, render_pass,
-            pipeline_layout{app.device, ubo_layout}, bm);
+            {.app = app,
+             .renderer = r,
+             .vertex_shader = vert_spirv_filename,
+             .fragment_shader = "planet-vk-engine/mesh.frag.spirv",
+             .binding_descriptions = binding_description,
+             .attribute_descriptions = attribute_description,
+             .extents = swap_chain->extents,
+             .render_pass = render_pass,
+             .blend_mode = bm,
+             .pipeline_layout = pipeline_layout{app.device, ubo_layout}});
 }
 
 

@@ -174,16 +174,24 @@ namespace planet::vk::engine {
 
 
     /// ## Create a graphics pipeline
-    graphics_pipeline create_graphics_pipeline(
-            app &,
-            std::string_view vert,
-            std::string_view frag,
-            std::span<VkVertexInputBindingDescription const>,
-            std::span<VkVertexInputAttributeDescription const>,
-            view<vk::swap_chain>,
-            view<vk::render_pass>,
-            pipeline_layout,
-            blend_mode = blend_mode::multiply);
+    struct graphics_pipeline_parameters {
+        engine::app &app;
+        engine::renderer &renderer;
+
+        std::string_view vertex_shader;
+        std::string_view fragment_shader;
+        std::span<VkVertexInputBindingDescription const> binding_descriptions;
+        std::span<VkVertexInputAttributeDescription const> attribute_descriptions;
+
+        VkExtent2D extents = renderer.swap_chain.extents;
+        view<vk::render_pass> render_pass = renderer.render_pass;
+
+        engine::blend_mode blend_mode = blend_mode::multiply;
+        std::size_t sub_pass = 0;
+
+        vk::pipeline_layout pipeline_layout;
+    };
+    graphics_pipeline create_graphics_pipeline(graphics_pipeline_parameters);
 
 
 }

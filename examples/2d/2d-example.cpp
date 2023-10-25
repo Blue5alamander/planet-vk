@@ -5,9 +5,7 @@ namespace {
     felspar::coro::task<int> render_loop(
             planet::vk::engine::app &app,
             planet::vk::engine::renderer &renderer) {
-        planet::vk::engine::pipeline::mesh mesh{
-                app, renderer.swap_chain, renderer.render_pass,
-                renderer.ubo_layout};
+        planet::vk::engine::pipeline::mesh mesh{app, renderer};
 
         constexpr std::array vertices{
                 planet::vk::engine::pipeline::mesh::vertex{

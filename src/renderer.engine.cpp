@@ -292,19 +292,15 @@ void planet::vk::engine::renderer::render_cycle_awaitable::await_suspend(
 
 
 planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
-        engine::app &app,
-        std::string_view vert,
-        std::string_view frag,
-        std::span<VkVertexInputBindingDescription const> binding_description,
-        std::span<VkVertexInputAttributeDescription const> attribute_description,
-        view<vk::swap_chain> swap_chain,
-        view<vk::render_pass> render_pass,
-        vk::pipeline_layout pipeline_layout,
-        blend_mode const blending) {
+        graphics_pipeline_parameters parameters) {
+    auto &app = parameters.app;
+
+    /// Shaders
     planet::vk::shader_module vertex_shader_module{
-            app.device, app.asset_manager.file_data(vert)};
+            app.device, app.asset_manager.file_data(parameters.vertex_shader)};
     planet::vk::shader_module fragment_shader_module{
-            app.device, app.asset_manager.file_data(frag)};
+            app.device,
+            app.asset_manager.file_data(parameters.fragment_shader)};
     std::array shader_stages{
             vertex_shader_module.shader_stage_info(
                     VK_SHADER_STAGE_VERTEX_BIT, "main"),
@@ -316,12 +312,13 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     vertex_input_info.sType =
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertex_input_info.vertexBindingDescriptionCount =
-            binding_description.size();
-    vertex_input_info.pVertexBindingDescriptions = binding_description.data();
+            parameters.binding_descriptions.size();
+    vertex_input_info.pVertexBindingDescriptions =
+            parameters.binding_descriptions.data();
     vertex_input_info.vertexAttributeDescriptionCount =
-            attribute_description.size();
+            parameters.attribute_descriptions.size();
     vertex_input_info.pVertexAttributeDescriptions =
-            attribute_description.data();
+            parameters.attribute_descriptions.data();
 
     // Primitive type
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
@@ -343,7 +340,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     VkRect2D scissor = {};
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent = swap_chain().extents;
+    scissor.extent = parameters.extents;
 
     VkPipelineViewportStateCreateInfo viewport_state_info = {};
     viewport_state_info.sType =
@@ -379,7 +376,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     blend_state.colorBlendOp = VK_BLEND_OP_ADD;
     blend_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
     blend_state.alphaBlendOp = VK_BLEND_OP_ADD;
-    switch (blending) {
+    switch (parameters.blend_mode) {
     case blend_mode::none: blend_state.blendEnable = VK_FALSE; break;
     case blend_mode::multiply:
         blend_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -409,7 +406,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     VkGraphicsPipelineCreateInfo graphics_pipeline_info = {};
     graphics_pipeline_info.sType =
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    graphics_pipeline_info.stageCount = 2;
+    graphics_pipeline_info.stageCount = shader_stages.size();
     graphics_pipeline_info.pStages = shader_stages.data();
     graphics_pipeline_info.pVertexInputState = &vertex_input_info;
     graphics_pipeline_info.pInputAssemblyState = &input_assembly;
@@ -418,9 +415,9 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     graphics_pipeline_info.pMultisampleState = &multisampling;
     graphics_pipeline_info.pDepthStencilState = &depth_stencil;
     graphics_pipeline_info.pColorBlendState = &blend_info;
-    graphics_pipeline_info.subpass = 0;
+    graphics_pipeline_info.subpass = parameters.sub_pass;
 
     return planet::vk::graphics_pipeline{
-            app.device, graphics_pipeline_info, render_pass,
-            std::move(pipeline_layout)};
+            app.device, graphics_pipeline_info, parameters.render_pass,
+            std::move(parameters.pipeline_layout)};
 }

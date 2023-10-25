@@ -11,20 +11,15 @@ namespace planet::vk::engine::pipeline {
 
     /// ## Textured triangle pipeline
     class textured final {
-        graphics_pipeline create_pipeline(std::string_view vertex_shader);
+        graphics_pipeline create_pipeline(
+                engine::renderer &, std::string_view vertex_shader);
 
       public:
-        textured(
-                engine::app &,
-                vk::swap_chain &,
-                vk::render_pass &,
-                vk::descriptor_set_layout &,
-                std::string_view vertex_shader);
+        textured(engine::renderer &, std::string_view vertex_shader);
 
         engine::app &app;
         view<vk::swap_chain> swap_chain;
         view<vk::render_pass> render_pass;
-        view<vk::descriptor_set_layout> vp_layout;
         vk::descriptor_set_layout texture_layout;
 
         vk::graphics_pipeline pipeline;

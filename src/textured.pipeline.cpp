@@ -47,15 +47,10 @@ namespace {
 
 
 planet::vk::engine::pipeline::textured::textured(
-        engine::app &a,
-        vk::swap_chain &sc,
-        vk::render_pass &rp,
-        vk::descriptor_set_layout &dsl,
-        std::string_view const vs)
-: app{a},
-  swap_chain{sc},
-  render_pass{rp},
-  vp_layout{dsl},
+        engine::renderer &r, std::string_view const vs)
+: app{r.app},
+  swap_chain{r.swap_chain},
+  render_pass{r.render_pass},
   texture_layout{[&]() {
       VkDescriptorSetLayoutBinding binding{};
       binding.binding = 0;
@@ -65,7 +60,7 @@ planet::vk::engine::pipeline::textured::textured(
       binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
       return vk::descriptor_set_layout{app.device, binding};
   }()},
-  pipeline{create_pipeline(vs)},
+  pipeline{create_pipeline(r, vs)},
   texture_sets{
           vk::descriptor_sets{
                   texture_pool, texture_layout, max_textures_per_frame},
@@ -77,13 +72,17 @@ planet::vk::engine::pipeline::textured::textured(
 
 planet::vk::graphics_pipeline
         planet::vk::engine::pipeline::textured::create_pipeline(
-                std::string_view const vertex_shader) {
+                engine::renderer &r, std::string_view const vertex_shader) {
     return planet::vk::engine::create_graphics_pipeline(
-            app, vertex_shader, "planet-vk-engine/textured.frag.spirv",
-            binding_description, attribute_description, swap_chain, render_pass,
-            pipeline_layout{
-                    app.device,
-                    std::array{vp_layout.get(), texture_layout.get()}});
+            {.app = r.app,
+             .renderer = r,
+             .vertex_shader = vertex_shader,
+             .fragment_shader = "planet-vk-engine/textured.frag.spirv",
+             .binding_descriptions = binding_description,
+             .attribute_descriptions = attribute_description,
+             .pipeline_layout = pipeline_layout{
+                     app.device,
+                     std::array{r.ubo_layout.get(), texture_layout.get()}}});
 }
 
 
