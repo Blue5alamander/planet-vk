@@ -48,19 +48,28 @@ namespace {
 
 planet::vk::engine::pipeline::textured::textured(
         engine::renderer &r, std::string_view const vs)
-: app{r.app},
-  swap_chain{r.swap_chain},
-  render_pass{r.render_pass},
-  texture_layout{[&]() {
+: texture_layout{[&]() {
       VkDescriptorSetLayoutBinding binding{};
       binding.binding = 0;
       binding.descriptorCount = 1;
       binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
       binding.pImmutableSamplers = nullptr;
       binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-      return vk::descriptor_set_layout{app.device, binding};
+      return vk::descriptor_set_layout{r.app.device, binding};
   }()},
-  pipeline{create_pipeline(r, vs)},
+  pipeline{planet::vk::engine::create_graphics_pipeline(
+          {.app = r.app,
+           .renderer = r,
+           .vertex_shader = vs,
+           .fragment_shader = "planet-vk-engine/textured.frag.spirv",
+           .binding_descriptions = binding_description,
+           .attribute_descriptions = attribute_description,
+           .pipeline_layout =
+                   pipeline_layout{
+                           r.app.device,
+                           std::array{
+                                   r.ubo_layout.get(), texture_layout.get()}}})},
+  texture_pool{r.app.device, max_frames_in_flight * max_textures_per_frame},
   texture_sets{
           vk::descriptor_sets{
                   texture_pool, texture_layout, max_textures_per_frame},
@@ -68,22 +77,6 @@ planet::vk::engine::pipeline::textured::textured(
                   texture_pool, texture_layout, max_textures_per_frame},
           vk::descriptor_sets{
                   texture_pool, texture_layout, max_textures_per_frame}} {}
-
-
-planet::vk::graphics_pipeline
-        planet::vk::engine::pipeline::textured::create_pipeline(
-                engine::renderer &r, std::string_view const vertex_shader) {
-    return planet::vk::engine::create_graphics_pipeline(
-            {.app = r.app,
-             .renderer = r,
-             .vertex_shader = vertex_shader,
-             .fragment_shader = "planet-vk-engine/textured.frag.spirv",
-             .binding_descriptions = binding_description,
-             .attribute_descriptions = attribute_description,
-             .pipeline_layout = pipeline_layout{
-                     app.device,
-                     std::array{r.ubo_layout.get(), texture_layout.get()}}});
-}
 
 
 void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
@@ -119,7 +112,8 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
         wds.dstArrayElement = 0;
         wds.descriptorCount = 1;
         wds.pImageInfo = &tx;
-        vkUpdateDescriptorSets(app.device.get(), 1, &wds, 0, nullptr);
+        vkUpdateDescriptorSets(
+                rp.renderer.app.device.get(), 1, &wds, 0, nullptr);
 
         vkCmdBindDescriptorSets(
                 rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,

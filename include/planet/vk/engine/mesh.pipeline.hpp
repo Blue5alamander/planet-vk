@@ -16,10 +16,6 @@ namespace planet::vk::engine::pipeline {
              std::string_view vertex_spirv,
              blend_mode = blend_mode::multiply);
 
-        engine::app &app;
-        view<vk::swap_chain> swap_chain;
-        view<vk::render_pass> render_pass;
-
         vk::graphics_pipeline pipeline;
 
 

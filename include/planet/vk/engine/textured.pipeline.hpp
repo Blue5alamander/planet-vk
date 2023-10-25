@@ -11,17 +11,10 @@ namespace planet::vk::engine::pipeline {
 
     /// ## Textured triangle pipeline
     class textured final {
-        graphics_pipeline create_pipeline(
-                engine::renderer &, std::string_view vertex_shader);
-
       public:
         textured(engine::renderer &, std::string_view vertex_shader);
 
-        engine::app &app;
-        view<vk::swap_chain> swap_chain;
-        view<vk::render_pass> render_pass;
         vk::descriptor_set_layout texture_layout;
-
         vk::graphics_pipeline pipeline;
 
 
@@ -94,8 +87,7 @@ namespace planet::vk::engine::pipeline {
       private:
         static constexpr std::size_t max_textures_per_frame = 10240;
 
-        vk::descriptor_pool texture_pool{
-                app.device, max_frames_in_flight *max_textures_per_frame};
+        vk::descriptor_pool texture_pool;
         std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
 
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;

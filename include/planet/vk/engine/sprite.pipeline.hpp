@@ -23,11 +23,7 @@ namespace planet::vk::engine::pipeline {
       public:
         sprite(engine::renderer &, std::string_view vertex_shader);
 
-        engine::app &app;
-        view<vk::swap_chain> swap_chain;
-        view<vk::render_pass> render_pass;
         vk::descriptor_set_layout texture_layout;
-
         vk::graphics_pipeline pipeline;
 
         struct push_constant {
@@ -80,8 +76,7 @@ namespace planet::vk::engine::pipeline {
 
         static constexpr std::size_t max_textures_per_frame = 10240;
 
-        vk::descriptor_pool texture_pool{
-                app.device, max_frames_in_flight *max_textures_per_frame};
+        vk::descriptor_pool texture_pool;
         std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
 
         std::vector<vertex> quads;
