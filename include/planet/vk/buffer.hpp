@@ -28,7 +28,7 @@ namespace planet::vk {
         /// ### Constructors
 
         buffer() {}
-        /// Allocate space for a number of items
+        /// #### Allocate space for a number of items
         buffer(device_memory_allocator &a,
                std::size_t const c,
                VkBufferUsageFlags const usage,
@@ -47,7 +47,8 @@ namespace planet::vk {
                     byte_count(), find_memory_type(properties), mr.alignment);
             memory.bind_buffer_memory(buffer_handle.get());
         }
-        /// Allocate memory for a number of items, and copy them into GPU memory
+        /// #### Allocate memory for a number of items
+        /// And copy them into GPU memory
         buffer(device_memory_allocator &allocator,
                std::span<T const> const items,
                VkBufferUsageFlags const usage,
