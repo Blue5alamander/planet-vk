@@ -1,6 +1,9 @@
 #pragma once
 
 
+#include <planet/vk/forward.hpp>
+
+
 namespace planet::vk::engine {
 
 
@@ -25,7 +28,9 @@ namespace planet::vk::engine {
 
         template<typename T>
         struct per_frame;
-        template<typename Pipeline = pipeline::textured>
+        template<
+                typename Pipeline = pipeline::textured,
+                typename Texture = vk::texture>
         struct tx;
 
     }

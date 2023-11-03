@@ -3,6 +3,7 @@
 
 #include <planet/ui/reflowable.hpp>
 #include <planet/vk/colour.hpp>
+#include <planet/vk/engine/textured.pipeline.hpp>
 #include <planet/vk/texture.hpp>
 #include <planet/vk/engine/forward.hpp>
 
@@ -10,41 +11,47 @@
 namespace planet::vk::engine::ui {
 
 
-    /// ### Draws a texture in the screen space coordinates for layout
-    template<typename Pipeline>
+    /// ## Draws a texture in the screen space coordinates for layout
+    template<typename Pipeline, typename Texture>
     struct tx final : public planet::ui::reflowable {
-        tx(Pipeline &p)
+        using pipeline_type = Pipeline;
+        using texture_type = Texture;
+
+
+        tx(pipeline_type &p)
         : reflowable{"planet::vk::engine::ui::on_screen"}, pl{p} {}
-        tx(Pipeline &p, std::string_view const n) : reflowable{n}, pl{p} {}
-        tx(Pipeline &p, vk::texture tx)
+        tx(pipeline_type &p, std::string_view const n) : reflowable{n}, pl{p} {}
+        tx(pipeline_type &p, texture_type tx)
         : reflowable{"planet::vk::engine::ui::on_screen"},
           pl{p},
           texture{std::move(tx)} {}
-        tx(Pipeline &p, std::string_view const n, vk::texture tx)
+        tx(pipeline_type &p, std::string_view const n, texture_type tx)
         : reflowable{n}, pl{p}, texture{std::move(tx)} {}
-        tx(Pipeline &p, vk::texture tx, vk::colour const &c)
+        tx(pipeline_type &p, texture_type tx, vk::colour const &c)
         : reflowable{"planet::vk::engine::ui::on_screen"},
           pl{p},
           texture{std::move(tx)},
           colour{c} {}
-        tx(Pipeline &p,
+        tx(pipeline_type &p,
            std::string_view const n,
-           vk::texture tx,
+           texture_type tx,
            vk::colour const &c)
         : reflowable{n}, pl{p}, texture{std::move(tx)}, colour{c} {}
 
+
         using constrained_type = planet::ui::reflowable::constrained_type;
 
-        Pipeline &pl;
-        vk::texture texture;
+
+        pipeline_type &pl;
+        texture_type texture;
         vk::colour colour = white;
+
 
         void
                 draw(renderer &,
                      felspar::source_location const & =
-                             felspar::source_location::current()) {
-            pl.this_frame.draw(texture, position(), colour);
-        }
+                             felspar::source_location::current());
+
 
       private:
         constrained_type do_reflow(constrained_type const &c) override {
@@ -52,6 +59,18 @@ namespace planet::vk::engine::ui {
         }
         void move_sub_elements(affine::rectangle2d const &) override {}
     };
+
+
+    template<>
+    inline void tx<pipeline::textured, vk::texture>::draw(
+            renderer &, felspar::source_location const &) {
+        pl.this_frame.draw(texture, position(), colour);
+    }
+    template<>
+    inline void tx<pipeline::textured, vk::texture *>::draw(
+            renderer &, felspar::source_location const &) {
+        pl.this_frame.draw(*texture, position(), colour);
+    }
 
 
 }

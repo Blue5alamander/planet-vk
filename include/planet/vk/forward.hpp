@@ -11,6 +11,7 @@ namespace planet::vk {
     class instance;
     class physical_device;
     class surface;
+    class texture;
 
 
 }
