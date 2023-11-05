@@ -36,13 +36,25 @@ namespace planet::vk::engine::ui {
             std::array<constrained_type, max_frames_in_flight> const cs{
                     frame[0].reflow(c), frame[1].reflow(c), frame[2].reflow(c)};
 
-            /// TODO Include all the frames in the constraint calculation
-            return {{std::max(cs[0].width.min(), cs[1].width.min()),
-                     std::max(cs[0].width.value(), cs[1].width.value()),
-                     std::min(cs[0].width.max(), cs[1].width.max())},
-                    {std::max(cs[0].height.min(), cs[1].height.min()),
-                     std::max(cs[0].height.value(), cs[1].height.value()),
-                     std::min(cs[0].height.max(), cs[1].height.max())}};
+            auto max = [](auto a, auto b, auto c) {
+                return std::max(a, std::max(b, c));
+            };
+            auto min = [](auto a, auto b, auto c) {
+                return std::min(a, std::min(b, c));
+            };
+
+            return {{max(cs[0].width.min(), cs[1].width.min(),
+                         cs[2].width.min()),
+                     max(cs[0].width.value(), cs[1].width.value(),
+                         cs[2].width.value()),
+                     min(cs[0].width.max(), cs[1].width.max(),
+                         cs[2].width.max())},
+                    {max(cs[0].height.min(), cs[1].height.min(),
+                         cs[2].height.min()),
+                     max(cs[0].height.value(), cs[1].height.value(),
+                         cs[2].height.value()),
+                     min(cs[0].height.max(), cs[1].height.max(),
+                         cs[2].height.max())}};
         }
         void move_sub_elements(affine::rectangle2d const &r) override {
             for (auto &f : frame) { f.move_to(r); }
