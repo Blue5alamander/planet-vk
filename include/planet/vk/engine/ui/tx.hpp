@@ -69,12 +69,14 @@ namespace planet::vk::engine::ui {
     template<>
     inline void tx<pipeline::textured, vk::texture>::draw(
             renderer &, felspar::source_location const &) {
-        pl.this_frame.draw(texture, position(), colour);
+        if (texture) { pl.this_frame.draw(texture, position(), colour); }
     }
     template<>
     inline void tx<pipeline::textured, vk::texture *>::draw(
             renderer &, felspar::source_location const &) {
-        pl.this_frame.draw(*texture, position(), colour);
+        if (texture and *texture) {
+            pl.this_frame.draw(*texture, position(), colour);
+        }
     }
 
 
