@@ -55,7 +55,12 @@ namespace planet::vk::engine::ui {
 
       private:
         constrained_type do_reflow(constrained_type const &c) override {
-            return planet::ui::scaling(texture.image.extents(), c, texture.fit);
+            if (texture) {
+                return planet::ui::scaling(
+                        texture.image.extents(), c, texture.fit);
+            } else {
+                return {};
+            }
         }
         void move_sub_elements(affine::rectangle2d const &) override {}
     };
