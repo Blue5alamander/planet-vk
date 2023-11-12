@@ -5,6 +5,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <cstdint>
+
 
 namespace planet::vk {
 
