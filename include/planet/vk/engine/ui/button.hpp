@@ -40,6 +40,12 @@ namespace planet::vk::engine::ui {
                value_type v)
         : superclass{n, std::move(g), o, std::move(v)} {}
 
+        button(button &&b) : superclass{std::move(b)} {
+            if (superclass::baseplate) {
+                superclass::response.post(superclass::behaviour());
+            }
+        }
+
       private:
         void do_draw(renderer &r) override { graphic.draw(r); }
     };
