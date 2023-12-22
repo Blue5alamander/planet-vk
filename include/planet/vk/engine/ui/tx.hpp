@@ -14,6 +14,7 @@ namespace planet::vk::engine::ui {
     /// ## Draws a texture in the screen space coordinates for layout
     template<typename Pipeline, typename Texture>
     struct tx final : public planet::ui::reflowable {
+        using constrained_type = planet::ui::reflowable::constrained_type;
         using pipeline_type = Pipeline;
         using texture_type = Texture;
 
@@ -39,9 +40,6 @@ namespace planet::vk::engine::ui {
         : reflowable{n}, pl{p}, texture{std::move(tx)}, colour{c} {}
 
 
-        using constrained_type = planet::ui::reflowable::constrained_type;
-
-
         pipeline_type &pl;
         texture_type texture;
         vk::colour colour = white;
@@ -54,14 +52,7 @@ namespace planet::vk::engine::ui {
 
 
       private:
-        constrained_type do_reflow(constrained_type const &c) override {
-            if (texture) {
-                return planet::ui::scaling(
-                        texture.image.extents(), c, texture.fit);
-            } else {
-                return {};
-            }
-        }
+        constrained_type do_reflow(constrained_type const &c) override;
         void move_sub_elements(affine::rectangle2d const &) override {}
     };
 
@@ -76,6 +67,32 @@ namespace planet::vk::engine::ui {
             renderer &, felspar::source_location const &) {
         if (texture and *texture) {
             pl.this_frame.draw(*texture, position(), colour);
+        }
+    }
+    template<>
+    inline void tx<pipeline::textured, sub_texture>::draw(
+            renderer &, felspar::source_location const &) {
+        if (texture.first) { pl.this_frame.draw(texture, position(), colour); }
+    }
+
+    template<>
+    inline auto tx<pipeline::textured, vk::texture>::do_reflow(
+            constrained_type const &c) -> constrained_type {
+        if (texture) {
+            return planet::ui::scaling(texture.image.extents(), c, texture.fit);
+        } else {
+            return {};
+        }
+    }
+    template<>
+    inline auto tx<pipeline::textured, sub_texture>::do_reflow(
+            constrained_type const &c) -> constrained_type {
+        if (texture.first) {
+            auto r = c;
+            r.desire(texture.second.extents);
+            return r;
+        } else {
+            return {};
         }
     }
 
