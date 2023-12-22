@@ -61,7 +61,7 @@ namespace planet::vk::engine::pipeline {
                 draw({t, {{0, 0}, affine::extents2d{1, 1}}}, r, c, z);
             }
             void
-                    draw(std::pair<vk::texture const &, affine::rectangle2d>,
+                    draw(vk::sub_texture const &,
                          affine::rectangle2d const &,
                          colour const & = white,
                          float z = {});

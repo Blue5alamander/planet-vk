@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/affine/rectangle2d.hpp>
 #include <planet/vk/image.hpp>
 #include <planet/ui/scale.hpp>
 
@@ -55,6 +56,12 @@ namespace planet::vk {
         /// ### Queries
         explicit operator bool() const noexcept;
     };
+
+
+    /// ## A rectangular area within another texture
+    /// Used for sprite sheets
+    using sub_texture =
+            std::pair<vk::texture const &, planet::affine::rectangle2d>;
 
 
 }

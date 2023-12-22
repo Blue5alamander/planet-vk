@@ -151,7 +151,7 @@ void planet::vk::engine::pipeline::textured::data::draw(
 
 
 void planet::vk::engine::pipeline::textured::data::draw(
-        std::pair<vk::texture const &, affine::rectangle2d> texture,
+        vk::sub_texture const &texture,
         affine::rectangle2d const &pos,
         vk::colour const &colour,
         float const z) {
