@@ -10,7 +10,7 @@
 namespace planet::vk::engine::ui {
 
 
-    template<typename R, typename G, typename Q>
+    template<typename R, planet::ui::drawable G, typename Q>
     class button final : public planet::ui::button<R, G, Q> {
         using superclass = planet::ui::button<R, G, Q>;
 
@@ -51,7 +51,7 @@ namespace planet::vk::engine::ui {
         void do_draw() override { graphic.draw(); }
     };
 
-    template<typename G, typename Q>
+    template<planet::ui::drawable G, typename Q>
     class button<void, G, Q> final : public planet::ui::button<void, G, Q> {
         using superclass = planet::ui::button<void, G, Q>;
 
@@ -87,31 +87,31 @@ namespace planet::vk::engine::ui {
     };
 
 
-    template<typename G, typename R>
+    template<planet::ui::drawable G, typename R>
     button(G, queue::pmc<R>, R) -> button<R, G, queue::pmc<R>>;
 
-    template<typename G, typename R>
+    template<planet::ui::drawable G, typename R>
     button(G, queue::psc<R>, R) -> button<R, G, queue::pmc<R>>;
-    template<typename G>
+    template<planet::ui::drawable G>
     button(G, queue::psc<void>) -> button<void, G, queue::psc<void>>;
 
-    template<typename G, typename R>
+    template<planet::ui::drawable G, typename R>
     button(G, felspar::coro::future<R>, R)
             -> button<R, G, felspar::coro::future<R>>;
 
 
-    template<typename G, typename R>
+    template<planet::ui::drawable G, typename R>
     button(std::string_view, G, queue::pmc<R>, R)
             -> button<R, G, queue::pmc<R>>;
 
-    template<typename G, typename R>
+    template<planet::ui::drawable G, typename R>
     button(std::string_view, G, queue::psc<R>, R)
             -> button<R, G, queue::pmc<R>>;
-    template<typename G>
+    template<planet::ui::drawable G>
     button(std::string_view, G, queue::psc<void>)
             -> button<void, G, queue::psc<void>>;
 
-    template<typename G, typename R>
+    template<planet::ui::drawable G, typename R>
     button(std::string_view, G, felspar::coro::future<R>, R)
             -> button<R, G, felspar::coro::future<R>>;
 
