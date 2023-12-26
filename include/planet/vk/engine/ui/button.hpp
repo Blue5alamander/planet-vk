@@ -13,8 +13,8 @@ namespace planet::vk::engine::ui {
             typename R,
             typename G = planet::vk::engine::ui::tx<>,
             typename Q = queue::pmc<R>>
-    class button final : public planet::ui::button<renderer, R, G, Q> {
-        using superclass = planet::ui::button<renderer, R, G, Q>;
+    class button final : public planet::ui::button<R, G, Q> {
+        using superclass = planet::ui::button<R, G, Q>;
 
       public:
         using value_type = R;
@@ -25,6 +25,7 @@ namespace planet::vk::engine::ui {
         using superclass::move_to;
         using superclass::position;
         using superclass::reflow;
+
 
         button(output_type &o, value_type v)
         : superclass{"planet::vk::engine::ui::button", o, std::move(v)} {}
@@ -45,6 +46,7 @@ namespace planet::vk::engine::ui {
                 superclass::response.post(superclass::behaviour());
             }
         }
+
 
       private:
         void do_draw() override { graphic.draw(); }

@@ -22,6 +22,7 @@ namespace planet::vk::engine {
       public:
         app(int argc, char const *argv[], char const *name);
 
+
         planet::asset_manager asset_manager;
         planet::sdl::init sdl;
         planet::sdl::ttf text{sdl};
@@ -30,7 +31,8 @@ namespace planet::vk::engine {
         vk::instance instance;
         vk::device device{instance, extensions};
 
-        planet::ui::baseplate<planet::vk::engine::renderer> baseplate;
+        planet::ui::baseplate baseplate;
+
 
         /// ### Run the provided UI function
         int run(felspar::coro::task<int> (*co_main)(app &, renderer &));
