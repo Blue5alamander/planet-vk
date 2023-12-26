@@ -45,10 +45,7 @@ namespace planet::vk::engine::ui {
         vk::colour colour = white;
 
 
-        void
-                draw(renderer &,
-                     felspar::source_location const & =
-                             felspar::source_location::current());
+        void draw();
 
 
       private:
@@ -58,20 +55,17 @@ namespace planet::vk::engine::ui {
 
 
     template<>
-    inline void tx<pipeline::textured, vk::texture>::draw(
-            renderer &, felspar::source_location const &) {
+    inline void tx<pipeline::textured, vk::texture>::draw() {
         if (texture) { pl.this_frame.draw(texture, position(), colour); }
     }
     template<>
-    inline void tx<pipeline::textured, vk::texture *>::draw(
-            renderer &, felspar::source_location const &) {
+    inline void tx<pipeline::textured, vk::texture *>::draw() {
         if (texture and *texture) {
             pl.this_frame.draw(*texture, position(), colour);
         }
     }
     template<>
-    inline void tx<pipeline::textured, sub_texture>::draw(
-            renderer &, felspar::source_location const &) {
+    inline void tx<pipeline::textured, sub_texture>::draw() {
         if (texture.first) { pl.this_frame.draw(texture, position(), colour); }
     }
 

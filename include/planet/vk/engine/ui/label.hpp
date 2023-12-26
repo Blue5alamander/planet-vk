@@ -19,16 +19,17 @@ namespace planet::vk::engine::ui {
         label(vk::pipeline &, vk::texture, vk::colour const &);
         label(vk::pipeline &, std::string_view, vk::texture, vk::colour const &);
 
+
         using constrained_type = planet::ui::reflowable::constrained_type;
+
 
         Pipeline &pl;
         vk::texture texture;
         vk::colour colour = white;
 
-        void
-                draw(renderer &,
-                     felspar::source_location const & =
-                             felspar::source_location::current());
+
+        void draw();
+
 
       private:
         constrained_type do_reflow(constrained_type const &) override;

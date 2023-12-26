@@ -22,14 +22,16 @@ namespace planet::vk::engine::ui {
 
         using constrained_type = planet::ui::reflowable::constrained_type;
 
-        std::array<T, max_frames_in_flight> frame;
 
-        void
-                draw(renderer &r,
-                     felspar::source_location const &loc =
-                             felspar::source_location::current()) {
-            frame[r.current_frame].draw(r, loc);
+        std::array<T, max_frames_in_flight> frame;
+        std::size_t current_frame = {};
+
+
+        void draw() {
+            frame[current_frame].draw();
+            current_frame = (current_frame + 1) % max_frames_in_flight;
         }
+
 
       private:
         constrained_type do_reflow(constrained_type const &c) override {

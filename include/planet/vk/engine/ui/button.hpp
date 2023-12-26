@@ -47,7 +47,7 @@ namespace planet::vk::engine::ui {
         }
 
       private:
-        void do_draw(renderer &r) override { graphic.draw(r); }
+        void do_draw() override { graphic.draw(); }
     };
 
 
