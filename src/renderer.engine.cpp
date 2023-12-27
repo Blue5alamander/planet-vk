@@ -185,6 +185,8 @@ felspar::coro::task<std::size_t>
     std::rotate(
             render_cycle_coroutines.begin(),
             render_cycle_coroutines.begin() + 1, render_cycle_coroutines.end());
+    for (auto h : pre_start_coroutines) { h.resume(); }
+    pre_start_coroutines.clear();
 
     // Start to record command buffers
     auto &cb = command_buffers[current_frame];
@@ -285,6 +287,22 @@ void planet::vk::engine::renderer::submit_and_present() {
 void planet::vk::engine::renderer::render_cycle_awaitable::await_suspend(
         felspar::coro::coroutine_handle<> h) const {
     renderer.render_cycle_coroutines.back().push_back(h);
+}
+
+
+/// ## `planet::vk::engine::renderer::render_prestart_awaitable`
+
+
+void planet::vk::engine::renderer::render_prestart_awaitable::await_suspend(
+        felspar::coro::coroutine_handle<> h) const {
+    renderer.pre_start_coroutines.push_back(h);
+}
+
+
+std::size_t
+        planet::vk::engine::renderer::render_prestart_awaitable::await_resume()
+                const noexcept {
+    return renderer.current_frame;
 }
 
 

@@ -141,6 +141,26 @@ namespace planet::vk::engine {
         render_cycle_awaitable full_render_cycle() { return {*this}; }
 
 
+        /// ### Wait for the next frame to cycle
+        /**
+         * This happens when the fences have cleared from the previous time this
+         * frame index was used. Returns the frame index that is about to be
+         * drawn.
+         *
+         * Draw commands **must not** be issued in response to waking up at this
+         * point in time. Memory that has been in use for rendering _may_ be
+         * freed at this point in time, but only for the frame index returned.
+         */
+        struct render_prestart_awaitable {
+            engine::renderer &renderer;
+
+            bool await_ready() const noexcept { return false; }
+            void await_suspend(felspar::coro::coroutine_handle<>) const;
+            std::size_t await_resume() const noexcept;
+        };
+        render_prestart_awaitable next_frame_prestart() { return {*this}; }
+
+
       private:
         /// ### Data we need to track whilst in the render loop
         std::uint32_t image_index = {};
@@ -166,10 +186,12 @@ namespace planet::vk::engine {
                 ubo_pool, ubo_layout, max_frames_in_flight};
 
 
+        /// TODO This array would be better as a circular buffer
         std::array<
                 std::vector<felspar::coro::coroutine_handle<>>,
                 max_frames_in_flight + 1>
                 render_cycle_coroutines;
+        std::vector<felspar::coro::coroutine_handle<>> pre_start_coroutines;
     };
 
 
