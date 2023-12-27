@@ -58,8 +58,11 @@ namespace planet::vk::engine::ui {
                      min(cs[0].height.max(), cs[1].height.max(),
                          cs[2].height.max())}};
         }
-        void move_sub_elements(affine::rectangle2d const &r) override {
+        affine::rectangle2d
+                move_sub_elements(affine::rectangle2d const &r) override {
             for (auto &f : frame) { f.move_to(r); }
+            /// TODO Should be union of the frames
+            return r;
         }
     };
 

@@ -50,7 +50,10 @@ namespace planet::vk::engine::ui {
 
       private:
         constrained_type do_reflow(constrained_type const &c) override;
-        void move_sub_elements(affine::rectangle2d const &) override {}
+        affine::rectangle2d
+                move_sub_elements(affine::rectangle2d const &r) override {
+            return {r.top_left, constraints().extents()};
+        }
     };
 
 
@@ -69,11 +72,24 @@ namespace planet::vk::engine::ui {
         if (texture.first) { pl.this_frame.draw(texture, position(), colour); }
     }
 
+
     template<>
     inline auto tx<pipeline::textured, vk::texture>::do_reflow(
             constrained_type const &c) -> constrained_type {
         if (texture) {
-            return planet::ui::scaling(texture.image.extents(), c, texture.fit);
+            auto const r = planet::ui::scaling(
+                    texture.image.extents(), c, texture.fit);
+            return r;
+        } else {
+            return {};
+        }
+    }
+    template<>
+    inline auto tx<pipeline::textured, vk::texture *>::do_reflow(
+            constrained_type const &c) -> constrained_type {
+        if (texture and *texture) {
+            return planet::ui::scaling(
+                    texture->image.extents(), c, texture->fit);
         } else {
             return {};
         }
@@ -82,9 +98,11 @@ namespace planet::vk::engine::ui {
     inline auto tx<pipeline::textured, sub_texture>::do_reflow(
             constrained_type const &c) -> constrained_type {
         if (texture.first) {
-            auto r = c;
-            r.desire(texture.second.extents);
-            return r;
+            auto const width =
+                    texture.second.extents.width * texture.first.image.width;
+            auto const height =
+                    texture.second.extents.height * texture.first.image.height;
+            return planet::ui::scaling({width, height}, c, texture.first.fit);
         } else {
             return {};
         }
