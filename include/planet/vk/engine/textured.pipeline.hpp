@@ -26,7 +26,7 @@ namespace planet::vk::engine::pipeline {
         };
         struct vertex {
             planet::affine::point3d p;
-            colour col = white;
+            colour col = colour::white;
             pos uv;
         };
 
@@ -56,14 +56,14 @@ namespace planet::vk::engine::pipeline {
             void
                     draw(vk::texture const &t,
                          affine::rectangle2d const &r,
-                         colour const &c = white,
+                         colour const &c = colour::white,
                          float z = {}) {
                 draw({t, {{0, 0}, affine::extents2d{1, 1}}}, r, c, z);
             }
             void
                     draw(vk::sub_texture const &,
                          affine::rectangle2d const &,
-                         colour const & = white,
+                         colour const & = colour::white,
                          float z = {});
             /// #### Draw a textured mesh
             void

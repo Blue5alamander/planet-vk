@@ -7,8 +7,19 @@
 namespace planet::vk {
 
 
+    /// ## Linear colour format
+    /**
+     * The colours described by this time are intended for use as a linear
+     * colour space, so colour manipulation is a simple matter of multiplying
+     * the values. This should be the default when using the [surface's
+     * `best_format`](../../../src/render.engine.cpp)
+     */
     struct colour {
         float r{}, g{}, b{}, a = {1};
+
+
+        static colour const white;
+
 
         operator VkClearValue() const noexcept {
             VkClearValue c;
@@ -20,8 +31,7 @@ namespace planet::vk {
         }
     };
 
-
-    constexpr colour white{1.0f, 1.0f, 1.0f, 1.0f};
+    constexpr colour colour::white{1.0f, 1.0f, 1.0f};
 
 
 }

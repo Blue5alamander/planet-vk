@@ -42,7 +42,7 @@ namespace planet::vk::engine::ui {
 
         pipeline_type &pl;
         texture_type texture;
-        vk::colour colour = white;
+        vk::colour colour = colour::white;
 
 
         void draw();

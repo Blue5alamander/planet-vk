@@ -46,6 +46,7 @@ namespace planet::vk::engine::pipeline {
              * world co-ordinate aspect ratio.
              */
             planet::affine::extents2d size{};
+
             /// ##### Rotation centre of the sprite
             /**
              * The offset is from the bottom left of the sprite with x-axis left
@@ -69,7 +70,7 @@ namespace planet::vk::engine::pipeline {
         };
         struct vertex {
             planet::affine::point3d p;
-            colour col = white;
+            colour col = colour::white;
             pos uv;
         };
 
@@ -93,11 +94,11 @@ namespace planet::vk::engine::pipeline {
         void
                 draw(std::pair<vk::texture const &, affine::rectangle2d>,
                      location const &,
-                     colour const & = white);
+                     colour const & = colour::white);
         void
                 draw(vk::texture const &t,
                      location const &l,
-                     colour const &c = white) {
+                     colour const &c = colour::white) {
             draw({t, {{0, 0}, affine::extents2d{1, 1}}}, l, c);
         }
 
