@@ -20,10 +20,12 @@ namespace planet::vk::engine::ui {
         using graphics_type = G;
         using output_type = Q;
 
+        using superclass::enable;
         using superclass::graphic;
         using superclass::move_to;
         using superclass::position;
         using superclass::reflow;
+        using superclass::visible;
 
 
         button(output_type &o, value_type v)
