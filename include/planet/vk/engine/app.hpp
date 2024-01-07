@@ -3,16 +3,10 @@
 
 #include <planet/ui/baseplate.hpp>
 #include <planet/vk-sdl.hpp>
+#include <planet/vk/engine/forward.hpp>
 
 
 namespace planet::vk::engine {
-
-
-    class renderer;
-
-
-    /// Maximum number of frames that we're willing to deal with at any given time
-    constexpr std::size_t max_frames_in_flight = 3;
 
 
     /// ## An engine for 2d texture based interfaces

@@ -3,8 +3,14 @@
 
 #include <planet/vk/forward.hpp>
 
+#include <cstddef>
+
 
 namespace planet::vk::engine {
+
+
+    /// Maximum number of frames that we're willing to deal with at any given time
+    constexpr std::size_t max_frames_in_flight = 3;
 
 
     class app;
