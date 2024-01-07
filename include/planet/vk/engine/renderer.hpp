@@ -133,9 +133,17 @@ namespace planet::vk::engine {
          */
         struct render_cycle_awaitable {
             engine::renderer &renderer;
+            felspar::coro::coroutine_handle<> mine = {};
+
+
+            render_cycle_awaitable(engine::renderer &r) : renderer{r} {}
+            render_cycle_awaitable(render_cycle_awaitable &&rca)
+            : renderer{rca.renderer}, mine{std::exchange(rca.mine, {})} {}
+            ~render_cycle_awaitable();
+
 
             bool await_ready() const noexcept { return false; }
-            void await_suspend(felspar::coro::coroutine_handle<>) const;
+            void await_suspend(felspar::coro::coroutine_handle<>);
             void await_resume() const noexcept {}
         };
         render_cycle_awaitable full_render_cycle() { return {*this}; }
@@ -153,9 +161,17 @@ namespace planet::vk::engine {
          */
         struct render_prestart_awaitable {
             engine::renderer &renderer;
+            felspar::coro::coroutine_handle<> mine = {};
+
+
+            render_prestart_awaitable(engine::renderer &r) : renderer{r} {}
+            render_prestart_awaitable(render_prestart_awaitable &&rpa)
+            : renderer{rpa.renderer}, mine{std::exchange(rpa.mine, {})} {}
+            ~render_prestart_awaitable();
+
 
             bool await_ready() const noexcept { return false; }
-            void await_suspend(felspar::coro::coroutine_handle<>) const;
+            void await_suspend(felspar::coro::coroutine_handle<>);
             std::size_t await_resume() const noexcept;
         };
         render_prestart_awaitable next_frame_prestart() { return {*this}; }

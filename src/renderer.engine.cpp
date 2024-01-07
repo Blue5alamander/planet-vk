@@ -284,8 +284,18 @@ void planet::vk::engine::renderer::submit_and_present() {
 /// ## `planet::vk::engine::renderer::render_cycle_awaitable`
 
 
+planet::vk::engine::renderer::render_cycle_awaitable::~render_cycle_awaitable() {
+    if (mine) {
+        for (auto &frame : renderer.render_cycle_coroutines) {
+            std::erase(frame, mine);
+        }
+    }
+}
+
+
 void planet::vk::engine::renderer::render_cycle_awaitable::await_suspend(
-        felspar::coro::coroutine_handle<> h) const {
+        felspar::coro::coroutine_handle<> h) {
+    mine = h;
     renderer.render_cycle_coroutines.back().push_back(h);
 }
 
@@ -293,8 +303,15 @@ void planet::vk::engine::renderer::render_cycle_awaitable::await_suspend(
 /// ## `planet::vk::engine::renderer::render_prestart_awaitable`
 
 
+planet::vk::engine::renderer::render_prestart_awaitable::
+        ~render_prestart_awaitable() {
+    if (mine) { std::erase(renderer.pre_start_coroutines, mine); }
+}
+
+
 void planet::vk::engine::renderer::render_prestart_awaitable::await_suspend(
-        felspar::coro::coroutine_handle<> h) const {
+        felspar::coro::coroutine_handle<> h) {
+    mine = h;
     renderer.pre_start_coroutines.push_back(h);
 }
 
