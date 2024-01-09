@@ -2,6 +2,8 @@
 #include <planet/vk/instance.hpp>
 #include <planet/vk/swap_chain.hpp>
 
+#include <algorithm>
+
 
 /// ## `planet::vk::swap_chain`
 
