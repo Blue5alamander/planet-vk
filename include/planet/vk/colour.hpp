@@ -18,7 +18,7 @@ namespace planet::vk {
         float r{}, g{}, b{}, a = {1};
 
 
-        static colour const white;
+        static colour const black, white;
 
 
         operator VkClearValue() const noexcept {
@@ -31,6 +31,7 @@ namespace planet::vk {
         }
     };
 
+    constexpr colour colour::black{};
     constexpr colour colour::white{1.0f, 1.0f, 1.0f};
 
 
