@@ -217,6 +217,8 @@ felspar::coro::task<std::size_t>
             viewport_mapping[current_frame].get(), &coordinates,
             sizeof(coordinate_space));
 
+    app.baseplate.start_frame_reset();
+
     co_return current_frame;
 }
 
