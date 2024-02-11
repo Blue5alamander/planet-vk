@@ -270,19 +270,26 @@ planet::vk::instance::instance(
                     })
             != pdevices.end();
 
+    if (pdevices.empty()) {
+        planet::log::critical("No GPU physical devices found");
+    }
     for (auto const &d : pdevices) {
         surface.refresh_characteristics(d);
-        bool const is_suitable = surface.has_queue_families()
-                and surface.has_adequate_swap_chain_support();
-        if (is_suitable and has_discrete_gpu
-            and d.properties.deviceType
-                    == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        bool const has_queue_families = surface.has_queue_families();
+        bool const has_swap_chain = surface.has_adequate_swap_chain_support();
+        bool const is_suitable = has_queue_families and has_swap_chain;
+        bool const is_discrete =
+                d.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+        bool const is_integrated = d.properties.deviceType
+                == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+        planet::log::info(
+                "GPU", d.properties.deviceName, "is_discrete", is_discrete,
+                "is_integrated", is_integrated, "has_queue_families",
+                has_queue_families, "has_swap_chain", has_swap_chain);
+        if (is_suitable and has_discrete_gpu and is_discrete) {
             gpu_in_use = &d;
             break;
-        } else if (
-                is_suitable and not has_discrete_gpu
-                and d.properties.deviceType
-                        == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+        } else if (is_suitable and not has_discrete_gpu and is_integrated) {
             gpu_in_use = &d;
             break;
         }
