@@ -178,6 +178,10 @@ planet::vk::device::device(
     info.enabledExtensionCount = extensions.device_extensions.size();
     info.ppEnabledExtensionNames = extensions.device_extensions.data();
     info.pEnabledFeatures = &device_features;
+    planet::log::info(
+            "Creating device with validation layers:",
+            extensions.validation_layers,
+            "and device extensions:", extensions.device_extensions);
     planet::vk::worked(
             vkCreateDevice(instance.gpu().get(), &info, nullptr, &handle));
 
