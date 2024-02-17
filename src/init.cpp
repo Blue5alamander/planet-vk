@@ -214,6 +214,21 @@ planet::vk::extensions::extensions() {
 }
 
 
+std::span<VkLayerProperties const>
+        planet::vk::extensions::supported_validation_layers() {
+    static auto const layers = []() {
+        auto l = planet::vk::fetch_vector<
+                vkEnumerateInstanceLayerProperties, VkLayerProperties>();
+        std::vector<char const *> names;
+        names.reserve(l.size());
+        for (auto const &layer : l) { names.push_back(layer.layerName); }
+        planet::log::info("Supported validation layers", names);
+        return l;
+    }();
+    return layers;
+}
+
+
 /// ## `planet::vk::instance`
 
 
@@ -260,7 +275,7 @@ planet::vk::instance::instance(
     if (not exts.validation_layers.empty()) {
         debug_messenger = {*this, debug_callback};
     }
-    auto devices = planet::vk::fetch_vector<
+    auto const devices = planet::vk::fetch_vector<
             vkEnumeratePhysicalDevices, VkPhysicalDevice>(handle.h);
     pdevices.reserve(devices.size());
     for (auto dh : devices) { pdevices.emplace_back(dh, surface.get()); }
@@ -280,16 +295,26 @@ planet::vk::instance::instance(
     for (auto const &d : pdevices) {
         surface.refresh_characteristics(d);
         bool const has_queue_families = surface.has_queue_families();
-        bool const has_swap_chain = surface.has_adequate_swap_chain_support();
-        bool const is_suitable = has_queue_families and has_swap_chain;
+        bool const surface_supports_swap_chain =
+                surface.has_adequate_swap_chain_support();
+        bool const is_suitable =
+                has_queue_families and surface_supports_swap_chain;
         bool const is_discrete =
                 d.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
         bool const is_integrated = d.properties.deviceType
                 == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+
+        std::vector<char const *> names;
+        names.reserve(d.extensions.size());
+        for (auto const &ex : d.extensions) {
+            names.push_back(ex.extensionName);
+        }
         planet::log::info(
                 "GPU", d.properties.deviceName, "is_discrete", is_discrete,
                 "is_integrated", is_integrated, "has_queue_families",
-                has_queue_families, "has_swap_chain", has_swap_chain);
+                has_queue_families, "surface_supports_swap_chain",
+                surface_supports_swap_chain, "extensions", names);
+
         if (is_suitable and has_discrete_gpu and is_discrete) {
             gpu_in_use = &d;
             break;
@@ -352,6 +377,10 @@ planet::vk::physical_device::physical_device(VkPhysicalDevice h, VkSurfaceKHR)
     } else {
         msaa_samples = VK_SAMPLE_COUNT_1_BIT;
     }
+
+    extensions = planet::vk::fetch_vector<
+            vkEnumerateDeviceExtensionProperties, VkExtensionProperties>(
+            handle, nullptr);
 }
 
 

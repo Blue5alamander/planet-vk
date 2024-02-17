@@ -23,6 +23,9 @@ namespace planet::vk {
 
         VkSampleCountFlagBits msaa_samples = VK_SAMPLE_COUNT_1_BIT;
 
+        std::vector<VkExtensionProperties> extensions;
+
+
         /// ### API wrappers
 
         /// #### `vkGetPhysicalDeviceFormatProperties`
