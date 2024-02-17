@@ -209,7 +209,15 @@ planet::vk::device::~device() {
 
 planet::vk::extensions::extensions() {
 #if defined(PLANET_VK_VALIDATION) or not defined(NDEBUG)
-    validation_layers.push_back("VK_LAYER_KHRONOS_validation");
+    static constexpr std::string_view vkl_validation =
+            "VK_LAYER_KHRONOS_validation";
+    auto const layers = supported_validation_layers();
+    if (std::find_if(
+                layers.begin(), layers.end(),
+                [&](auto const vl) { return vl.layerName == vkl_validation; })
+        != layers.end()) {
+        validation_layers.push_back(vkl_validation.data());
+    }
 #endif
 }
 
