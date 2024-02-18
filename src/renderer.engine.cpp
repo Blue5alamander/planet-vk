@@ -159,7 +159,7 @@ felspar::coro::task<std::size_t>
                 app.device.get(), swap_chain.get(), {},
                 img_avail_semaphore[current_frame].get(), VK_NULL_HANDLE,
                 &image_index);
-        if (result == VK_TIMEOUT) {
+        if (result == VK_TIMEOUT or result == VK_NOT_READY) {
             acquire_wait.tick();
             co_await app.sdl.io.sleep(wait_time);
         } else if (
