@@ -1,6 +1,8 @@
 #include <planet/vk/device.hpp>
 #include <planet/vk/synchronisation.hpp>
 
+#include <array>
+
 
 /// ## `planet::vk::fence`
 
