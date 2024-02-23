@@ -31,8 +31,8 @@ namespace planet::vk {
         }
     };
 
-    constexpr colour colour::black{};
-    constexpr colour colour::white{1.0f, 1.0f, 1.0f};
+    inline constexpr colour colour::black{};
+    inline constexpr colour colour::white{1.0f, 1.0f, 1.0f};
 
 
 }

@@ -3,6 +3,7 @@
 #include <planet/vk/swap_chain.hpp>
 
 #include <algorithm>
+#include <array>
 
 
 /// ## `planet::vk::swap_chain`

@@ -2,6 +2,8 @@
 #include <planet/vk/device.hpp>
 #include <planet/vk/surface.hpp>
 
+#include <array>
+
 
 /// ## `planet::vk::command_pool`
 
