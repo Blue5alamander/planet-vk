@@ -45,14 +45,14 @@ planet::vk::engine::pipeline::mesh::mesh(
         std::string_view const vertex_spirv_filename,
         blend_mode const bm)
 : pipeline{planet::vk::engine::create_graphics_pipeline(
-        {.app = r.app,
-         .renderer = r,
-         .vertex_shader = vertex_spirv_filename,
-         .fragment_shader = "planet-vk-engine/mesh.frag.spirv",
-         .binding_descriptions = binding_description,
-         .attribute_descriptions = attribute_description,
-         .blend_mode = bm,
-         .pipeline_layout = pipeline_layout{r.app.device, r.ubo_layout}})} {}
+          {.app = r.app,
+           .renderer = r,
+           .vertex_shader = vertex_spirv_filename,
+           .fragment_shader = "planet-vk-engine/mesh.frag.spirv",
+           .binding_descriptions = binding_description,
+           .attribute_descriptions = attribute_description,
+           .blend_mode = bm,
+           .pipeline_layout = pipeline_layout{r.app.device, r.ubo_layout}})} {}
 
 
 namespace {
