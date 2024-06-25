@@ -13,7 +13,9 @@ A set of C++ wrappers that can be used with the Vulkan APIs and provide some con
 Packages needed on Debian systems:
 
 ```bash
-sudo apt-get install libvulkan-dev vulkan-validationlayers-dev
+sudo apt-get install libvulkan-dev glslc vulkan-utility-libraries-dev
 ```
 
-You'll also need [a copy of `glscl`](https://github.com/google/shaderc), which is not currently packaged.
+To build the examples you'll also need `libglfw3-dev`, `libglm-dev`, `libstb-dev` and `libtinyobjloader-dev`
+
+On Windows you'll need to download and install the SDK.
