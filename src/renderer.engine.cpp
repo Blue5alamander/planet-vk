@@ -235,9 +235,10 @@ auto planet::vk::engine::renderer::bind(planet::vk::graphics_pipeline &pl)
 
 
 namespace {
-    planet::telemetry::counter frame_count{"planet_vk_engine_renderer_frame"};
+    planet::telemetry::counter frame_count{
+            "planet_vk_engine_renderer_frame_count"};
     planet::telemetry::real_time_rate frame_rate{
-            "planet_vk_engine_renderer_frame", 500ms};
+            "planet_vk_engine_renderer_frame_rate", 500ms};
 }
 void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
