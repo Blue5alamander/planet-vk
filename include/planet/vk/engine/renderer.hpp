@@ -82,6 +82,11 @@ namespace planet::vk::engine {
 
         /// #### Bind graphics pipeline
         render_parameters bind(vk::graphics_pipeline &);
+        /// ##### Bind and call render on the pipeline type
+        template<typename... Pipelines>
+        void render(Pipelines &...p) {
+            (p.render(bind(p.pipeline)), ...);
+        }
 
         /// #### Submit and present the frame
         /// This blocks until the frame is complete
