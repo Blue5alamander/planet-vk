@@ -49,7 +49,8 @@ namespace planet::vk::engine::ui {
 
 
       private:
-        constrained_type do_reflow(constrained_type const &c) override;
+        constrained_type do_reflow(
+                reflow_parameters const &p, constrained_type const &c) override;
         affine::rectangle2d
                 move_sub_elements(affine::rectangle2d const &r) override {
             return {r.top_left, constraints().extents()};
@@ -75,6 +76,7 @@ namespace planet::vk::engine::ui {
 
     template<>
     inline auto tx<pipeline::textured, vk::texture>::do_reflow(
+            reflow_parameters const &,
             constrained_type const &c) -> constrained_type {
         if (texture) {
             auto const r = planet::ui::scaling(
@@ -86,6 +88,7 @@ namespace planet::vk::engine::ui {
     }
     template<>
     inline auto tx<pipeline::textured, vk::texture *>::do_reflow(
+            reflow_parameters const &,
             constrained_type const &c) -> constrained_type {
         if (texture and *texture) {
             return planet::ui::scaling(
@@ -96,6 +99,7 @@ namespace planet::vk::engine::ui {
     }
     template<>
     inline auto tx<pipeline::textured, sub_texture>::do_reflow(
+            reflow_parameters const &,
             constrained_type const &c) -> constrained_type {
         if (texture.first) {
             auto const width =

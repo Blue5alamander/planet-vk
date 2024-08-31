@@ -34,9 +34,12 @@ namespace planet::vk::engine::ui {
 
 
       private:
-        constrained_type do_reflow(constrained_type const &c) override {
+        constrained_type do_reflow(
+                reflow_parameters const &p,
+                constrained_type const &c) override {
             std::array<constrained_type, max_frames_in_flight> const cs{
-                    frame[0].reflow(c), frame[1].reflow(c), frame[2].reflow(c)};
+                    frame[0].reflow(p, c), frame[1].reflow(p, c),
+                    frame[2].reflow(p, c)};
 
             auto max = [](auto a, auto b, auto c) {
                 return std::max(a, std::max(b, c));
