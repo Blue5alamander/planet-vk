@@ -29,6 +29,12 @@ namespace planet::vk {
             c.color.float32[3] = a;
             return c;
         }
+
+
+        /// ### Multiple the RGB values
+        friend colour operator*(colour const &c, float const m) noexcept {
+            return {c.r * m, c.g * m, c.b * m, c.a};
+        }
     };
 
     inline constexpr colour colour::black{};
