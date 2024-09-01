@@ -42,7 +42,11 @@ namespace planet::vk::engine::pipeline {
             }
 
 
-            /// #### Draw a 2D triangle mesh with an optional positional offset
+            /// #### 2D Z layer height
+            float z_layer = 0.75f;
+
+
+            /// #### Draw a triangle mesh
             void draw(std::span<vertex const>, std::span<std::uint32_t const>);
             void
                     draw(std::span<vertex const>,
@@ -56,28 +60,8 @@ namespace planet::vk::engine::pipeline {
         };
 
 
-        /// ### Draw captured mesh data
-        void draw(data const &);
-
-        /// #### Forward to the internal mesh data
-        void
-                draw(std::span<vertex const> const v,
-                     std::span<std::uint32_t const> const i) {
-            draw_data.draw(v, i);
-        }
-        void
-                draw(std::span<vertex const> const v,
-                     std::span<std::uint32_t const> const i,
-                     planet::affine::point3d const &o) {
-            draw_data.draw(v, i, o);
-        }
-        void
-                draw(std::span<vertex const> const v,
-                     std::span<std::uint32_t const> const i,
-                     planet::affine::point3d const &o,
-                     colour const &c) {
-            draw_data.draw(v, i, o, c);
-        }
+        /// ### This frame's draw data and commands
+        data this_frame;
 
 
         /// ### Add draw commands to command buffer
@@ -85,7 +69,6 @@ namespace planet::vk::engine::pipeline {
 
 
       private:
-        data draw_data;
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
 
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;

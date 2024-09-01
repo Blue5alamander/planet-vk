@@ -88,6 +88,7 @@ namespace planet::vk::engine::pipeline {
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
 
+
         /// ### Drawing API
 
         /// #### Draw texture stretched to the axis aligned rectangle

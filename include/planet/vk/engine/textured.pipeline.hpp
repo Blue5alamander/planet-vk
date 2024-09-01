@@ -50,21 +50,37 @@ namespace planet::vk::engine::pipeline {
             }
 
 
+            /// #### 2D Z layer height
+            float z_layer = 0.75f;
+
+
             /// ### Drawing API
 
             /// #### Draw texture stretched to the axis aligned rectangle
             void
                     draw(vk::texture const &t,
                          affine::rectangle2d const &r,
-                         colour const &c = colour::white,
-                         float z = {}) {
+                         colour const &c,
+                         float const z) {
                 draw({t, {{0, 0}, affine::extents2d{1, 1}}}, r, c, z);
+            }
+            void
+                    draw(vk::texture const &t,
+                         affine::rectangle2d const &r,
+                         colour const &c = colour::white) {
+                draw({t, {{0, 0}, affine::extents2d{1, 1}}}, r, c, z_layer);
             }
             void
                     draw(vk::sub_texture const &,
                          affine::rectangle2d const &,
-                         colour const & = colour::white,
-                         float z = {});
+                         colour const &,
+                         float z);
+            void
+                    draw(vk::sub_texture const &t,
+                         affine::rectangle2d const &r,
+                         colour const &c = colour::white) {
+                draw(t, r, c, z_layer);
+            }
             /// #### Draw a textured mesh
             void
                     draw(std::span<vertex const>,

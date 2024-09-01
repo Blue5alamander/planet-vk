@@ -37,8 +37,8 @@ namespace {
 
             co_await renderer.start({{{0.f, 0.f, 0.f, 1.f}}});
 
-            mesh.draw(vertices, indices);
-            mesh.draw(vertices, indices, {0.75f, 0.75f, 0.0f});
+            mesh.this_frame.draw(vertices, indices);
+            mesh.this_frame.draw(vertices, indices, {0.75f, 0.75f, 0.0f});
 
             renderer.submit_and_present();
         }

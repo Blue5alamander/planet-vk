@@ -62,20 +62,20 @@ namespace {
             "planet_vk_engine_pipeline_mesh_render_indices"};
 }
 void planet::vk::engine::pipeline::mesh::render(render_parameters rp) {
-    if (draw_data.empty()) { return; }
+    if (this_frame.empty()) { return; }
 
-    vertex_count += draw_data.vertices.size();
-    index_count += draw_data.indices.size();
+    vertex_count += this_frame.vertices.size();
+    index_count += this_frame.indices.size();
 
     auto &vertex_buffer = vertex_buffers[rp.current_frame];
     vertex_buffer = {
-            rp.renderer.per_frame_memory, draw_data.vertices,
+            rp.renderer.per_frame_memory, this_frame.vertices,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     auto &index_buffer = index_buffers[rp.current_frame];
     index_buffer = {
-            rp.renderer.per_frame_memory, draw_data.indices,
+            rp.renderer.per_frame_memory, this_frame.indices,
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -88,16 +88,10 @@ void planet::vk::engine::pipeline::mesh::render(render_parameters rp) {
     vkCmdBindIndexBuffer(
             rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
     vkCmdDrawIndexed(
-            rp.cb.get(), static_cast<uint32_t>(draw_data.indices.size()), 1, 0,
+            rp.cb.get(), static_cast<uint32_t>(this_frame.indices.size()), 1, 0,
             0, 0);
 
-    draw_data.clear();
-}
-
-
-void planet::vk::engine::pipeline::mesh::draw(
-        planet::vk::engine::pipeline::mesh::data const &d) {
-    draw_data.draw(d.vertices, d.indices);
+    this_frame.clear();
 }
 
 
