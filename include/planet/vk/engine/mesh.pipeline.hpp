@@ -62,6 +62,8 @@ namespace planet::vk::engine::pipeline {
 
         /// ### This frame's draw data and commands
         data this_frame;
+        /// #### Draw already captured data
+        void draw(data const &);
 
 
         /// ### Add draw commands to command buffer

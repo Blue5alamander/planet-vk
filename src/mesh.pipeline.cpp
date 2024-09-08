@@ -95,6 +95,12 @@ void planet::vk::engine::pipeline::mesh::render(render_parameters rp) {
 }
 
 
+void planet::vk::engine::pipeline::mesh::draw(data const &d) {
+    /// TODO This should really end up as its own GPU upload
+    this_frame.draw(d.vertices, d.indices);
+}
+
+
 /// ## `planet::vk::engine::pipeline::mesh::data`
 
 
