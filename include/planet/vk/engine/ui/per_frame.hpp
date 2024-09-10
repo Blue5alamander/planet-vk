@@ -10,7 +10,8 @@ namespace planet::vk::engine::ui {
 
     /// ## Draw wrapper that automatically handles one instance per frame for us
     template<typename T>
-    struct per_frame final : public planet::ui::reflowable {
+    struct [[deprecated("Use the `autoupdater` instead")]] per_frame final :
+    public planet::ui::reflowable {
         per_frame() : reflowable{"planet::vk::engine::ui::per_frame"} {}
         template<typename... Args>
         per_frame(Args &&...args)
