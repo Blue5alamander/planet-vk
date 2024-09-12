@@ -38,7 +38,8 @@ namespace planet::vk::engine {
          * single rendered frame. In practice this means that the memory won't
          * be freed until the same frame index comes back around to be rendered.
          */
-        device_memory_allocator per_frame_memory{app.device};
+        device_memory_allocator per_frame_memory{
+                "renderer_per_frame", app.device};
         /// #### Per-swap chain
         /**
          * Certain events will cause the swap chain to be re-configured. These
@@ -46,7 +47,8 @@ namespace planet::vk::engine {
          * allocator should be used for things like depth buffers and colour
          * attachments that are created in response to a swap chain reset.
          */
-        device_memory_allocator per_swap_chain_memory{app.device};
+        device_memory_allocator per_swap_chain_memory{
+                "renderer_per_swap_chain", app.device};
 
 
         /// ### Swap chain, command buffers and synchronisation

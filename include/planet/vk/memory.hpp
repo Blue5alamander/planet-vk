@@ -1,6 +1,8 @@
 #pragma once
 
 
+#include <planet/telemetry/counter.hpp>
+#include <planet/telemetry/id.hpp>
 #include <planet/vk/forward.hpp>
 #include <planet/vk/owned_handle.hpp>
 #include <planet/vk/view.hpp>
@@ -50,14 +52,11 @@ namespace planet::vk {
         std::byte *mapped_base = nullptr;
 
         device_memory_allocation(
-                device_memory_allocator *a,
-                handle_type h,
-                std::uint32_t const mti,
-                std::size_t const bytes)
-        : handle{std::move(h)},
-          allocator{a},
-          memory_type_index{mti},
-          allocation_size{bytes} {}
+                device_memory_allocator *,
+                handle_type,
+                std::uint32_t,
+                std::size_t);
+
 
       public:
         ~device_memory_allocation();
@@ -178,7 +177,10 @@ namespace planet::vk {
      * Different instances may have different expectations of the frequency and
      * use of the handed out memory.
      */
-    class device_memory_allocator final {
+    class device_memory_allocator final : private telemetry::id {
+        friend class device_memory_allocation;
+
+
         /// ### Memory pool
         struct pool {
             /**
@@ -198,12 +200,21 @@ namespace planet::vk {
         /// ### Free memory by memory type index
         std::vector<pool> pools;
 
+
       public:
         /// ### Bind allocator to a device
         device_memory_allocator(
                 vk::device &,
                 device_memory_allocator_configuration const & =
                         thread_safe_device_memory_allocator);
+        device_memory_allocator(
+                std::string_view name,
+                vk::device &,
+                device_memory_allocator_configuration const & =
+                        thread_safe_device_memory_allocator,
+                id::suffix = id::suffix::no);
+        ~device_memory_allocator();
+
 
         device_view device;
         device_memory_allocator_configuration config;
@@ -227,11 +238,20 @@ namespace planet::vk {
 
         /// ### Clear all memory held by the allocator
         /**
-         * This will be done automatically by the destructor, but this allows
-         * the allocator to be cleared with a check that any outstanding
-         * allocations have been properly returned.
+         * This allows the allocator to be cleared with a check that any
+         * outstanding allocations have been properly returned.
+         *
+         * This will be done automatically by the destructor.
          */
         void clear_without_check();
+
+
+      private:
+        telemetry::counter c_block_allocation_from_driver,
+                c_block_allocation_from_free_list,
+                c_block_deallocated_added_to_free_list,
+                c_block_deallocation_returned_to_driver,
+                c_memory_allocation_count, c_memory_deallocation_count;
     };
 
 

@@ -23,6 +23,18 @@ planet::vk::device_memory_allocation::handle_type
 }
 
 
+planet::vk::device_memory_allocation::device_memory_allocation(
+        device_memory_allocator *a,
+        handle_type h,
+        std::uint32_t const mti,
+        std::size_t const bytes)
+: handle{std::move(h)},
+  allocator{a},
+  memory_type_index{mti},
+  allocation_size{bytes} {
+    if (allocator) { ++allocator->c_memory_allocation_count; }
+}
+
 planet::vk::device_memory_allocation::~device_memory_allocation() {
     if (allocator) {
         allocator->deallocate(
@@ -34,14 +46,20 @@ planet::vk::device_memory_allocation::~device_memory_allocation() {
 void planet::vk::device_memory_allocation::decrement(
         device_memory_allocation *&m) noexcept {
     device_memory_allocation *alloc = std::exchange(m, nullptr);
-    if (alloc and --alloc->ownership_count == 0u) { delete alloc; }
+    if (alloc) {
+        ++alloc->allocator->c_memory_deallocation_count;
+        if (--alloc->ownership_count == 0u) { delete alloc; }
+    }
 }
 
 
 planet::vk::device_memory_allocation *
         planet::vk::device_memory_allocation::increment(
                 device_memory_allocation *alloc) noexcept {
-    if (alloc) { ++alloc->ownership_count; }
+    if (alloc) {
+        ++alloc->allocator->c_memory_allocation_count;
+        ++alloc->ownership_count;
+    }
     return alloc;
 }
 
@@ -69,11 +87,43 @@ void planet::vk::device_memory_allocation::unmap_memory() {
 /// ## `planet::vk::device_memory_allocator`
 
 
+namespace {
+    planet::telemetry::counter c_allocators_created{
+            "planet_vk_device_memory_allocator_created"};
+    planet::telemetry::counter c_allocators_destroyed{
+            "planet_vk_device_memory_allocator_destroyed"};
+}
+
+
 planet::vk::device_memory_allocator::device_memory_allocator(
         vk::device &d, device_memory_allocator_configuration const &c)
-: pools(d.instance.gpu().memory_properties.memoryTypeCount),
+: device_memory_allocator{
+          "planet_vk_device_memory_allocator", d, c, id::suffix::yes} {}
+
+planet::vk::device_memory_allocator::device_memory_allocator(
+        std::string_view const n,
+        vk::device &d,
+        device_memory_allocator_configuration const &c,
+        id::suffix const s)
+: id{"planet_vk_device_memory_allocator_" + std::string{n}, s},
+  pools(d.instance.gpu().memory_properties.memoryTypeCount),
   device{d},
-  config{c} {}
+  config{c},
+  c_block_allocation_from_driver{name() + "_block_allocation_from_driver"},
+  c_block_allocation_from_free_list{
+          name() + "_block_allocation_from_free_list"},
+  c_block_deallocated_added_to_free_list{
+          name() + "_block_deallocated_added_to_free_list"},
+  c_block_deallocation_returned_to_driver{
+          name() + "_block_deallocation_returned_to_driver"},
+  c_memory_allocation_count{name() + "_memory_allocation_count"},
+  c_memory_deallocation_count{name() + "_memory_deallocation_count"} {
+    ++c_allocators_created;
+}
+
+planet::vk::device_memory_allocator::~device_memory_allocator() {
+    ++c_allocators_destroyed;
+}
 
 
 planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
@@ -89,11 +139,13 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
         device_memory_allocation::handle_type handle;
         if (allocating > config.allocation_block_size
             or pool.free_memory.empty()) {
+            ++c_block_allocation_from_driver;
             handle = device_memory_allocation::allocate(
                     device, allocating, memory_type_index);
         } else {
             handle = std::move(pool.free_memory.back());
             pool.free_memory.pop_back();
+            ++c_block_allocation_from_free_list;
         }
         pool.splitting = {
                 new device_memory_allocation(
@@ -125,6 +177,9 @@ void planet::vk::device_memory_allocator::deallocate(
         auto &pool = pools[memory_type_index];
         std::scoped_lock _{pool.mtx};
         pool.free_memory.push_back(std::move(h));
+        ++c_block_deallocated_added_to_free_list;
+    } else {
+        ++c_block_deallocation_returned_to_driver;
     }
 }
 
