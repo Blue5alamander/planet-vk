@@ -33,7 +33,7 @@ namespace planet::vk {
         VkQueue graphics_queue = VK_NULL_HANDLE, present_queue = VK_NULL_HANDLE;
 
         /// #### Wait for the device to become idle
-        void wait_idle() const { vkDeviceWaitIdle(handle); }
+        void wait_idle() const { worked(vkDeviceWaitIdle(handle)); }
 
 
         /// ### Allocators
