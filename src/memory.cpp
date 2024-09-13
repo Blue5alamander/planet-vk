@@ -5,6 +5,18 @@
 #include <felspar/memory/sizes.hpp>
 
 
+namespace {
+    planet::telemetry::counter c_allocators_created{
+            "planet_vk_device_memory_allocator_created"};
+    planet::telemetry::counter c_allocators_destroyed{
+            "planet_vk_device_memory_allocator_destroyed"};
+    planet::telemetry::counter c_allocations{
+            "planet_vk_device_memory_allocator_memory_allocations"};
+    planet::telemetry::counter c_deallocations{
+            "planet_vk_device_memory_allocator_memory_deallocations"};
+}
+
+
 /// ## `planet::vk::device_memory_allocation`
 
 
@@ -18,7 +30,9 @@ planet::vk::device_memory_allocation::handle_type
     alloc.allocationSize = bytes;
     alloc.memoryTypeIndex = memory_type_index;
     handle_type handle;
-    handle.create<vkAllocateMemory>(device.get(), alloc);
+    handle.create<vkAllocateMemory>(
+            device.get(), alloc, nullptr, &c_deallocations);
+    ++c_allocations;
     return handle;
 }
 
@@ -85,14 +99,6 @@ void planet::vk::device_memory_allocation::unmap_memory() {
 
 
 /// ## `planet::vk::device_memory_allocator`
-
-
-namespace {
-    planet::telemetry::counter c_allocators_created{
-            "planet_vk_device_memory_allocator_created"};
-    planet::telemetry::counter c_allocators_destroyed{
-            "planet_vk_device_memory_allocator_destroyed"};
-}
 
 
 planet::vk::device_memory_allocator::device_memory_allocator(
