@@ -138,17 +138,19 @@ planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
 
 
 namespace {
-    planet::telemetry::real_time_rate fence_wait{
+    planet::telemetry::real_time_rate c_fence_wait{
             "planet_vk_engine_renderer_fence_wait", 500ms};
-    planet::telemetry::real_time_rate acquire_wait{
+    planet::telemetry::real_time_rate c_acquire_wait{
             "planet_vk_engine_renderer_acquire_next_image_wait", 500ms};
+    planet::telemetry::counter c_recreate_swapchain{
+            "planet_vk_engine_renderer_recreate_swapchain_count"};
 }
 felspar::coro::task<std::size_t>
         planet::vk::engine::renderer::start(VkClearValue const colour) {
     constexpr auto wait_time = 5ms;
     // Wait for the previous version of this frame number to finish
     while (not fence[current_frame].is_ready()) {
-        fence_wait.tick();
+        c_fence_wait.tick();
         co_await app.sdl.io.sleep(wait_time);
     }
 
@@ -160,11 +162,12 @@ felspar::coro::task<std::size_t>
                 img_avail_semaphore[current_frame].get(), VK_NULL_HANDLE,
                 &image_index);
         if (result == VK_TIMEOUT or result == VK_NOT_READY) {
-            acquire_wait.tick();
+            c_acquire_wait.tick();
             co_await app.sdl.io.sleep(wait_time);
         } else if (
                 result == VK_ERROR_OUT_OF_DATE_KHR
                 or result == VK_SUBOPTIMAL_KHR) {
+                ++c_recreate_swapchain;
             app.device.wait_idle();
             /// TODO Recreate the swap chain with the new window dims
             planet::vk::worked(result);
