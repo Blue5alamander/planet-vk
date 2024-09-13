@@ -67,10 +67,15 @@ planet::vk::sdl::window::window(
     if (not pw.get()) {
         throw felspar::stdexcept::runtime_error{"SDL_CreateWindow failed"};
     }
+    refresh_window_dimensions();
+    planet::log::info("Window created", size);
+}
+
+
+auto planet::vk::sdl::window::refresh_window_dimensions() -> affine::extents2d const & {
     int ww{}, wh{};
     SDL_Vulkan_GetDrawableSize(pw.get(), &ww, &wh);
-    size = {float(ww), float(wh)};
-    planet::log::info("Window created", ww, wh);
+    return size = {float(ww), float(wh)};
 }
 
 
