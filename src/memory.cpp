@@ -32,8 +32,7 @@ planet::vk::device_memory_allocation::handle_type
     alloc.allocationSize = bytes;
     alloc.memoryTypeIndex = memory_type_index;
     handle_type handle;
-    handle.create<vkAllocateMemory>(
-            device.get(), alloc, nullptr);
+    handle.create<vkAllocateMemory>(device.get(), alloc, nullptr);
     ++c_allocations;
     c_total_allocated += bytes;
     return handle;
