@@ -72,7 +72,8 @@ planet::vk::sdl::window::window(
 }
 
 
-auto planet::vk::sdl::window::refresh_window_dimensions() -> affine::extents2d const & {
+auto planet::vk::sdl::window::refresh_window_dimensions()
+        -> affine::extents2d const & {
     int ww{}, wh{};
     SDL_Vulkan_GetDrawableSize(pw.get(), &ww, &wh);
     return size = {float(ww), float(wh)};

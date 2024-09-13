@@ -167,10 +167,15 @@ felspar::coro::task<std::size_t>
         } else if (
                 result == VK_ERROR_OUT_OF_DATE_KHR
                 or result == VK_SUBOPTIMAL_KHR) {
-                ++c_recreate_swapchain;
-            app.device.wait_idle();
-            /// TODO Recreate the swap chain with the new window dims
-            planet::vk::worked(result);
+            ++c_recreate_swapchain;
+            auto const images =
+                    swap_chain.recreate(app.window.refresh_window_dimensions());
+            swap_chain.create_frame_buffers(
+                    render_pass, colour_attachment.image_view.get(),
+                    depth_buffer.image_view.get());
+            planet::log::info(
+                    "Swap chain dirty. New image count", images,
+                    detail::error(result));
         } else if (result == VK_SUCCESS) {
             break;
         } else {
