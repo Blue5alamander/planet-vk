@@ -39,7 +39,9 @@ namespace planet::vk {
         friend class device_memory;
         friend class device_memory_allocator;
 
-        using handle_type = device_handle<VkDeviceMemory, vkFreeMemory>;
+        static void deallocate(
+                VkDevice, VkDeviceMemory, VkAllocationCallbacks const *);
+        using handle_type = device_handle<VkDeviceMemory, &deallocate>;
         handle_type handle;
 
         std::atomic<std::size_t> ownership_count = 1u;

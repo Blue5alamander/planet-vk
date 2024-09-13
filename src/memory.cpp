@@ -14,6 +14,8 @@ namespace {
             "planet_vk_device_memory_allocator_memory_allocations"};
     planet::telemetry::counter c_deallocations{
             "planet_vk_device_memory_allocator_memory_deallocations"};
+    planet::telemetry::counter c_total_allocated{
+            "planet_vk_device_memory_allocator_memory_total_allocated"};
 }
 
 
@@ -31,9 +33,16 @@ planet::vk::device_memory_allocation::handle_type
     alloc.memoryTypeIndex = memory_type_index;
     handle_type handle;
     handle.create<vkAllocateMemory>(
-            device.get(), alloc, nullptr, &c_deallocations);
+            device.get(), alloc, nullptr);
     ++c_allocations;
+    c_total_allocated += bytes;
     return handle;
+}
+
+void planet::vk::device_memory_allocation::deallocate(
+        VkDevice o, VkDeviceMemory a, const VkAllocationCallbacks *c) {
+    vkFreeMemory(o, a, c);
+    ++c_deallocations;
 }
 
 
