@@ -51,8 +51,9 @@ namespace planet::vk::engine::ui {
       private:
         constrained_type do_reflow(
                 reflow_parameters const &p, constrained_type const &c) override;
-        affine::rectangle2d
-                move_sub_elements(affine::rectangle2d const &r) override {
+        affine::rectangle2d move_sub_elements(
+                reflow_parameters const &,
+                affine::rectangle2d const &r) override {
             return {r.top_left, constraints().extents()};
         }
     };
