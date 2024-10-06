@@ -46,7 +46,7 @@ namespace planet::vk::engine {
 
         constrained_type
                 reflow(reflow_parameters const &p, constrained_type const &c) {
-            if (not graphic) { graphic.assign(generate()); }
+            if (needs_reflow() or not graphic) { graphic.assign(generate()); }
             return graphic->reflow(p, c);
         }
         auto move_to(reflow_parameters const &p, affine::rectangle2d const &r) {
@@ -94,7 +94,7 @@ namespace planet::vk::engine {
 
         constrained_type
                 reflow(reflow_parameters const &p, constrained_type const &c) {
-            if (not graphic) { graphic.assign(generate()); }
+            if (needs_reflow() or not graphic) { graphic.assign(generate()); }
             return graphic->reflow(p, c);
         }
         auto move_to(reflow_parameters const &p, affine::rectangle2d const &r) {
