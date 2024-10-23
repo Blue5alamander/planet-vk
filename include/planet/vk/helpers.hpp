@@ -36,7 +36,8 @@ namespace planet::vk {
     inline std::vector<Array> fetch_vector(A &&...arg) {
         std::uint32_t count{};
         Api(arg..., &count, nullptr);
-        std::vector<Array> items{count};
+        std::vector<Array> items;
+        items.resize(count);
         Api(std::forward<A>(arg)..., &count, items.data());
         return items;
     }
