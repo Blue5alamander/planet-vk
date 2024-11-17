@@ -343,6 +343,10 @@ planet::vk::instance::instance(
     if (not gpu_in_use) {
         throw felspar::stdexcept::runtime_error{
                 "No suitable GPU has been found"};
+    } else {
+        planet::log::info(
+                "GPU", gpu_in_use->properties.deviceName,
+                "has been selected for use");
     }
 }
 
