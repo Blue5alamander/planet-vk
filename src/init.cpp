@@ -304,6 +304,10 @@ planet::vk::instance::instance(
 
     if (pdevices.empty()) {
         planet::log::critical("No GPU physical devices found");
+    } else {
+        planet::log::info(
+                "Found", pdevices.size(), "devices - has_discrete_gpu",
+                has_discrete_gpu);
     }
     for (auto const &d : pdevices) {
         surface.refresh_characteristics(d);
