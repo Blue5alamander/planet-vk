@@ -309,6 +309,8 @@ planet::vk::instance::instance(
                 "Found", pdevices.size(), "devices - has_discrete_gpu",
                 has_discrete_gpu);
     }
+    /// TODO Ideally we'd sort all found GPUs by their suitability and then
+    /// choose the best one
     for (auto const &d : pdevices) {
         surface.refresh_characteristics(d);
         bool const has_queue_families = surface.has_queue_families();
@@ -335,10 +337,14 @@ planet::vk::instance::instance(
         if (is_suitable and has_discrete_gpu and is_discrete) {
             gpu_in_use = &d;
             break;
-        } else if (is_suitable and not has_discrete_gpu and is_integrated) {
+        } else if (is_suitable and not has_discrete_gpu) {
             gpu_in_use = &d;
             break;
         }
+    }
+    if (not gpu_in_use and pdevices.size() == 1) {
+        planet::log::warning(
+                "Only one GPU found, going to try it, but expect errors");
     }
     if (not gpu_in_use) {
         throw felspar::stdexcept::runtime_error{
