@@ -1,5 +1,6 @@
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/renderer.hpp>
+
 #include <SDL_vulkan.h>
 
 
@@ -31,8 +32,13 @@ int planet::vk::engine::app::run(
     auto const wrapper = [](felspar::io::warden &, app *papp,
                             felspar::coro::task<int> (*cm)(app &, renderer &))
             -> felspar::io::warden::task<int> {
-        planet::vk::engine::renderer renderer{*papp};
-        co_return co_await cm(*papp, renderer);
+        try {
+            planet::vk::engine::renderer renderer{*papp};
+            co_return co_await cm(*papp, renderer);
+        } catch (std::exception const &e) {
+            planet::log::critical("Exception caught", e.what());
+            std::terminate();
+        }
     };
     return warden->run(+wrapper, this, co_main);
 }
