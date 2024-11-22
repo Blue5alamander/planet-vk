@@ -48,7 +48,10 @@ namespace {
 
 
 int main(int const argc, char const *argv[]) {
+    felspar::posix::promise_to_never_use_select();
+    felspar::io::poll_warden warden{};
+    planet::sdl::init sdl{warden, "blue5alamander/planet-vk/2d-example"};
     return planet::vk::engine::app{
-            argc, argv, "blue5alamander/planet-vk/2d-example"}
+            argc, argv, sdl, "blue5alamander/planet-vk/2d-example"}
             .run(render_loop);
 }

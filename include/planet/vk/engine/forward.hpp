@@ -13,7 +13,7 @@ namespace planet::vk::engine {
     constexpr std::size_t max_frames_in_flight = 3;
 
 
-    class app;
+    struct app;
     struct depth_buffer;
     class renderer;
 

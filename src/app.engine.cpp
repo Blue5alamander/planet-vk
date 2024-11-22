@@ -4,10 +4,10 @@
 #include <SDL_vulkan.h>
 
 
-planet::vk::engine::app::app(int, char const *argv[], char const *name)
-: warden{std::make_unique<felspar::io::poll_warden>()},
-  asset_manager{argv[0]},
-  sdl{*warden, name},
+planet::vk::engine::app::app(
+        int, char const *argv[], planet::sdl::init &s, char const *name)
+: asset_manager{argv[0]},
+  sdl{s},
   window{sdl, name, SDL_WINDOW_FULLSCREEN_DESKTOP},
   instance{[&]() {
       auto app_info = planet::vk::application_info();
@@ -40,5 +40,5 @@ int planet::vk::engine::app::run(
             std::terminate();
         }
     };
-    return warden->run(+wrapper, this, co_main);
+    return sdl.io.run(+wrapper, this, co_main);
 }

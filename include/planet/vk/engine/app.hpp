@@ -10,15 +10,12 @@ namespace planet::vk::engine {
 
 
     /// ## An engine for 2d texture based interfaces
-    class app final {
-        std::unique_ptr<felspar::io::warden> warden;
-
-      public:
-        app(int argc, char const *argv[], char const *name);
+    struct app final {
+        app(int argc, char const *argv[], planet::sdl::init &, char const *name);
 
 
         planet::asset_manager asset_manager;
-        planet::sdl::init sdl;
+        planet::sdl::init &sdl;
         planet::sdl::ttf text{sdl};
         planet::vk::sdl::window window;
         planet::vk::extensions extensions{window};
