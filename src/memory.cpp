@@ -118,19 +118,19 @@ planet::vk::device_memory_allocator::device_memory_allocator(
         vk::device &d,
         device_memory_allocator_configuration const &c,
         id::suffix const s)
-: id{"planet_vk_device_memory_allocator_" + std::string{n}, s},
+: id{"planet_vk_device_memory_allocator__" + std::string{n}, s},
   pools(d.instance.gpu().memory_properties.memoryTypeCount),
   device{d},
   config{c},
-  c_block_allocation_from_driver{name() + "_block_allocation_from_driver"},
+  c_block_allocation_from_driver{name() + "__block_allocation_from_driver"},
   c_block_allocation_from_free_list{
-          name() + "_block_allocation_from_free_list"},
+          name() + "__block_allocation_from_free_list"},
   c_block_deallocated_added_to_free_list{
-          name() + "_block_deallocated_added_to_free_list"},
+          name() + "__block_deallocated_added_to_free_list"},
   c_block_deallocation_returned_to_driver{
-          name() + "_block_deallocation_returned_to_driver"},
-  c_memory_allocation_count{name() + "_memory_allocation_count"},
-  c_memory_deallocation_count{name() + "_memory_deallocation_count"} {
+          name() + "__block_deallocation_returned_to_driver"},
+  c_memory_allocation_count{name() + "__memory_allocation_count"},
+  c_memory_deallocation_count{name() + "__memory_deallocation_count"} {
     ++c_allocators_created;
 }
 
