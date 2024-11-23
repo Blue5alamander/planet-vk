@@ -3,6 +3,7 @@
 
 #include <planet/affine/matrix3d.hpp>
 #include <planet/affine/point3d.hpp>
+#include <planet/telemetry/minmax.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 
@@ -17,13 +18,20 @@ namespace planet::vk::engine::pipeline {
      * game characters, shots etc. that need to be drawn in world coordinate
      * space.
      */
-    class sprite final {
+    class sprite final : private telemetry::id {
         graphics_pipeline create_pipeline(engine::renderer &, std::string_view);
 
       public:
-        sprite(engine::renderer &,
+        sprite(engine::renderer &r,
+               std::string_view const vertex_shader,
+               std::uint32_t const textures_per_frame = 256)
+        : sprite{"planet_vk_engine_pipeline_sprite", r, vertex_shader,
+                 textures_per_frame, id::suffix::yes} {}
+        sprite(std::string_view,
+               engine::renderer &,
                std::string_view vertex_shader,
-               std::uint32_t textures_per_frame = 512);
+               std::uint32_t textures_per_frame = 256,
+               id::suffix = id::suffix::no);
 
         vk::descriptor_set_layout texture_layout;
         vk::graphics_pipeline pipeline;
@@ -113,6 +121,11 @@ namespace planet::vk::engine::pipeline {
 
         /// ### Add draw commands to command buffer
         void render(render_parameters);
+
+
+      private:
+        /// ### Performance counters
+        telemetry::max textures_in_frame;
     };
 
 

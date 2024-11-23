@@ -2,6 +2,7 @@
 
 
 #include <planet/affine/point3d.hpp>
+#include <planet/telemetry/minmax.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 
@@ -10,12 +11,21 @@ namespace planet::vk::engine::pipeline {
 
 
     /// ## Textured triangle pipeline
-    class textured final {
+    class textured final : private telemetry::id {
       public:
         textured(
+                engine::renderer &r,
+                std::string_view const vertex_shader,
+                std::uint32_t const textures_per_frame = 256)
+        : textured{
+                  "planet_vk_engine_pipeline_textured", r, vertex_shader,
+                  textures_per_frame, id::suffix::yes} {}
+        textured(
+                std::string_view,
                 engine::renderer &,
                 std::string_view vertex_shader,
-                std::uint32_t textures_per_frame = 512);
+                std::uint32_t textures_per_frame = 256,
+                id::suffix = id::suffix::no);
 
         vk::descriptor_set_layout texture_layout;
         vk::graphics_pipeline pipeline;
@@ -111,6 +121,10 @@ namespace planet::vk::engine::pipeline {
 
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
+
+
+        /// ### Performance counters
+        telemetry::max textures_in_frame;
     };
 
 

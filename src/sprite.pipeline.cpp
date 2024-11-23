@@ -47,8 +47,13 @@ namespace {
 
 
 planet::vk::engine::pipeline::sprite::sprite(
-        engine::renderer &r, std::string_view const vs, std::uint32_t const mtpf)
-: texture_layout{[&]() {
+        std::string_view const n,
+        engine::renderer &r,
+        std::string_view const vs,
+        std::uint32_t const mtpf,
+        id::suffix const suffix)
+: id{n, suffix},
+  texture_layout{[&]() {
       VkDescriptorSetLayoutBinding binding{};
       binding.binding = 0;
       binding.descriptorCount = 1;
@@ -69,7 +74,8 @@ planet::vk::engine::pipeline::sprite::sprite(
           vk::descriptor_sets{
                   texture_pool, texture_layout, max_textures_per_frame},
           vk::descriptor_sets{
-                  texture_pool, texture_layout, max_textures_per_frame}} {}
+                  texture_pool, texture_layout, max_textures_per_frame}},
+  textures_in_frame{name() + "__textures_in_frame"} {}
 
 
 planet::vk::graphics_pipeline
@@ -163,6 +169,7 @@ void planet::vk::engine::pipeline::sprite::render(render_parameters rp) {
     vkCmdBindIndexBuffer(
             rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
+    textures_in_frame.value(textures.size());
     if (textures.size() > max_textures_per_frame) {
         planet::log::error("We will run out of texture slots for this frame");
     }
