@@ -12,7 +12,10 @@ namespace planet::vk::engine::pipeline {
     /// ## Textured triangle pipeline
     class textured final {
       public:
-        textured(engine::renderer &, std::string_view vertex_shader);
+        textured(
+                engine::renderer &,
+                std::string_view vertex_shader,
+                std::uint32_t textures_per_frame = 512);
 
         vk::descriptor_set_layout texture_layout;
         vk::graphics_pipeline pipeline;
@@ -101,7 +104,7 @@ namespace planet::vk::engine::pipeline {
 
 
       private:
-        static constexpr std::size_t max_textures_per_frame = 10240;
+        std::uint32_t max_textures_per_frame;
 
         vk::descriptor_pool texture_pool;
         std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;

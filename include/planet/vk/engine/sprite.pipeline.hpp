@@ -21,7 +21,9 @@ namespace planet::vk::engine::pipeline {
         graphics_pipeline create_pipeline(engine::renderer &, std::string_view);
 
       public:
-        sprite(engine::renderer &, std::string_view vertex_shader);
+        sprite(engine::renderer &,
+               std::string_view vertex_shader,
+               std::uint32_t textures_per_frame = 512);
 
         vk::descriptor_set_layout texture_layout;
         vk::graphics_pipeline pipeline;
@@ -75,7 +77,12 @@ namespace planet::vk::engine::pipeline {
         };
 
 
-        static constexpr std::size_t max_textures_per_frame = 10240;
+        /// ### The maximum number of textures
+        /**
+         * Used to size the descriptor pool and the descriptor sets. The number
+         * of individual textures cannot be higher than this number.
+         */
+        std::uint32_t max_textures_per_frame;
 
         vk::descriptor_pool texture_pool;
         std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;

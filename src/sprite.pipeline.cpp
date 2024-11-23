@@ -47,7 +47,7 @@ namespace {
 
 
 planet::vk::engine::pipeline::sprite::sprite(
-        engine::renderer &r, std::string_view const vs)
+        engine::renderer &r, std::string_view const vs, std::uint32_t const mtpf)
 : texture_layout{[&]() {
       VkDescriptorSetLayoutBinding binding{};
       binding.binding = 0;
@@ -58,7 +58,11 @@ planet::vk::engine::pipeline::sprite::sprite(
       return vk::descriptor_set_layout{r.app.device, binding};
   }()},
   pipeline{create_pipeline(r, vs)},
-  texture_pool{r.app.device, max_frames_in_flight * max_textures_per_frame},
+  max_textures_per_frame{mtpf},
+  texture_pool{
+          r.app.device,
+          static_cast<std::uint32_t>(
+                  max_frames_in_flight * max_textures_per_frame)},
   texture_sets{
           vk::descriptor_sets{
                   texture_pool, texture_layout, max_textures_per_frame},
@@ -93,11 +97,6 @@ void planet::vk::engine::pipeline::sprite::draw(
         std::pair<vk::texture const &, affine::rectangle2d> texture,
         location const &loc,
         vk::colour const &colour) {
-    if (textures.size() == max_textures_per_frame) {
-        throw felspar::stdexcept::runtime_error{
-                "Have run out of texture slots for this frame"};
-    }
-
     auto const pos = affine::rectangle2d{
             affine::point2d{0, loc.size.height} - loc.centre,
             affine::extents2d{loc.size.width, -loc.size.height}};
@@ -164,6 +163,9 @@ void planet::vk::engine::pipeline::sprite::render(render_parameters rp) {
     vkCmdBindIndexBuffer(
             rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
+    if (textures.size() > max_textures_per_frame) {
+        planet::log::error("We will run out of texture slots for this frame");
+    }
     for (std::size_t index{}; auto const &tx : textures) {
         VkWriteDescriptorSet wds{};
         wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
