@@ -66,7 +66,9 @@ namespace planet::vk {
         descriptor_sets(
                 descriptor_pool const &,
                 descriptor_set_layout const &,
-                std::uint32_t count = 1);
+                std::uint32_t count = 1,
+                felspar::source_location const & =
+                        felspar::source_location::current());
 
         /// ### Access to individual sets
         auto &operator[](std::uint32_t const index) { return sets.at(index); }
