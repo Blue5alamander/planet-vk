@@ -65,7 +65,7 @@ planet::vk::engine::pipeline::sprite::sprite(
   pipeline{create_pipeline(r, vs)},
   max_textures_per_frame{mtpf},
   texture_pool{
-          r.app.device,
+          r.app.device, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
           static_cast<std::uint32_t>(
                   max_frames_in_flight * max_textures_per_frame)},
   texture_sets{

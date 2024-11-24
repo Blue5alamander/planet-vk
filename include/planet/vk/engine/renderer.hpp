@@ -204,7 +204,9 @@ namespace planet::vk::engine {
                 viewport_buffer;
         std::array<device_memory::mapping, max_frames_in_flight> viewport_mapping;
 
-        vk::descriptor_pool ubo_pool{app.device, max_frames_in_flight};
+        vk::descriptor_pool ubo_pool{
+                app.device, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                max_frames_in_flight};
         vk::descriptor_sets ubo_sets{
                 ubo_pool, ubo_layout, max_frames_in_flight};
 

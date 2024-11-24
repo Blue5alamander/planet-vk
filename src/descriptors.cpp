@@ -21,10 +21,10 @@ planet::vk::descriptor_pool::descriptor_pool(
 
 
 planet::vk::descriptor_pool::descriptor_pool(
-        vk::device &d, std::uint32_t const count)
+        vk::device &d, VkDescriptorType const type, std::uint32_t const count)
 : device{d} {
     VkDescriptorPoolSize size{};
-    size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    size.type = type;
     size.descriptorCount = count;
     VkDescriptorPoolCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

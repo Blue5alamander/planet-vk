@@ -356,14 +356,13 @@ class HelloTriangleApplication {
     std::vector<planet::vk::device_memory::mapping> uniformBuffersMapped;
 
     planet::vk::descriptor_pool descriptorPool = [this]() {
-        std::array<VkDescriptorPoolSize, 2> poolSizes{};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount =
-                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount =
-                static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-
+        std::array<VkDescriptorPoolSize, 2> poolSizes{
+                {{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                  .descriptorCount =
+                          static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)},
+                 {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                  .descriptorCount =
+                          static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT)}}};
         return planet::vk::descriptor_pool{
                 device, poolSizes, MAX_FRAMES_IN_FLIGHT};
     }();
