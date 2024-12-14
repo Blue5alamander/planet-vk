@@ -77,8 +77,8 @@ namespace planet::vk::engine::ui {
 
     template<>
     inline auto tx<pipeline::textured, vk::texture>::do_reflow(
-            reflow_parameters const &,
-            constrained_type const &c) -> constrained_type {
+            reflow_parameters const &, constrained_type const &c)
+            -> constrained_type {
         if (texture) {
             auto const r = planet::ui::scaling(
                     texture.image.extents(), c, texture.fit);
@@ -89,8 +89,8 @@ namespace planet::vk::engine::ui {
     }
     template<>
     inline auto tx<pipeline::textured, vk::texture *>::do_reflow(
-            reflow_parameters const &,
-            constrained_type const &c) -> constrained_type {
+            reflow_parameters const &, constrained_type const &c)
+            -> constrained_type {
         if (texture and *texture) {
             return planet::ui::scaling(
                     texture->image.extents(), c, texture->fit);
@@ -100,8 +100,8 @@ namespace planet::vk::engine::ui {
     }
     template<>
     inline auto tx<pipeline::textured, sub_texture>::do_reflow(
-            reflow_parameters const &,
-            constrained_type const &c) -> constrained_type {
+            reflow_parameters const &, constrained_type const &c)
+            -> constrained_type {
         if (texture.first) {
             auto const width =
                     texture.second.extents.width * texture.first.image.width;
