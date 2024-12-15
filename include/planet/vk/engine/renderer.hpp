@@ -189,6 +189,10 @@ namespace planet::vk::engine {
         std::uint32_t image_index = {};
 
 
+        /// ### Re-create the swap chain
+        void recreate_swap_chain(VkResult);
+
+
         /// ### View port transformation matrix and UBO
 
         struct coordinate_space {

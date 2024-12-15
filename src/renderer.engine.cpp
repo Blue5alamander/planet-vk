@@ -138,12 +138,26 @@ planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
 
 
 namespace {
+    planet::telemetry::counter c_recreate_swapchain{
+            "planet_vk_engine_renderer_recreate_swapchain_count"};
+}
+void planet::vk::engine::renderer::recreate_swap_chain(VkResult const result) {
+    ++c_recreate_swapchain;
+    auto const images =
+            swap_chain.recreate(app.window.refresh_window_dimensions());
+    swap_chain.create_frame_buffers(
+            render_pass, colour_attachment.image_view.get(),
+            depth_buffer.image_view.get());
+    planet::log::info(
+            "Swap chain dirty. New image count", images, detail::error(result));
+}
+
+
+namespace {
     planet::telemetry::real_time_rate c_fence_wait{
             "planet_vk_engine_renderer_fence_wait", 500ms};
     planet::telemetry::real_time_rate c_acquire_wait{
             "planet_vk_engine_renderer_acquire_next_image_wait", 500ms};
-    planet::telemetry::counter c_recreate_swapchain{
-            "planet_vk_engine_renderer_recreate_swapchain_count"};
 }
 felspar::coro::task<std::size_t>
         planet::vk::engine::renderer::start(VkClearValue const colour) {
@@ -167,15 +181,7 @@ felspar::coro::task<std::size_t>
         } else if (
                 result == VK_ERROR_OUT_OF_DATE_KHR
                 or result == VK_SUBOPTIMAL_KHR) {
-            ++c_recreate_swapchain;
-            auto const images =
-                    swap_chain.recreate(app.window.refresh_window_dimensions());
-            swap_chain.create_frame_buffers(
-                    render_pass, colour_attachment.image_view.get(),
-                    depth_buffer.image_view.get());
-            planet::log::info(
-                    "Swap chain dirty. New image count", images,
-                    detail::error(result));
+            recreate_swap_chain(result);
         } else if (result == VK_SUCCESS) {
             break;
         } else {
@@ -283,8 +289,13 @@ void planet::vk::engine::renderer::submit_and_present() {
     present_info.swapchainCount = present_chain.size();
     present_info.pSwapchains = present_chain.data();
     present_info.pImageIndices = &image_index;
-    planet::vk::worked(
-            vkQueuePresentKHR(app.device.present_queue, &present_info));
+    auto const presented =
+            vkQueuePresentKHR(app.device.present_queue, &present_info);
+    if (presented == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreate_swap_chain(presented);
+    } else {
+        worked(presented);
+    }
 
     current_frame = (current_frame + 1) % max_frames_in_flight;
     ++frame_count;
