@@ -13,9 +13,10 @@ constexpr int win_height = 720;
 
 
 int main(int, const char **argv) {
+    planet::version const v{"sdl2_vulkan", "Twinklebear/sdl2_vulkan", "0.1", 1};
     planet::asset_manager assets{argv[0]};
     felspar::io::poll_warden poll;
-    planet::sdl::init sdl{poll, "Twinklebear/sdl2_vulkan"};
+    planet::sdl::init sdl{poll, v};
 
     planet::vk::sdl::window window{sdl, "SDL2 + Vulkan", win_width, win_height};
 

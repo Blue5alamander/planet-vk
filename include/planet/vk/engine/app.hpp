@@ -11,7 +11,7 @@ namespace planet::vk::engine {
 
     /// ## An engine for 2d texture based interfaces
     struct app final {
-        app(int argc, char const *argv[], planet::sdl::init &, char const *name);
+        app(int argc, char const *argv[], planet::sdl::init &, version const &);
 
 
         planet::asset_manager asset_manager;

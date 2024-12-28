@@ -5,14 +5,18 @@
 
 
 planet::vk::engine::app::app(
-        int, char const *argv[], planet::sdl::init &s, char const *name)
+        int,
+        char const *argv[],
+        planet::sdl::init &s,
+        planet::version const &version)
 : asset_manager{argv[0]},
   sdl{s},
-  window{sdl, name, SDL_WINDOW_FULLSCREEN_DESKTOP},
+  window{sdl, version.application_id.c_str(), SDL_WINDOW_FULLSCREEN_DESKTOP},
   instance{[&]() {
       auto app_info = planet::vk::application_info();
-      app_info.pApplicationName = name;
-      app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+      app_info.pApplicationName = version.application_id.c_str();
+      app_info.applicationVersion = VK_MAKE_VERSION(
+              version.semver.major, version.semver.minor, version.semver.patch);
       auto info = planet::vk::instance::info(extensions, app_info);
       return planet::vk::instance{
               extensions, info, [&](VkInstance instance_handle) {
