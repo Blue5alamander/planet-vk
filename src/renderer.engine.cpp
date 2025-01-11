@@ -141,7 +141,8 @@ namespace {
     planet::telemetry::counter c_recreate_swapchain{
             "planet_vk_engine_renderer_recreate_swapchain_count"};
 }
-void planet::vk::engine::renderer::recreate_swap_chain(VkResult const result) {
+void planet::vk::engine::renderer::recreate_swap_chain(
+        VkResult const result, felspar::source_location const &loc) {
     ++c_recreate_swapchain;
     auto const images =
             swap_chain.recreate(app.window.refresh_window_dimensions());
@@ -149,7 +150,8 @@ void planet::vk::engine::renderer::recreate_swap_chain(VkResult const result) {
             render_pass, colour_attachment.image_view.get(),
             depth_buffer.image_view.get());
     planet::log::info(
-            "Swap chain dirty. New image count", images, detail::error(result));
+            "Swap chain dirty. New image count", images, detail::error(result),
+            loc);
 }
 
 

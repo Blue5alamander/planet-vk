@@ -190,7 +190,10 @@ namespace planet::vk::engine {
 
 
         /// ### Re-create the swap chain
-        void recreate_swap_chain(VkResult);
+        void recreate_swap_chain(
+                VkResult,
+                felspar::source_location const & =
+                        felspar::source_location::current());
 
 
         /// ### View port transformation matrix and UBO
