@@ -222,6 +222,10 @@ planet::vk::extensions::extensions() {
                 [&](auto const vl) { return vl.layerName == vkl_validation; })
         != layers.end()) {
         validation_layers.push_back(vkl_validation.data());
+    } else {
+        planet::log::warning(
+                "We wanted validation layer", vkl_validation,
+                "but didn't find it");
     }
 #endif
 }
