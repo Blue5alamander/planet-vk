@@ -9,6 +9,7 @@ planet::vk::surface::surface(vk::instance const &i, VkSurfaceKHR h)
 
 
 planet::vk::surface::~surface() {
+    /// TODO Can't we use our handle type that's owned by the instance here?
     if (handle) { vkDestroySurfaceKHR(instance.get(), handle, nullptr); }
 }
 
@@ -21,6 +22,22 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
             vkGetPhysicalDeviceQueueFamilyProperties, VkQueueFamilyProperties>(
             device.get());
 
+    /**
+     * TODO OK, we can't share queues across threads, so we really need to be
+     * able to find out if we have multiple queues and then hand out queues to
+     * the threads that need them. Presumably this can be done by having the
+     * `command_pool` own the queue that it uses for as long as it lives. If no
+     * queue is available for it then it should throw -- i.e. only create a
+     * `command_pool ` if you know that there is a queue for it to use
+     * (presumably pass in the queue).
+     *
+     * The "main" thread should presumably be able to use the present queue (if
+     * suitable).
+     *
+     * All of this implies a queue wrapper that is able to deal with these
+     * things, and place itself back into the "available queues" structure we're
+     * going to need here.
+     */
     for (std::uint32_t index = {}; const auto &qf : queue_family_properties) {
         if (qf.queueFlags bitand VK_QUEUE_GRAPHICS_BIT) { graphics = index; }
 
