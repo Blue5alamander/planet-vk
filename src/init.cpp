@@ -156,8 +156,8 @@ planet::vk::device::device(
     felspar::memory::small_vector<VkDeviceQueueCreateInfo, 2> queue_create_infos;
     const float queue_priority = 1.f;
     for (auto const q : std::array{
-                 instance.surface.graphics_queue_index(),
-                 instance.surface.presentation_queue_index()}) {
+                 instance.surface.graphics_queue_family_index(),
+                 instance.surface.presentation_queue_family_index()}) {
         queue_create_infos.emplace_back();
         queue_create_infos.back().sType =
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -171,8 +171,8 @@ planet::vk::device::device(
 
     VkDeviceCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    if (instance.surface.graphics_queue_index()
-        == instance.surface.presentation_queue_index()) {
+    if (instance.surface.graphics_queue_family_index()
+        == instance.surface.presentation_queue_family_index()) {
         info.queueCreateInfoCount = 1;
     } else {
         info.queueCreateInfoCount = queue_create_infos.size();
@@ -191,10 +191,10 @@ planet::vk::device::device(
             vkCreateDevice(instance.gpu().get(), &info, nullptr, &handle));
 
     vkGetDeviceQueue(
-            handle, instance.surface.graphics_queue_index(), 0,
+            handle, instance.surface.graphics_queue_family_index(), 0,
             &graphics_queue);
     vkGetDeviceQueue(
-            handle, instance.surface.presentation_queue_index(), 0,
+            handle, instance.surface.presentation_queue_family_index(), 0,
             &present_queue);
 }
 
@@ -360,7 +360,7 @@ planet::vk::instance::instance(
                 "GPU", gpu_in_use->properties.deviceName,
                 "has been selected for use");
     }
-    surface.refresh_characteristics(*gpu_in_use);
+    // surface.refresh_characteristics(*gpu_in_use);
 }
 
 

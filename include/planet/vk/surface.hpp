@@ -52,10 +52,10 @@ namespace planet::vk {
         bool has_queue_families() const noexcept {
             return graphics.has_value() and present.has_value();
         }
-        std::uint32_t graphics_queue_index() const noexcept {
+        std::uint32_t graphics_queue_family_index() const noexcept {
             return graphics.value();
         }
-        std::uint32_t presentation_queue_index() const noexcept {
+        std::uint32_t presentation_queue_family_index() const noexcept {
             return present.value();
         }
 

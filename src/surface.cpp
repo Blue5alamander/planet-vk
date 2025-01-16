@@ -75,7 +75,7 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
      * things, and place itself back into the "available queues" structure we're
      * going to need here.
      */
-    for (std::uint32_t index = {}; const auto &qf : queue_family_properties) {
+    for (std::uint32_t index = {}; auto const &qf : queue_family_properties) {
         bool const is_graphics_queue =
                 qf.queueFlags bitand VK_QUEUE_GRAPHICS_BIT;
         bool const is_transfer_queue =
@@ -93,8 +93,8 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
         }
 
         planet::log::debug(
-                "Surface queue", index, "is_graphics_queue", is_graphics_queue,
-                "is_presentation_queue",
+                "Surface queue", index, "queueCount", qf.queueCount,
+                "is_graphics_queue", is_graphics_queue, "is_presentation_queue",
                 static_cast<bool>(is_presentation_queue), "is_transfer_queue",
                 is_transfer_queue);
 

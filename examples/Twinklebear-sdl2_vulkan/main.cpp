@@ -55,10 +55,10 @@ int main(int, const char **argv) {
     std::cout << "Found " << vk_instance.physical_devices().size()
               << " devices. Using " << vk_instance.gpu().properties.deviceName
               << "\n";
-    std::cout << "Graphics queue is "
-              << vk_instance.surface.graphics_queue_index()
-              << " and presentation queue is "
-              << vk_instance.surface.presentation_queue_index() << "\n";
+    std::cout << "Graphics queue family is "
+              << vk_instance.surface.graphics_queue_family_index()
+              << " and presentation queue family is "
+              << vk_instance.surface.presentation_queue_family_index() << "\n";
 
     planet::vk::device vk_device{vk_instance, extensions};
     planet::vk::swap_chain vk_swapchain{

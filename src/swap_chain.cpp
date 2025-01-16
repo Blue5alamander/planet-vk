@@ -34,9 +34,11 @@ std::uint32_t planet::vk::swap_chain::create(VkExtent2D const wsize) {
     info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     std::array queues{
-            surface.graphics_queue_index(), surface.presentation_queue_index()};
+            surface.graphics_queue_family_index(),
+            surface.presentation_queue_family_index()};
 
-    if (surface.graphics_queue_index() != surface.presentation_queue_index()) {
+    if (surface.graphics_queue_family_index()
+        != surface.presentation_queue_family_index()) {
         info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         info.queueFamilyIndexCount = queues.size();
         info.pQueueFamilyIndices = queues.data();
