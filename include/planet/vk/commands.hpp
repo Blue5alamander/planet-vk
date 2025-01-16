@@ -3,6 +3,7 @@
 
 #include <planet/vk/forward.hpp>
 #include <planet/vk/owned_handle.hpp>
+#include <planet/vk/queue.hpp>
 #include <planet/vk/view.hpp>
 
 #include <vector>
@@ -103,9 +104,13 @@ namespace planet::vk {
     class command_pool final {
         using handle_type = device_handle<VkCommandPool, vkDestroyCommandPool>;
         handle_type handle;
+        vk::queue transfer_queue;
+
 
       public:
         command_pool(vk::device &, vk::surface const &);
+        command_pool(vk::device &, vk::queue);
+
 
         device_view device;
         VkCommandPool get() const noexcept { return handle.get(); }

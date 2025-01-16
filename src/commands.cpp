@@ -17,6 +17,15 @@ planet::vk::command_pool::command_pool(vk::device &d, vk::surface const &s)
     handle.create<vkCreateCommandPool>(device.get(), info);
 }
 
+planet::vk::command_pool::command_pool(vk::device &d, vk::queue q)
+: transfer_queue{std::move(q)}, device{d} {
+    VkCommandPoolCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    info.queueFamilyIndex = transfer_queue.get();
+    handle.create<vkCreateCommandPool>(device.get(), info);
+}
+
 
 /// ## `planet::vk::command_buffers`
 

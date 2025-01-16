@@ -10,6 +10,7 @@ namespace planet::vk {
     class device_memory_allocator;
     class instance;
     class physical_device;
+    class queue;
     class surface;
     class texture;
 

@@ -1,4 +1,32 @@
+#include <planet/log.hpp>
 #include <planet/vk/instance.hpp>
+#include <planet/vk/queue.hpp>
+
+
+/// ## `planet::vk::queue`
+
+
+planet::vk::queue::queue() {}
+planet::vk::queue::queue(queue &&q)
+: surface{std::exchange(q.surface, nullptr)},
+  index{std::exchange(q.index, 0)} {}
+
+planet::vk::queue::queue(vk::surface *const s, std::uint32_t const i)
+: surface{s}, index{i} {}
+
+planet::vk::queue::~queue() {
+    if (surface) { surface->return_queue_index(index); }
+}
+
+
+planet::vk::queue::operator bool() const noexcept { return surface != nullptr; }
+
+std::uint32_t planet::vk::queue::get() const {
+    if (not surface) {
+        throw felspar::stdexcept::logic_error{"This queue is empty"};
+    }
+    return index;
+}
 
 
 /// ## `planet::vk::surface`
@@ -15,8 +43,17 @@ planet::vk::surface::~surface() {
 
 
 void planet::vk::surface::refresh_characteristics(physical_device const &device) {
+    std::scoped_lock _{transfer_mutex};
+
     graphics = {};
     present = {};
+    if (transfer_count != transfer.size()) {
+        throw felspar::stdexcept::logic_error{
+                "Cannot refresh the surface's characterstics whilst there are transfer queues being used"};
+    } else {
+        transfer_count = 0;
+        transfer.clear();
+    }
 
     queue_family_properties = fetch_vector<
             vkGetPhysicalDeviceQueueFamilyProperties, VkQueueFamilyProperties>(
@@ -39,19 +76,34 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
      * going to need here.
      */
     for (std::uint32_t index = {}; const auto &qf : queue_family_properties) {
-        if (qf.queueFlags bitand VK_QUEUE_GRAPHICS_BIT) { graphics = index; }
+        bool const is_graphics_queue =
+                qf.queueFlags bitand VK_QUEUE_GRAPHICS_BIT;
+        bool const is_transfer_queue =
+                qf.queueFlags bitand VK_QUEUE_TRANSFER_BIT;
 
-        VkBool32 presentf = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(
-                device.get(), index, handle, &presentf);
-        if (presentf) { present = index; }
+        VkBool32 is_presentation_queue = false;
+        worked(vkGetPhysicalDeviceSurfaceSupportKHR(
+                device.get(), index, handle, &is_presentation_queue));
+
+        if (is_graphics_queue) { graphics = index; }
+        if (is_presentation_queue) { present = index; }
+        if (is_transfer_queue and index != graphics and index != present) {
+            transfer.push_back(index);
+            transfer_count = transfer.size();
+        }
+
+        planet::log::debug(
+                "Surface queue", index, "is_graphics_queue", is_graphics_queue,
+                "is_presentation_queue",
+                static_cast<bool>(is_presentation_queue), "is_transfer_queue",
+                is_transfer_queue);
 
         ++index;
     }
 
     if (has_queue_families()) {
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-                device.get(), handle, &capabilities);
+        worked(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+                device.get(), handle, &capabilities));
         formats = fetch_vector<
                 vkGetPhysicalDeviceSurfaceFormatsKHR, VkSurfaceFormatKHR>(
                 device.get(), handle);
@@ -77,4 +129,21 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
             }
         }
     }
+}
+
+
+auto planet::vk::surface::transfer_queue() -> queue {
+    std::scoped_lock _{transfer_mutex};
+    if (not transfer.empty()) {
+        auto const index = transfer.back();
+        transfer.pop_back();
+        return queue{this, index};
+    } else {
+        return {};
+    }
+}
+
+void planet::vk::surface::return_queue_index(std::uint32_t const index) {
+    std::scoped_lock _{transfer_mutex};
+    transfer.push_back(index);
 }

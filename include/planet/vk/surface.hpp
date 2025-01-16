@@ -1,22 +1,31 @@
 #pragma once
 
 
+#include <planet/vk/forward.hpp>
 #include <planet/vk/helpers.hpp>
+
+#include <mutex>
 
 
 namespace planet::vk {
 
 
-    class instance;
-    class physical_device;
-
-
+    /// ## Surface
     class surface final {
         friend class instance;
+        friend class queue;
+
+
         VkSurfaceKHR handle;
         surface(vk::instance const &, VkSurfaceKHR);
 
+
         std::optional<std::uint32_t> graphics, present;
+        std::mutex transfer_mutex;
+        std::size_t transfer_count = {};
+        std::vector<std::uint32_t> transfer;
+        void return_queue_index(std::uint32_t);
+
 
       public:
         ~surface();
@@ -30,10 +39,12 @@ namespace planet::vk {
 
         vk::instance const &instance;
 
-        /// ## Surface characteristics
+
+        /// ### Surface characteristics
 
         /// Refreshes the characteristics of the surface for the specified GPU
         void refresh_characteristics(physical_device const &);
+
 
         /// ### Queue indexes and properties
         std::vector<VkQueueFamilyProperties> queue_family_properties;
@@ -47,6 +58,14 @@ namespace planet::vk {
         std::uint32_t presentation_queue_index() const noexcept {
             return present.value();
         }
+
+        /// #### Return a transfer queue index
+        /**
+         * It's possible that there is no transfer queue available, in which
+         * case the `queue` returned will evaluate to `false`.
+         */
+        queue transfer_queue();
+
 
         /// ### Swap chain support
         /**
