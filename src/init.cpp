@@ -313,8 +313,10 @@ planet::vk::instance::instance(
                 "Found", pdevices.size(), "devices - has_discrete_gpu",
                 has_discrete_gpu);
     }
-    /// TODO Ideally we'd sort all found GPUs by their suitability and then
-    /// choose the best one
+    /**
+     * TODO Ideally we'd sort all found GPUs by their suitability and then
+     * choose the best one
+     */
     for (auto const &d : pdevices) {
         surface.refresh_characteristics(d);
         bool const has_queue_families = surface.has_queue_families();
@@ -358,6 +360,7 @@ planet::vk::instance::instance(
                 "GPU", gpu_in_use->properties.deviceName,
                 "has been selected for use");
     }
+    surface.refresh_characteristics(*gpu_in_use);
 }
 
 
