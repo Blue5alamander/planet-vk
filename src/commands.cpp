@@ -5,28 +5,6 @@
 #include <array>
 
 
-/// ## `planet::vk::command_pool`
-
-
-planet::vk::command_pool::command_pool(vk::device &d, vk::surface const &s)
-: device{d} {
-    VkCommandPoolCreateInfo info = {};
-    info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    info.queueFamilyIndex = s.graphics_queue_family_index();
-    handle.create<vkCreateCommandPool>(device.get(), info);
-}
-
-planet::vk::command_pool::command_pool(vk::device &d, vk::queue q)
-: transfer_queue{std::move(q)}, device{d} {
-    VkCommandPoolCreateInfo info = {};
-    info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    info.queueFamilyIndex = transfer_queue.get();
-    handle.create<vkCreateCommandPool>(device.get(), info);
-}
-
-
 /// ## `planet::vk::command_buffers`
 
 
@@ -62,7 +40,10 @@ planet::vk::command_buffers::~command_buffers() {
 
 planet::vk::command_buffer::command_buffer(
         vk::command_pool &cp, VkCommandBufferLevel const level)
-: self_owned{true}, device{cp.device}, command_pool{cp} {
+: queue{cp.command_queue()},
+  self_owned{true},
+  device{cp.device},
+  command_pool{cp} {
     VkCommandBufferAllocateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     info.level = level;
@@ -75,11 +56,12 @@ planet::vk::command_buffer::command_buffer(
 
 planet::vk::command_buffer::command_buffer(
         vk::command_pool &cp, VkCommandBuffer const h)
-: handle{h}, device{cp.device}, command_pool{cp} {}
+: handle{h}, queue{cp.command_queue()}, device{cp.device}, command_pool{cp} {}
 
 
 planet::vk::command_buffer::command_buffer(command_buffer &&b)
 : handle{std::exchange(b.handle, VK_NULL_HANDLE)},
+  queue{std::exchange(b.queue, VK_NULL_HANDLE)},
   device{std::move(b.device)},
   command_pool{std::move(b.command_pool)} {}
 
@@ -88,6 +70,7 @@ auto planet::vk::command_buffer::operator=(command_buffer &&cb)
         -> command_buffer & {
     reset();
     handle = std::exchange(cb.handle, VK_NULL_HANDLE);
+    queue = std::exchange(cb.queue, VK_NULL_HANDLE);
     device = std::move(cb.device);
     command_pool = std::move(cb.command_pool);
     return *this;
@@ -101,6 +84,8 @@ void planet::vk::command_buffer::reset() {
                 device.get(), command_pool.get(), handles.size(),
                 handles.data());
     }
+    handle = VK_NULL_HANDLE;
+    queue = VK_NULL_HANDLE;
 }
 
 
@@ -112,8 +97,8 @@ planet::vk::command_buffer
 }
 void planet::vk::command_buffer::end_and_submit() {
     end();
-    submit(device().graphics_queue);
-    vkQueueWaitIdle(device().graphics_queue);
+    submit();
+    vkQueueWaitIdle(queue);
 }
 
 
@@ -128,11 +113,42 @@ void planet::vk::command_buffer::begin(VkCommandBufferUsageFlags const flags) {
 void planet::vk::command_buffer::end() { worked(vkEndCommandBuffer(handle)); }
 
 
-void planet::vk::command_buffer::submit(VkQueue const queue) {
+void planet::vk::command_buffer::submit() {
     std::array buffers{handle};
     VkSubmitInfo info{};
     info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     info.commandBufferCount = buffers.size();
     info.pCommandBuffers = buffers.data();
     vkQueueSubmit(queue, 1, &info, VK_NULL_HANDLE);
+}
+
+
+/// ## `planet::vk::command_pool`
+
+
+planet::vk::command_pool::command_pool(vk::device &d, vk::surface const &s)
+: device{d} {
+    VkCommandPoolCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    info.queueFamilyIndex = s.graphics_queue_family_index();
+    handle.create<vkCreateCommandPool>(device.get(), info);
+}
+
+planet::vk::command_pool::command_pool(vk::device &d, vk::queue q)
+: queue{std::move(q)}, device{d} {
+    VkCommandPoolCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    info.queueFamilyIndex = queue.family_index();
+    handle.create<vkCreateCommandPool>(device.get(), info);
+}
+
+
+VkQueue planet::vk::command_pool::command_queue() {
+    if (queue) {
+        return queue.get();
+    } else {
+        return device().graphics_queue;
+    }
 }

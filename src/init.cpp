@@ -153,17 +153,38 @@ std::string planet::vk::detail::error(VkResult const code) {
 planet::vk::device::device(
         vk::instance const &i, vk::extensions const &extensions)
 : instance{i} {
-    felspar::memory::small_vector<VkDeviceQueueCreateInfo, 2> queue_create_infos;
+    felspar::memory::small_vector<VkDeviceQueueCreateInfo, 3> queue_create_infos;
+    auto const graphics_family = instance.surface.graphics_queue_family_index();
+    auto const presentation_family =
+            instance.surface.presentation_queue_family_index();
+    auto const transfer_family = instance.surface.transfer_queue_family_index();
+
     const float queue_priority = 1.f;
-    for (auto const q : std::array{
-                 instance.surface.graphics_queue_family_index(),
-                 instance.surface.presentation_queue_family_index()}) {
-        queue_create_infos.emplace_back();
-        queue_create_infos.back().sType =
-                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_create_infos.back().queueFamilyIndex = q;
-        queue_create_infos.back().queueCount = 1;
-        queue_create_infos.back().pQueuePriorities = &queue_priority;
+    queue_create_infos.push_back(
+            {.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+             .pNext = nullptr,
+             .flags = {},
+             .queueFamilyIndex = graphics_family,
+             .queueCount = static_cast<std::uint32_t>(
+                     transfer_family == graphics_family ? 2 : 1),
+             .pQueuePriorities = &queue_priority});
+    if (graphics_family != presentation_family) {
+        queue_create_infos.push_back(
+                {.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                 .pNext = nullptr,
+                 .flags = {},
+                 .queueFamilyIndex = presentation_family,
+                 .queueCount = 1,
+                 .pQueuePriorities = &queue_priority});
+    }
+    if (transfer_family and transfer_family != graphics_family) {
+        queue_create_infos.push_back(
+                {.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                 .pNext = nullptr,
+                 .flags = {},
+                 .queueFamilyIndex = *transfer_family,
+                 .queueCount = 1,
+                 .pQueuePriorities = &queue_priority});
     }
 
     VkPhysicalDeviceFeatures device_features = {};
@@ -171,12 +192,7 @@ planet::vk::device::device(
 
     VkDeviceCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    if (instance.surface.graphics_queue_family_index()
-        == instance.surface.presentation_queue_family_index()) {
-        info.queueCreateInfoCount = 1;
-    } else {
-        info.queueCreateInfoCount = queue_create_infos.size();
-    }
+    info.queueCreateInfoCount = queue_create_infos.size();
     info.pQueueCreateInfos = queue_create_infos.data();
     info.enabledLayerCount = extensions.validation_layers.size();
     info.ppEnabledLayerNames = extensions.validation_layers.data();
@@ -190,14 +206,18 @@ planet::vk::device::device(
     planet::vk::worked(
             vkCreateDevice(instance.gpu().get(), &info, nullptr, &handle));
 
-    vkGetDeviceQueue(
-            handle, instance.surface.graphics_queue_family_index(), 0,
-            &graphics_queue);
-    vkGetDeviceQueue(
-            handle, instance.surface.presentation_queue_family_index(), 0,
-            &present_queue);
+    vkGetDeviceQueue(handle, graphics_family, 0, &graphics_queue);
+    vkGetDeviceQueue(handle, presentation_family, 0, &present_queue);
+    if (transfer_family) {
+        VkQueue tq = {};
+        vkGetDeviceQueue(
+                handle, *transfer_family,
+                static_cast<std::uint32_t>(
+                        transfer_family == graphics_family ? 1 : 0),
+                &tq);
+        held_transfer_queue = std::pair{tq, *transfer_family};
+    }
 }
-
 
 planet::vk::device::~device() {
     staging_memory.clear_without_check();
@@ -206,6 +226,24 @@ planet::vk::device::~device() {
         vkDeviceWaitIdle(handle);
         vkDestroyDevice(handle, nullptr);
     }
+}
+
+
+planet::vk::queue planet::vk::device::transfer_queue() {
+    std::scoped_lock _{transfer_queue_mutex};
+    if (held_transfer_queue) {
+        vk::queue q{
+                this, held_transfer_queue->first, held_transfer_queue->second};
+        held_transfer_queue.reset();
+        return q;
+    } else {
+        return {};
+    }
+}
+void planet::vk::device::return_transfer_queue(
+        VkQueue const q, std::uint32_t const i) {
+    std::scoped_lock _{transfer_queue_mutex};
+    held_transfer_queue = std::pair{q, i};
 }
 
 
@@ -423,4 +461,38 @@ VkFormatProperties planet::vk::physical_device::format_properties(
     VkFormatProperties properties{};
     vkGetPhysicalDeviceFormatProperties(get(), format, &properties);
     return properties;
+}
+
+
+/// ## `planet::vk::queue`
+
+
+planet::vk::queue::queue() {}
+planet::vk::queue::queue(queue &&q)
+: device{std::exchange(q.device, nullptr)},
+  handle{std::exchange(q.handle, VK_NULL_HANDLE)},
+  index{std::exchange(q.index, 0)} {}
+
+planet::vk::queue::queue(vk::device *const d, VkQueue q, std::uint32_t const i)
+: device{d}, handle{q}, index{i} {}
+
+planet::vk::queue::~queue() {
+    if (device) { device->return_transfer_queue(handle, index); }
+}
+
+
+planet::vk::queue::operator bool() const noexcept { return device != nullptr; }
+
+VkQueue planet::vk::queue::get() const {
+    if (not device) {
+        throw felspar::stdexcept::logic_error{"This queue is empty"};
+    }
+    return handle;
+}
+
+std::uint32_t planet::vk::queue::family_index() const {
+    if (not device) {
+        throw felspar::stdexcept::logic_error{"This queue is empty"};
+    }
+    return index;
 }

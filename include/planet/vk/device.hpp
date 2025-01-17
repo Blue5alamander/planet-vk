@@ -2,6 +2,9 @@
 
 
 #include <planet/vk/memory.hpp>
+#include <planet/vk/queue.hpp>
+
+#include <mutex>
 
 
 namespace planet::vk {
@@ -11,9 +14,19 @@ namespace planet::vk {
     class instance;
 
 
+    /// ## Vulkan device
     /// The logical graphics device we're using
     class device final {
+        friend class queue;
+
+
         VkDevice handle = VK_NULL_HANDLE;
+
+        std::mutex transfer_queue_mutex;
+        std::optional<std::pair<VkQueue, std::uint32_t>> held_transfer_queue =
+                {};
+        void return_transfer_queue(VkQueue, std::uint32_t);
+
 
       public:
         device(vk::instance const &, extensions const &);
@@ -28,11 +41,19 @@ namespace planet::vk {
         device &operator=(device const &) = delete;
         device &operator=(device &&i) = delete;
 
+
         VkDevice get() const noexcept { return handle; }
 
         VkQueue graphics_queue = VK_NULL_HANDLE, present_queue = VK_NULL_HANDLE;
 
-        /// #### Wait for the device to become idle
+
+        /// ### Fetch a transfer queue
+        /// If there is no transfer queue left then it will return an empty
+        /// `vk::queue`
+        vk::queue transfer_queue();
+
+
+        /// ### Wait for the device to become idle
         void wait_idle() const { worked(vkDeviceWaitIdle(handle)); }
 
 

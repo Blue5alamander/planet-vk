@@ -3,32 +3,6 @@
 #include <planet/vk/queue.hpp>
 
 
-/// ## `planet::vk::queue`
-
-
-planet::vk::queue::queue() {}
-planet::vk::queue::queue(queue &&q)
-: surface{std::exchange(q.surface, nullptr)},
-  index{std::exchange(q.index, 0)} {}
-
-planet::vk::queue::queue(vk::surface *const s, std::uint32_t const i)
-: surface{s}, index{i} {}
-
-planet::vk::queue::~queue() {
-    if (surface) { surface->return_queue_index(index); }
-}
-
-
-planet::vk::queue::operator bool() const noexcept { return surface != nullptr; }
-
-std::uint32_t planet::vk::queue::get() const {
-    if (not surface) {
-        throw felspar::stdexcept::logic_error{"This queue is empty"};
-    }
-    return index;
-}
-
-
 /// ## `planet::vk::surface`
 
 
@@ -43,17 +17,9 @@ planet::vk::surface::~surface() {
 
 
 void planet::vk::surface::refresh_characteristics(physical_device const &device) {
-    std::scoped_lock _{transfer_mutex};
-
     graphics = {};
     present = {};
-    if (transfer_count != transfer.size()) {
-        throw felspar::stdexcept::logic_error{
-                "Cannot refresh the surface's characterstics whilst there are transfer queues being used"};
-    } else {
-        transfer_count = 0;
-        transfer.clear();
-    }
+    transfer = {};
 
     queue_family_properties = fetch_vector<
             vkGetPhysicalDeviceQueueFamilyProperties, VkQueueFamilyProperties>(
@@ -87,9 +53,9 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
 
         if (is_graphics_queue) { graphics = index; }
         if (is_presentation_queue) { present = index; }
-        if (is_transfer_queue and index != graphics and index != present) {
-            transfer.push_back(index);
-            transfer_count = transfer.size();
+        if (is_transfer_queue and is_graphics_queue and index != graphics
+            and index != present) {
+            transfer = index;
         }
 
         planet::log::debug(
@@ -99,6 +65,21 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
                 is_transfer_queue);
 
         ++index;
+    }
+    if (not transfer and graphics and present) {
+        /**
+         * We didn't find a suitable dedicated transfer queue family. There are
+         * enough queues in the graphics family (which always has the transfer
+         * ability), so we can piggy back on that if there are enough of them.
+         *
+         * If the presentation and graphics queue familiies are the same then
+         * we'll actually only use one queue for both, so we only need one exta
+         * for our transfer queue.
+         */
+        std::uint32_t const required_count = 2;
+        if (queue_family_properties[*graphics].queueCount >= required_count) {
+            transfer = graphics;
+        }
     }
 
     if (has_queue_families()) {
@@ -129,21 +110,4 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
             }
         }
     }
-}
-
-
-auto planet::vk::surface::transfer_queue() -> queue {
-    std::scoped_lock _{transfer_mutex};
-    if (not transfer.empty()) {
-        auto const index = transfer.back();
-        transfer.pop_back();
-        return queue{this, index};
-    } else {
-        return {};
-    }
-}
-
-void planet::vk::surface::return_queue_index(std::uint32_t const index) {
-    std::scoped_lock _{transfer_mutex};
-    transfer.push_back(index);
 }

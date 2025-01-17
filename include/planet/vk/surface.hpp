@@ -4,8 +4,6 @@
 #include <planet/vk/forward.hpp>
 #include <planet/vk/helpers.hpp>
 
-#include <mutex>
-
 
 namespace planet::vk {
 
@@ -13,18 +11,13 @@ namespace planet::vk {
     /// ## Surface
     class surface final {
         friend class instance;
-        friend class queue;
 
 
         VkSurfaceKHR handle;
         surface(vk::instance const &, VkSurfaceKHR);
 
 
-        std::optional<std::uint32_t> graphics, present;
-        std::mutex transfer_mutex;
-        std::size_t transfer_count = {};
-        std::vector<std::uint32_t> transfer;
-        void return_queue_index(std::uint32_t);
+        std::optional<std::uint32_t> graphics, present, transfer;
 
 
       public:
@@ -58,13 +51,10 @@ namespace planet::vk {
         std::uint32_t presentation_queue_family_index() const noexcept {
             return present.value();
         }
-
-        /// #### Return a transfer queue index
-        /**
-         * It's possible that there is no transfer queue available, in which
-         * case the `queue` returned will evaluate to `false`.
-         */
-        queue transfer_queue();
+        std::optional<std::uint32_t>
+                transfer_queue_family_index() const noexcept {
+            return transfer;
+        }
 
 
         /// ### Swap chain support

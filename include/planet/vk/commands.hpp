@@ -17,6 +17,7 @@ namespace planet::vk {
         friend class command_buffers;
         /// These instances are owned by the command_buffers type
         VkCommandBuffer handle;
+        VkQueue queue;
 
         /**
          * The command buffer can be either a one-off used for a particular
@@ -51,8 +52,8 @@ namespace planet::vk {
         static command_buffer single_use(vk::command_pool &);
         /// #### End and submit on the graphics queue
         /**
-         * As well as combining the `end` with a `submit` to the device's
-         * graphics queue, it also waits for the queue to become idle again.
+         * As well as combining the `end` with a `submit` to the graphics queue,
+         * it also waits for the queue to become idle again.
          */
         void end_and_submit();
 
@@ -64,7 +65,12 @@ namespace planet::vk {
         /// #### `vkEndCommandBuffer`
         void end();
         /// #### `vkQueueSubmit`
-        void submit(VkQueue);
+        /**
+         * The queue that is used is the one given to the original
+         * `command_pool`, or the graphics queue if the `command_pool` is given
+         * a surface.
+         */
+        void submit();
 
 
       private:
@@ -104,7 +110,7 @@ namespace planet::vk {
     class command_pool final {
         using handle_type = device_handle<VkCommandPool, vkDestroyCommandPool>;
         handle_type handle;
-        vk::queue transfer_queue;
+        vk::queue queue;
 
 
       public:
@@ -114,6 +120,7 @@ namespace planet::vk {
 
         device_view device;
         VkCommandPool get() const noexcept { return handle.get(); }
+        VkQueue command_queue();
     };
 
 
