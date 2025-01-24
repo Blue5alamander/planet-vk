@@ -205,6 +205,7 @@ namespace planet::vk::engine {
 
             affine::matrix3d world;
             affine::matrix3d screen;
+            affine::matrix3d perspective = {};
         };
         coordinate_space coordinates{*this};
         std::array<buffer<coordinate_space>, max_frames_in_flight>
