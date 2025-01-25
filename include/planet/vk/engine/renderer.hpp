@@ -107,6 +107,8 @@ namespace planet::vk::engine {
          * matrix from the `logical_vulkan_space`.
          */
         void reset_world_coordinates(affine::matrix3d const &);
+        void reset_world_coordinates(
+                affine::matrix3d const &, affine::matrix3d const &);
 
         /// #### Transformation into and out of pixel coordinate space
         /**

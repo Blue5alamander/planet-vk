@@ -80,6 +80,11 @@ void planet::vk::engine::renderer::reset_world_coordinates(
         affine::matrix3d const &m) {
     coordinates.world = m;
 }
+void planet::vk::engine::renderer::reset_world_coordinates(
+        affine::matrix3d const &m, affine::matrix3d const &p) {
+    coordinates.world = m;
+    coordinates.perspective = p;
+}
 
 
 planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
