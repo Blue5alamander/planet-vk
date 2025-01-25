@@ -5,12 +5,13 @@ layout(location = 1) in vec4 inColor;
 
 layout(location = 0) out vec4 fragColor;
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform CoordinateSpace {
     mat4 world;
     mat4 screen;
-} ubo;
+    mat4 perspective;
+} coordinates;
 
 void main() {
-    gl_Position = ubo.world * inPosition;
+    gl_Position = coordinates.perspective * coordinates.world * inPosition;
     fragColor = inColor;
 }
