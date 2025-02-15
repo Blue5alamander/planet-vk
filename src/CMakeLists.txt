@@ -1,6 +1,7 @@
 find_package (Vulkan REQUIRED)
 
 add_library(planet-vk
+        colour.cpp
         commands.cpp
         descriptors.cpp
         frame_buffer.cpp

@@ -1,6 +1,8 @@
 #pragma once
 
 
+#include <planet/serialise/forward.hpp>
+
 #include <vulkan/vulkan.h>
 
 
@@ -15,6 +17,9 @@ namespace planet::vk {
      * `best_format`](../../../src/render.engine.cpp)
      */
     struct colour {
+        static constexpr std::string_view box{"_p:vk:col"};
+
+
         float r{}, g{}, b{}, a = {1};
 
 
@@ -36,6 +41,9 @@ namespace planet::vk {
             return {c.r * m, c.g * m, c.b * m, c.a};
         }
     };
+    void save(planet::serialise::save_buffer &, colour const &);
+    void load(planet::serialise::box &, colour &);
+
 
     inline constexpr colour colour::black{};
     inline constexpr colour colour::white{1.0f, 1.0f, 1.0f};
