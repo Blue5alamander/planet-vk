@@ -54,7 +54,7 @@ namespace planet::vk {
 
 
         /// ### Wait for the device to become idle
-        void wait_idle() const { worked(vkDeviceWaitIdle(handle)); }
+        void wait_idle() const;
 
 
         /// ### Allocators

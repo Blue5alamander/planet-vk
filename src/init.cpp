@@ -247,6 +247,12 @@ void planet::vk::device::return_transfer_queue(
 }
 
 
+void planet::vk::device::wait_idle() const {
+    worked(vkDeviceWaitIdle(handle));
+    planet::log::info("GPU device now idle");
+}
+
+
 /// ## `planet::vk::extensions`
 
 
