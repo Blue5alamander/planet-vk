@@ -2,6 +2,7 @@
 
 
 #include <planet/vk/commands.hpp>
+#include <planet/vk/engine/forward.hpp>
 
 
 namespace planet::vk::engine {
