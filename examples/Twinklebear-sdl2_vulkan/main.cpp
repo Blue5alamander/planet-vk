@@ -95,9 +95,9 @@ int main(int, const char **argv) {
     }()};
     planet::vk::graphics_pipeline vk_pipeline{[&]() {
         planet::vk::shader_module vertex_shader_module{
-                vk_device, assets.file_data("vert.vert.spirv")};
+                vk_device, assets.file_data("vertex.vert.spirv")};
         planet::vk::shader_module fragment_shader_module{
-                vk_device, assets.file_data("frag.frag.spirv")};
+                vk_device, assets.file_data("fragment.frag.spirv")};
         std::array shader_stages{
                 vertex_shader_module.shader_stage_info(
                         VK_SHADER_STAGE_VERTEX_BIT, "main"),
