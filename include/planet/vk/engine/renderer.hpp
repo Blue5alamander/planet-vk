@@ -110,6 +110,15 @@ namespace planet::vk::engine {
         void reset_world_coordinates(
                 affine::matrix3d const &, affine::matrix3d const &);
 
+        /// #### Access the world and perspective transformations
+        affine::matrix3d const &world_coordinates() const noexcept {
+            return coordinates.world;
+        }
+        affine::matrix3d const &perspective_projection() const noexcept {
+            return coordinates.perspective;
+        }
+
+
         /// #### Transformation into and out of pixel coordinate space
         /**
          * Maps between the Vulkan coordinate space and pixel coordinates. Pixel
