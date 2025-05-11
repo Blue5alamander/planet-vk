@@ -234,6 +234,15 @@ felspar::coro::task<std::size_t>
     vkCmdBeginRenderPass(
             cb.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
+    VkViewport viewport = {};
+    viewport.x = 0.0f;
+    viewport.y = app.window.height();
+    viewport.width = app.window.width();
+    viewport.height = -app.window.height();
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cb.get(), 0, 1, &viewport);
+
     std::memcpy(
             viewport_mapping[current_frame].get(), &coordinates,
             sizeof(coordinate_space));
@@ -399,6 +408,9 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     viewport.height = -app.window.height();
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
+    planet::log::debug(
+            "Viewport", viewport.x, viewport.y, viewport.width,
+            viewport.height);
 
     // Scissor rect config
     VkRect2D scissor = {};
@@ -413,6 +425,16 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     viewport_state_info.pViewports = &viewport;
     viewport_state_info.scissorCount = 1;
     viewport_state_info.pScissors = &scissor;
+
+    // Set up dynamic state
+    static auto constexpr dynamic_states =
+            std::array{VK_DYNAMIC_STATE_VIEWPORT};
+    VkPipelineDynamicStateCreateInfo pipleline_dynamic_states{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = {},
+            .dynamicStateCount = dynamic_states.size(),
+            .pDynamicStates = dynamic_states.data()};
 
     VkPipelineRasterizationStateCreateInfo rasterizer_info = {};
     rasterizer_info.sType =
@@ -479,6 +501,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     graphics_pipeline_info.pMultisampleState = &multisampling;
     graphics_pipeline_info.pDepthStencilState = &depth_stencil;
     graphics_pipeline_info.pColorBlendState = &blend_info;
+    graphics_pipeline_info.pDynamicState = &pipleline_dynamic_states;
     graphics_pipeline_info.subpass = parameters.sub_pass;
 
     return planet::vk::graphics_pipeline{
