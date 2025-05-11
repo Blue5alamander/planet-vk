@@ -16,10 +16,10 @@ planet::vk::engine::renderer::renderer(engine::app &a)
 : app{a},
   screen_space{
           affine::transform2d{}
-                  .scale(2.0f / app.window.width(), 2.0f / app.window.height())
-                  .translate({-1.0f, -1.0f})},
+                  .scale(2.0f / app.window.width(), -2.0f / app.window.height())
+                  .translate({-1.0f, 1.0f})},
   logical_vulkan_space{affine::transform2d{}.scale(
-          app.window.height() / app.window.width(), -1.0f)},
+          app.window.height() / app.window.width(), 1.0f)},
   viewport_buffer{
           buffer<coordinate_space>{
                   app.device.startup_memory, 1u,
@@ -394,9 +394,9 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     // Viewport config
     VkViewport viewport = {};
     viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = app.window.uzwidth();
-    viewport.height = app.window.uzheight();
+    viewport.y = app.window.height();
+    viewport.width = app.window.width();
+    viewport.height = -app.window.height();
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
