@@ -211,8 +211,9 @@ namespace planet::vk::engine {
 
         struct coordinate_space {
             coordinate_space(renderer &rp)
-            : world{rp.logical_vulkan_space.into()},
-              screen{rp.screen_space.into()} {}
+            : world{},
+              screen{rp.screen_space.into()},
+              perspective{rp.logical_vulkan_space.into()} {}
 
             affine::matrix3d world;
             affine::matrix3d screen;
