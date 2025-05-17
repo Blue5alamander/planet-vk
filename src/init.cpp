@@ -159,7 +159,7 @@ planet::vk::device::device(
             instance.surface.presentation_queue_family_index();
     auto const transfer_family = instance.surface.transfer_queue_family_index();
 
-    const float queue_priority = 1.f;
+    static auto constexpr queue_priority = std::array{1.0f, 1.0f};
     queue_create_infos.push_back(
             {.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
              .pNext = nullptr,
@@ -167,7 +167,7 @@ planet::vk::device::device(
              .queueFamilyIndex = graphics_family,
              .queueCount = static_cast<std::uint32_t>(
                      transfer_family == graphics_family ? 2 : 1),
-             .pQueuePriorities = &queue_priority});
+             .pQueuePriorities = queue_priority.data()});
     if (graphics_family != presentation_family) {
         queue_create_infos.push_back(
                 {.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -175,7 +175,7 @@ planet::vk::device::device(
                  .flags = {},
                  .queueFamilyIndex = presentation_family,
                  .queueCount = 1,
-                 .pQueuePriorities = &queue_priority});
+                 .pQueuePriorities = queue_priority.data()});
     }
     if (transfer_family and transfer_family != graphics_family) {
         queue_create_infos.push_back(
@@ -184,7 +184,7 @@ planet::vk::device::device(
                  .flags = {},
                  .queueFamilyIndex = *transfer_family,
                  .queueCount = 1,
-                 .pQueuePriorities = &queue_priority});
+                 .pQueuePriorities = queue_priority.data()});
     }
 
     VkPhysicalDeviceFeatures device_features = {};
