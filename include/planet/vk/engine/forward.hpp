@@ -32,8 +32,6 @@ namespace planet::vk::engine {
     namespace ui {
 
 
-        template<typename T>
-        struct per_frame;
         template<
                 typename Pipeline = pipeline::textured,
                 typename Texture = vk::texture>

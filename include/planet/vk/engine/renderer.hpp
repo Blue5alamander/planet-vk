@@ -16,9 +16,6 @@ namespace planet::vk::engine {
 
     /// ## Renderer
     class renderer final {
-        template<typename T>
-        friend struct ui::per_frame;
-
         std::size_t current_frame = {};
         vk::render_pass create_render_pass();
 
