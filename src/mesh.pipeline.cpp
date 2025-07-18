@@ -52,7 +52,8 @@ planet::vk::engine::pipeline::mesh::mesh(
            .binding_descriptions = binding_description,
            .attribute_descriptions = attribute_description,
            .blend_mode = bm,
-           .pipeline_layout = pipeline_layout{r.app.device, r.ubo_layout}})} {}
+           .pipeline_layout = pipeline_layout{
+                   r.app.device, r.coordinates_ubo_layout()}})} {}
 
 
 namespace {

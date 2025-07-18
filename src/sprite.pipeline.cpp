@@ -94,7 +94,9 @@ planet::vk::graphics_pipeline
              .attribute_descriptions = attribute_description,
              .pipeline_layout = pipeline_layout{
                      r.app.device,
-                     std::array{r.ubo_layout.get(), texture_layout.get()},
+                     std::array{
+                             r.coordinates_ubo_layout().get(),
+                             texture_layout.get()},
                      std::array{pc}}});
 }
 

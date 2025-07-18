@@ -7,6 +7,7 @@
 #include <planet/vk/engine/depth_buffer.hpp>
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
+#include <planet/vk/engine/ubo.hpp>
 
 #include <planet/affine/matrix3d.hpp>
 
@@ -50,9 +51,6 @@ namespace planet::vk::engine {
 
         /// ### Swap chain, command buffers and synchronisation
         vk::swap_chain swap_chain{app.device, app.window.extents()};
-        vk::descriptor_set_layout ubo_layout{
-                vk::descriptor_set_layout::for_uniform_buffer_object(
-                        app.device)};
 
         vk::command_pool command_pool{app.device, app.instance.surface};
         vk::command_buffers command_buffers{command_pool, max_frames_in_flight};
@@ -109,10 +107,15 @@ namespace planet::vk::engine {
 
         /// #### Access the world and perspective transformations
         affine::matrix3d const &world_coordinates() const noexcept {
-            return coordinates.world;
+            return coordinates.current.world;
         }
         affine::matrix3d const &perspective_projection() const noexcept {
-            return coordinates.perspective;
+            return coordinates.current.perspective;
+        }
+
+        /// #### The UBO descriptor layout for coordinates
+        descriptor_set_layout const &coordinates_ubo_layout() const {
+            return coordinates.ubo_layout;
         }
 
 
@@ -212,20 +215,17 @@ namespace planet::vk::engine {
               screen{rp.screen_space.into()},
               perspective{rp.logical_vulkan_space.into()} {}
 
+
             affine::matrix3d world;
             affine::matrix3d screen;
             affine::matrix3d perspective = {};
-        };
-        coordinate_space coordinates{*this};
-        std::array<buffer<coordinate_space>, max_frames_in_flight>
-                viewport_buffer;
-        std::array<device_memory::mapping, max_frames_in_flight> viewport_mapping;
 
-        vk::descriptor_pool ubo_pool{
-                app.device, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                max_frames_in_flight};
-        vk::descriptor_sets ubo_sets{
-                ubo_pool, ubo_layout, max_frames_in_flight};
+
+            void copy_to_gpu_memory(std::byte *memory) const {
+                std::memcpy(memory, this, sizeof(coordinate_space));
+            }
+        };
+        ubo<coordinate_space> coordinates;
 
 
         /// TODO This array would be better as a circular buffer

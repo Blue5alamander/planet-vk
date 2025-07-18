@@ -20,50 +20,7 @@ planet::vk::engine::renderer::renderer(engine::app &a)
                   .translate({-1.0f, 1.0f})},
   logical_vulkan_space{affine::transform2d{}.scale(
           app.window.height() / app.window.width(), 1.0f)},
-  viewport_buffer{
-          buffer<coordinate_space>{
-                  app.device.startup_memory, 1u,
-                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
-          buffer<coordinate_space>{
-                  app.device.startup_memory, 1u,
-                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
-          buffer<coordinate_space>{
-                  app.device.startup_memory, 1u,
-                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT}},
-  viewport_mapping{
-          viewport_buffer[0].map(), viewport_buffer[1].map(),
-          viewport_buffer[2].map()} {
-
-    for (auto &mapping : viewport_mapping) {
-        std::memcpy(mapping.get(), &coordinates, sizeof(coordinate_space));
-    }
-
-    for (std::size_t index{}; auto const &vpb : viewport_buffer) {
-        VkDescriptorBufferInfo info{};
-        info.buffer = vpb.get();
-        info.offset = 0;
-        info.range = sizeof(coordinate_space);
-
-        VkWriteDescriptorSet set{};
-        set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        set.dstSet = ubo_sets[index];
-        set.dstBinding = 0;
-        set.dstArrayElement = 0;
-        set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        set.descriptorCount = 1;
-        set.pBufferInfo = &info;
-
-        vkUpdateDescriptorSets(app.device.get(), 1, &set, 0, nullptr);
-
-        ++index;
-    }
-}
+  coordinates{app.device.startup_memory, {*this}} {}
 planet::vk::engine::renderer::~renderer() {
     /// Because images can be in flight when we're destructed, we have to wait
     /// for them
@@ -78,12 +35,12 @@ planet::vk::engine::renderer::~renderer() {
 
 void planet::vk::engine::renderer::reset_world_coordinates(
         affine::matrix3d const &m) {
-    coordinates.world = m;
+    coordinates.current.world = m;
 }
 void planet::vk::engine::renderer::reset_world_coordinates(
         affine::matrix3d const &m, affine::matrix3d const &p) {
-    coordinates.world = m;
-    coordinates.perspective = p;
+    coordinates.current.world = m;
+    coordinates.current.perspective = p;
 }
 
 
@@ -243,9 +200,7 @@ felspar::coro::task<std::size_t>
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(cb.get(), 0, 1, &viewport);
 
-    std::memcpy(
-            viewport_mapping[current_frame].get(), &coordinates,
-            sizeof(coordinate_space));
+    coordinates.copy_to_gpu_memory(current_frame);
 
     app.baseplate.start_frame_reset();
 
@@ -259,7 +214,7 @@ auto planet::vk::engine::renderer::bind(planet::vk::graphics_pipeline &pl)
     vkCmdBindPipeline(cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.get());
     vkCmdBindDescriptorSets(
             cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.layout.get(), 0, 1,
-            &ubo_sets[current_frame], 0, nullptr);
+            &coordinates.ubo_sets[current_frame], 0, nullptr);
     return {*this, cb, current_frame};
 }
 

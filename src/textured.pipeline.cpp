@@ -73,7 +73,8 @@ planet::vk::engine::pipeline::textured::textured(
                    pipeline_layout{
                            r.app.device,
                            std::array{
-                                   r.ubo_layout.get(), texture_layout.get()}}})},
+                                   r.coordinates_ubo_layout().get(),
+                                   texture_layout.get()}}})},
   max_textures_per_frame{mtpf},
   texture_pool{
           r.app.device, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
