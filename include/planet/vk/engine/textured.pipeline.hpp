@@ -5,6 +5,7 @@
 #include <planet/telemetry/minmax.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
+#include <planet/vk/ubo/textures.hpp>
 
 
 namespace planet::vk::engine::pipeline {
@@ -27,6 +28,8 @@ namespace planet::vk::engine::pipeline {
                 std::uint32_t textures_per_frame = 256,
                 id::suffix = id::suffix::no);
 
+
+        vk::textures textures;
         vk::descriptor_set_layout texture_layout;
         vk::graphics_pipeline pipeline;
 
@@ -47,13 +50,12 @@ namespace planet::vk::engine::pipeline {
         /// ### Texture data to be drawn
         std::vector<vertex> vertices;
         std::vector<std::uint32_t> indices;
-        std::vector<VkDescriptorImageInfo> textures;
 
 
         void clear() {
             vertices.clear();
             indices.clear();
-            textures.clear();
+            textures.descriptors.clear();
         }
         [[nodiscard]] bool empty() const noexcept { return vertices.empty(); }
 

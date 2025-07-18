@@ -114,11 +114,11 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     vkCmdBindIndexBuffer(
             rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
-    textures_in_frame.value(textures.size());
-    if (textures.size() > max_textures_per_frame) {
+    textures_in_frame.value(textures.descriptors.size());
+    if (textures.descriptors.size() > max_textures_per_frame) {
         planet::log::error("We will run out of texture slots for this frame");
     }
-    for (std::size_t index{}; auto const &tx : textures) {
+    for (std::size_t index{}; auto const &tx : textures.descriptors) {
         VkWriteDescriptorSet wds{};
         wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -158,7 +158,7 @@ void planet::vk::engine::pipeline::textured::draw(
     auto const start_index = vertices.size();
     for (auto const &v : vs) { vertices.push_back(v); }
     for (auto const &i : ix) { indices.push_back(start_index + i); }
-    for (auto const &t : tx) { textures.push_back(t); }
+    for (auto const &t : tx) { textures.descriptors.push_back(t); }
 }
 
 
@@ -196,8 +196,9 @@ void planet::vk::engine::pipeline::textured::draw(
     indices.push_back(quad_index + 3);
     indices.push_back(quad_index + 2);
 
-    textures.emplace_back();
-    textures.back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    textures.back().imageView = texture.first.image_view.get();
-    textures.back().sampler = texture.first.sampler.get();
+    textures.descriptors.emplace_back();
+    textures.descriptors.back().imageLayout =
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    textures.descriptors.back().imageView = texture.first.image_view.get();
+    textures.descriptors.back().sampler = texture.first.sampler.get();
 }

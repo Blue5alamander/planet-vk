@@ -6,6 +6,7 @@
 #include <planet/telemetry/minmax.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
+#include <planet/vk/ubo/textures.hpp>
 
 
 namespace planet::vk::engine::pipeline {
@@ -33,12 +34,16 @@ namespace planet::vk::engine::pipeline {
                std::uint32_t textures_per_frame = 256,
                id::suffix = id::suffix::no);
 
+
+        vk::textures textures;
         vk::descriptor_set_layout texture_layout;
         vk::graphics_pipeline pipeline;
+
 
         struct push_constant {
             affine::matrix3d transform;
         };
+
 
         /// ### Position for a sprite
         struct location {
@@ -97,7 +102,6 @@ namespace planet::vk::engine::pipeline {
 
         std::vector<vertex> quads;
         std::vector<std::uint32_t> indexes;
-        std::vector<VkDescriptorImageInfo> textures;
         std::vector<push_constant> transforms;
 
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
