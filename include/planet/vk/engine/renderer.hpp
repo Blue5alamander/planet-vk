@@ -7,7 +7,7 @@
 #include <planet/vk/engine/depth_buffer.hpp>
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
-#include <planet/vk/engine/ubo.hpp>
+#include <planet/vk/ubo.hpp>
 
 #include <planet/affine/matrix3d.hpp>
 
@@ -225,7 +225,7 @@ namespace planet::vk::engine {
                 std::memcpy(memory, this, sizeof(coordinate_space));
             }
         };
-        ubo<coordinate_space> coordinates;
+        ubo<coordinate_space, max_frames_in_flight> coordinates;
 
 
         /// TODO This array would be better as a circular buffer

@@ -5,15 +5,20 @@
 #include <planet/vk/descriptors.hpp>
 
 
-namespace planet::vk::engine {
+namespace planet::vk {
 
 
     /// ## Uniform Data Object
-    template<typename Struct>
+    template<typename Struct, std::size_t Frames>
     struct ubo {
         ubo(device_memory_allocator &a, Struct s)
         : allocator{a}, current{std::move(s)} {
-            for (std::size_t index{}; index < max_frames_in_flight; ++index) {
+            for (std::size_t index{}; index < Frames; ++index) {
+                buffers[index] = {
+                        allocator, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                                | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+                mappings[index] = buffers[index].map();
                 copy_to_gpu_memory(index);
 
                 VkDescriptorBufferInfo info{};
@@ -37,29 +42,15 @@ namespace planet::vk::engine {
 
         device_memory_allocator &allocator;
         Struct current;
-        std::array<buffer<Struct>, max_frames_in_flight> buffers{
-                buffer<Struct>{
-                        allocator, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                                | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
-                buffer<Struct>{
-                        allocator, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                                | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT},
-                buffer<Struct>{
-                        allocator, 1u, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                                | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT}};
-        std::array<device_memory::mapping, max_frames_in_flight> mappings{
-                buffers[0].map(), buffers[1].map(), buffers[2].map()};
+
+        std::array<buffer<Struct>, Frames> buffers{};
+        std::array<device_memory::mapping, Frames> mappings{};
         vk::descriptor_set_layout ubo_layout{
                 vk::descriptor_set_layout::for_uniform_buffer_object(
                         allocator.device)};
         vk::descriptor_pool ubo_pool{
-                allocator.device, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                max_frames_in_flight};
-        vk::descriptor_sets ubo_sets{
-                ubo_pool, ubo_layout, max_frames_in_flight};
+                allocator.device, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Frames};
+        vk::descriptor_sets ubo_sets{ubo_pool, ubo_layout, Frames};
 
 
         void copy_to_gpu_memory(std::size_t index) const {
