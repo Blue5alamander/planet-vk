@@ -30,7 +30,6 @@ namespace planet::vk::engine::pipeline {
 
 
         vk::textures textures;
-        vk::descriptor_set_layout texture_layout;
         vk::graphics_pipeline pipeline;
 
 

@@ -53,15 +53,7 @@ planet::vk::engine::pipeline::textured::textured(
         std::uint32_t const mtpf,
         id::suffix const suffix)
 : id{n, suffix},
-  texture_layout{[&]() {
-      VkDescriptorSetLayoutBinding binding{};
-      binding.binding = 0;
-      binding.descriptorCount = 1;
-      binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-      binding.pImmutableSamplers = nullptr;
-      binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-      return vk::descriptor_set_layout{r.app.device, binding};
-  }()},
+  textures{.device = r.app.device},
   pipeline{planet::vk::engine::create_graphics_pipeline(
           {.app = r.app,
            .renderer = r,
@@ -74,7 +66,7 @@ planet::vk::engine::pipeline::textured::textured(
                            r.app.device,
                            std::array{
                                    r.coordinates_ubo_layout().get(),
-                                   texture_layout.get()}}})},
+                                   textures.layout.get()}}})},
   max_textures_per_frame{mtpf},
   texture_pool{
           r.app.device, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -82,11 +74,11 @@ planet::vk::engine::pipeline::textured::textured(
                   max_frames_in_flight * max_textures_per_frame)},
   texture_sets{
           vk::descriptor_sets{
-                  texture_pool, texture_layout, max_textures_per_frame},
+                  texture_pool, textures.layout, max_textures_per_frame},
           vk::descriptor_sets{
-                  texture_pool, texture_layout, max_textures_per_frame},
+                  texture_pool, textures.layout, max_textures_per_frame},
           vk::descriptor_sets{
-                  texture_pool, texture_layout, max_textures_per_frame}},
+                  texture_pool, textures.layout, max_textures_per_frame}},
   textures_in_frame{name() + "__textures_in_frame"} {}
 
 
