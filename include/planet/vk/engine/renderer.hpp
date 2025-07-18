@@ -115,7 +115,7 @@ namespace planet::vk::engine {
 
         /// #### The UBO descriptor layout for coordinates
         descriptor_set_layout const &coordinates_ubo_layout() const {
-            return coordinates.ubo_layout;
+            return coordinates.layout;
         }
 
 

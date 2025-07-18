@@ -28,7 +28,7 @@ namespace planet::vk {
 
                 VkWriteDescriptorSet set{};
                 set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                set.dstSet = ubo_sets[index];
+                set.dstSet = sets[index];
                 set.dstBinding = 0;
                 set.dstArrayElement = 0;
                 set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -45,12 +45,12 @@ namespace planet::vk {
 
         std::array<buffer<Struct>, Frames> buffers{};
         std::array<device_memory::mapping, Frames> mappings{};
-        vk::descriptor_set_layout ubo_layout{
+        vk::descriptor_set_layout layout{
                 vk::descriptor_set_layout::for_uniform_buffer_object(
                         allocator.device)};
-        vk::descriptor_pool ubo_pool{
+        vk::descriptor_pool pool{
                 allocator.device, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Frames};
-        vk::descriptor_sets ubo_sets{ubo_pool, ubo_layout, Frames};
+        vk::descriptor_sets sets{pool, layout, Frames};
 
 
         void copy_to_gpu_memory(std::size_t index) const {
