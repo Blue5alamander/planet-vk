@@ -61,17 +61,15 @@ namespace planet::vk::engine::ui {
 
     template<>
     inline void tx<pipeline::textured, vk::texture>::draw() {
-        if (texture) { pl.this_frame.draw(texture, position(), colour); }
+        if (texture) { pl.draw(texture, position(), colour); }
     }
     template<>
     inline void tx<pipeline::textured, vk::texture *>::draw() {
-        if (texture and *texture) {
-            pl.this_frame.draw(*texture, position(), colour);
-        }
+        if (texture and *texture) { pl.draw(*texture, position(), colour); }
     }
     template<>
     inline void tx<pipeline::textured, sub_texture>::draw() {
-        if (texture.first) { pl.this_frame.draw(texture, position(), colour); }
+        if (texture.first) { pl.draw(texture, position(), colour); }
     }
 
 

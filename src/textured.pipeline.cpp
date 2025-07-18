@@ -91,17 +91,17 @@ planet::vk::engine::pipeline::textured::textured(
 
 
 void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
-    if (this_frame.empty()) { return; }
+    if (empty()) { return; }
 
     auto &vertex_buffer = vertex_buffers[rp.current_frame];
     vertex_buffer = {
-            rp.renderer.per_frame_memory, this_frame.vertices,
+            rp.renderer.per_frame_memory, vertices,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     auto &index_buffer = index_buffers[rp.current_frame];
     index_buffer = {
-            rp.renderer.per_frame_memory, this_frame.indices,
+            rp.renderer.per_frame_memory, indices,
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
@@ -114,11 +114,11 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     vkCmdBindIndexBuffer(
             rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
-    textures_in_frame.value(this_frame.textures.size());
-    if (this_frame.textures.size() > max_textures_per_frame) {
+    textures_in_frame.value(textures.size());
+    if (textures.size() > max_textures_per_frame) {
         planet::log::error("We will run out of texture slots for this frame");
     }
-    for (std::size_t index{}; auto const &tx : this_frame.textures) {
+    for (std::size_t index{}; auto const &tx : textures) {
         VkWriteDescriptorSet wds{};
         wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -147,14 +147,11 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     }
 
     // Clear out data from this frame
-    this_frame.clear();
+    clear();
 }
 
 
-/// ## `planet::vk::engine::pipeline::textured::data`
-
-
-void planet::vk::engine::pipeline::textured::data::draw(
+void planet::vk::engine::pipeline::textured::draw(
         std::span<vertex const> const vs,
         std::span<std::uint32_t const> const ix,
         std::span<VkDescriptorImageInfo const> const tx) {
@@ -165,7 +162,7 @@ void planet::vk::engine::pipeline::textured::data::draw(
 }
 
 
-void planet::vk::engine::pipeline::textured::data::draw(
+void planet::vk::engine::pipeline::textured::draw(
         vk::sub_texture const &texture,
         affine::rectangle2d const &pos,
         vk::colour const &colour,
