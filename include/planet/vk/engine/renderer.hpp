@@ -7,7 +7,7 @@
 #include <planet/vk/engine/depth_buffer.hpp>
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
-#include <planet/vk/ubo.hpp>
+#include <planet/vk/ubo/coordinate_space.hpp>
 
 #include <planet/affine/matrix3d.hpp>
 
@@ -207,25 +207,8 @@ namespace planet::vk::engine {
                         felspar::source_location::current());
 
 
-        /// ### View port transformation matrix and UBO
-
-        struct coordinate_space {
-            coordinate_space(renderer &rp)
-            : world{},
-              screen{rp.screen_space.into()},
-              perspective{rp.logical_vulkan_space.into()} {}
-
-
-            affine::matrix3d world;
-            affine::matrix3d screen;
-            affine::matrix3d perspective = {};
-
-
-            void copy_to_gpu_memory(std::byte *memory) const {
-                std::memcpy(memory, this, sizeof(coordinate_space));
-            }
-        };
-        ubo<coordinate_space, max_frames_in_flight> coordinates;
+        /// ### Standard UBOs
+        coordinate_space::ubo_type<max_frames_in_flight> coordinates;
 
 
         /// TODO This array would be better as a circular buffer

@@ -20,10 +20,15 @@ planet::vk::engine::renderer::renderer(engine::app &a)
                   .translate({-1.0f, 1.0f})},
   logical_vulkan_space{affine::transform2d{}.scale(
           app.window.height() / app.window.width(), 1.0f)},
-  coordinates{app.device.startup_memory, {*this}} {}
+  coordinates{
+          app.device.startup_memory,
+          {.screen{screen_space.into()},
+           .perspective{logical_vulkan_space.into()}}} {}
 planet::vk::engine::renderer::~renderer() {
-    /// Because images can be in flight when we're destructed, we have to wait
-    /// for them
+    /**
+     * Because images can be in flight when we're destructed, we have to wait
+     * for them
+     */
     for (auto &f : fence) {
         std::array waitfor{f.get()};
         vkWaitForFences(
