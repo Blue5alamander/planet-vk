@@ -11,10 +11,28 @@ namespace planet::vk::engine::pipeline {
 
     /// ## 2D triangle mesh with per-vertex colour
     class mesh final {
+        static pipeline_layout default_layout(engine::renderer &);
+
+
       public:
+        /// ### Construction
+        /**
+         * Always supply the renderer and the filename of the vertex shader, but
+         * the blend mode and the pipeline layout are both optional.
+         */
+        mesh(engine::renderer &r,
+             std::string_view const vertex_spirv,
+             blend_mode const bm = blend_mode::multiply)
+        : mesh{r, vertex_spirv, bm, default_layout(r)} {}
+        mesh(engine::renderer &r,
+             std::string_view const vertex_spirv,
+             pipeline_layout layout)
+        : mesh{r, vertex_spirv, blend_mode::multiply, std::move(layout)} {}
         mesh(engine::renderer &,
              std::string_view vertex_spirv,
-             blend_mode = blend_mode::multiply);
+             blend_mode,
+             pipeline_layout);
+
 
         vk::graphics_pipeline pipeline;
 
@@ -72,7 +90,6 @@ namespace planet::vk::engine::pipeline {
 
       private:
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
-
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
     };
 
