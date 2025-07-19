@@ -60,9 +60,18 @@ namespace planet::vk::ubo {
 
 
         void copy_to_gpu_memory(std::size_t index) const {
-            current.copy_to_gpu_memory(mappings[index].get());
+            do_copy_to_gpu_memory(current, mappings[index].get());
         }
     };
+
+    /**
+     * The default implementation assumes the struct has a `copy_to_gpu_memory`
+     * member function to call.
+     */
+    template<typename Struct>
+    inline void do_copy_to_gpu_memory(Struct const &s, std::byte *d) {
+        s.copy_to_gpu_memory(d);
+    }
 
 
 }
