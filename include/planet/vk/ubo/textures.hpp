@@ -1,6 +1,9 @@
 #pragma once
 
 
+#include <planet/affine/point3d.hpp>
+#include <planet/log.hpp>
+#include <planet/telemetry/minmax.hpp>
 #include <planet/vk/descriptors.hpp>
 #include <planet/vk/device.hpp>
 
@@ -15,8 +18,13 @@ namespace planet::vk {
      */
     template<std::size_t Frames>
     struct textures {
-        textures(vk::device &d, std::uint32_t max_textures_per_frame)
-        : device{d}, max_per_frame{max_textures_per_frame} {
+        textures(
+                std::string_view const name,
+                vk::device &d,
+                std::uint32_t max_textures_per_frame)
+        : device{d},
+          max_per_frame{max_textures_per_frame},
+          textures_in_frame{std::string{name} + "__textures_in_frame"} {
             for (std::size_t index{}; index < Frames; ++index) {
                 sets[index] = {pool, layout, max_per_frame};
             }
@@ -26,6 +34,7 @@ namespace planet::vk {
         /// ### Configuration
         vk::device &device;
         std::uint32_t max_per_frame;
+        telemetry::max textures_in_frame;
 
 
         /// ### Vulkan set up
@@ -61,8 +70,7 @@ namespace planet::vk {
             VkVertexInputBindingDescription description{};
 
             description.binding = 0;
-            description.stride =
-            sizeof(vertex);
+            description.stride = sizeof(vertex);
             description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
             return std::array{description};
@@ -73,20 +81,17 @@ namespace planet::vk {
             attrs[0].binding = 0;
             attrs[0].location = 0;
             attrs[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-            attrs[0].offset =
-            offsetof(vertex, p);
+            attrs[0].offset = offsetof(vertex, p);
 
             attrs[1].binding = 0;
             attrs[1].location = 1;
             attrs[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-            attrs[1].offset =
-            offsetof(vertex, col);
+            attrs[1].offset = offsetof(vertex, col);
 
             attrs[2].binding = 0;
             attrs[2].location = 2;
             attrs[2].format = VK_FORMAT_R32G32_SFLOAT;
-            attrs[2].offset =
-            offsetof(vertex, uv);
+            attrs[2].offset = offsetof(vertex, uv);
 
             return attrs;
         }()};
@@ -99,6 +104,57 @@ namespace planet::vk {
 
         /// ### Per-frame data
         std::vector<VkDescriptorImageInfo> descriptors = {};
+        std::vector<vertex> vertices;
+        std::vector<std::uint32_t> indices;
+
+
+        /// ### Upload buffers to GPU
+        [[nodiscard]] bool
+                bind(device_memory_allocator &allocator,
+                     std::size_t frame_index,
+                     command_buffer &cb)
+        /**
+         * Returns `true` if there are vertices and indices and they have been
+         * uploaded to the GPU. If `false` then there is nothing more to do in
+         * any render calls for pipelines using this UBO.
+         */
+        {
+            if (empty()) { return false; }
+
+            auto &vertex_buffer = vertex_buffers[frame_index];
+            vertex_buffer = {
+                    allocator, vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+            auto &index_buffer = index_buffers[frame_index];
+            index_buffer = {
+                    allocator, indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                            | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+
+            std::array buffers{vertex_buffer.get()};
+            std::array offset{VkDeviceSize{}};
+
+            vkCmdBindVertexBuffers(
+                    cb.get(), 0, buffers.size(), buffers.data(), offset.data());
+            vkCmdBindIndexBuffer(
+                    cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
+
+            textures_in_frame.value(descriptors.size());
+            if (descriptors.size() > max_per_frame) {
+                planet::log::critical(
+                        "We will run out of texture slots for this frame");
+            }
+            return true;
+        }
+
+
+        void clear() {
+            vertices.clear();
+            indices.clear();
+            descriptors.clear();
+        }
+        [[nodiscard]] bool empty() const noexcept { return vertices.empty(); }
     };
 
 

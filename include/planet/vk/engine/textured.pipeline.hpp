@@ -1,8 +1,6 @@
 #pragma once
 
 
-#include <planet/affine/point3d.hpp>
-#include <planet/telemetry/minmax.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 #include <planet/vk/ubo/textures.hpp>
@@ -12,6 +10,12 @@ namespace planet::vk::engine::pipeline {
 
 
     /// ## Textured triangle pipeline
+    /**
+     * The current implementation assumes that only quads are being drawn. To
+     * fix this it will need to save how many vertices/indices are drawn per
+     * texture so it can dispatch the correct number per draw call after binding
+     * the texture.
+     */
     class textured final : private telemetry::id {
       public:
         textured(
@@ -34,17 +38,6 @@ namespace planet::vk::engine::pipeline {
 
 
         /// ### Texture data to be drawn
-        std::vector<vk::textures<max_frames_in_flight>::vertex> vertices;
-        std::vector<std::uint32_t> indices;
-
-
-        void clear() {
-            vertices.clear();
-            indices.clear();
-            textures.descriptors.clear();
-        }
-        [[nodiscard]] bool empty() const noexcept { return vertices.empty(); }
-
 
         /// #### 2D Z layer height
         float z_layer = 0.75f;
@@ -77,20 +70,10 @@ namespace planet::vk::engine::pipeline {
                      colour const &c = colour::white) {
             draw(t, r, c, z_layer);
         }
-        /// #### Draw a textured mesh
-        void
-                draw(std::span<vk::textures<max_frames_in_flight>::vertex const>,
-                     std::span<std::uint32_t const>,
-                     std::span<VkDescriptorImageInfo const>);
 
 
         /// ### Add draw commands to command buffer
         void render(render_parameters);
-
-
-      private:
-        /// ### Performance counters
-        telemetry::max textures_in_frame;
     };
 
 

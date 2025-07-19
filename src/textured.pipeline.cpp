@@ -12,7 +12,7 @@ planet::vk::engine::pipeline::textured::textured(
         std::uint32_t const mtpf,
         id::suffix const suffix)
 : id{n, suffix},
-  textures{r.app.device, mtpf},
+  textures{name(), r.app.device, mtpf},
   pipeline{planet::vk::engine::create_graphics_pipeline(
           {.app = r.app,
            .renderer = r,
@@ -20,42 +20,17 @@ planet::vk::engine::pipeline::textured::textured(
            .fragment_shader = "planet-vk-engine/textured.frag.spirv",
            .binding_descriptions = textures.binding_description,
            .attribute_descriptions = textures.attribute_description,
-           .pipeline_layout =
-                   pipeline_layout{
-                           r.app.device,
-                           std::array{
-                                   r.coordinates_ubo_layout().get(),
-                                   textures.layout.get()}}})},
-  textures_in_frame{name() + "__textures_in_frame"} {}
+           .pipeline_layout = pipeline_layout{
+                   r.app.device,
+                   std::array{
+                           r.coordinates_ubo_layout().get(),
+                           textures.layout.get()}}})} {}
 
 
 void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
-    if (empty()) { return; }
-
-    auto &vertex_buffer = textures.vertex_buffers[rp.current_frame];
-    vertex_buffer = {
-            rp.renderer.per_frame_memory, vertices,
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-    auto &index_buffer = textures.index_buffers[rp.current_frame];
-    index_buffer = {
-            rp.renderer.per_frame_memory, indices,
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-
-    std::array buffers{vertex_buffer.get()};
-    std::array offset{VkDeviceSize{}};
-
-    vkCmdBindVertexBuffers(
-            rp.cb.get(), 0, buffers.size(), buffers.data(), offset.data());
-    vkCmdBindIndexBuffer(
-            rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
-
-    textures_in_frame.value(textures.descriptors.size());
-    if (textures.descriptors.size() > textures.max_per_frame) {
-        planet::log::error("We will run out of texture slots for this frame");
+    if (not textures.bind(
+                rp.renderer.per_frame_memory, rp.current_frame, rp.cb)) {
+        return;
     }
     for (std::size_t index{}; auto const &tx : textures.descriptors) {
         VkWriteDescriptorSet wds{};
@@ -86,18 +61,7 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
     }
 
     // Clear out data from this frame
-    clear();
-}
-
-
-void planet::vk::engine::pipeline::textured::draw(
-        std::span<vk::textures<max_frames_in_flight>::vertex const> const vs,
-        std::span<std::uint32_t const> const ix,
-        std::span<VkDescriptorImageInfo const> const tx) {
-    auto const start_index = vertices.size();
-    for (auto const &v : vs) { vertices.push_back(v); }
-    for (auto const &i : ix) { indices.push_back(start_index + i); }
-    for (auto const &t : tx) { textures.descriptors.push_back(t); }
+    textures.clear();
 }
 
 
@@ -106,34 +70,34 @@ void planet::vk::engine::pipeline::textured::draw(
         affine::rectangle2d const &pos,
         vk::colour const &colour,
         float const z) {
-    std::size_t const quad_index = vertices.size();
+    std::size_t const quad_index = textures.vertices.size();
 
-    vertices.push_back(
+    textures.vertices.push_back(
             {planet::affine::point3d{pos.bottom_right(), z},
              colour,
              {texture.second.bottom_right().x(),
               texture.second.bottom_right().y()}});
-    vertices.push_back(
+    textures.vertices.push_back(
             {planet::affine::point3d{
                      pos.bottom_right().x(), pos.top_left.y(), z},
              colour,
              {texture.second.bottom_right().x(), texture.second.top_left.y()}});
-    vertices.push_back(
+    textures.vertices.push_back(
             {planet::affine::point3d{pos.top_left, z},
              colour,
              {texture.second.top_left.x(), texture.second.top_left.y()}});
-    vertices.push_back(
+    textures.vertices.push_back(
             {planet::affine::point3d{
                      pos.top_left.x(), pos.bottom_right().y(), z},
              colour,
              {texture.second.top_left.x(), texture.second.bottom_right().y()}});
 
-    indices.push_back(quad_index);
-    indices.push_back(quad_index + 2);
-    indices.push_back(quad_index + 1);
-    indices.push_back(quad_index);
-    indices.push_back(quad_index + 3);
-    indices.push_back(quad_index + 2);
+    textures.indices.push_back(quad_index);
+    textures.indices.push_back(quad_index + 2);
+    textures.indices.push_back(quad_index + 1);
+    textures.indices.push_back(quad_index);
+    textures.indices.push_back(quad_index + 3);
+    textures.indices.push_back(quad_index + 2);
 
     textures.descriptors.emplace_back();
     textures.descriptors.back().imageLayout =

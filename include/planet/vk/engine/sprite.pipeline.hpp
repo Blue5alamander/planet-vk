@@ -82,8 +82,6 @@ namespace planet::vk::engine::pipeline {
          * Used to size the descriptor pool and the descriptor sets. The number
          * of individual textures cannot be higher than this number.
          */
-        std::vector<vk::textures<max_frames_in_flight>::vertex> quads;
-        std::vector<std::uint32_t> indexes;
         std::vector<push_constant> transforms;
 
 
@@ -104,11 +102,6 @@ namespace planet::vk::engine::pipeline {
 
         /// ### Add draw commands to command buffer
         void render(render_parameters);
-
-
-      private:
-        /// ### Performance counters
-        telemetry::max textures_in_frame;
     };
 
 
