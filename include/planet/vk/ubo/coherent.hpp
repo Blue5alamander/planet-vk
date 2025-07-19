@@ -67,10 +67,24 @@ namespace planet::vk::ubo {
     /**
      * The default implementation assumes the struct has a `copy_to_gpu_memory`
      * member function to call.
+     *
+     * Depending on the types involved, you may need to have `using
+     * planet::vk::ubo::do_copy_to_gpu_memory;` in your code's namespace.
      */
     template<typename Struct>
     inline void do_copy_to_gpu_memory(Struct const &s, std::byte *d) {
         s.copy_to_gpu_memory(d);
+    }
+
+    template<typename Struct, std::size_t M>
+    inline void
+            do_copy_to_gpu_memory(std::span<Struct, M> const &s, std::byte *d) {
+        std::memcpy(d, s.data(), s.size_bytes());
+    }
+    template<typename Struct, std::size_t M>
+    inline void
+            do_copy_to_gpu_memory(std::array<Struct, M> const &s, std::byte *d) {
+        do_copy_to_gpu_memory(std::span{s}, d);
     }
 
 
