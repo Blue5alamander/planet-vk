@@ -33,7 +33,7 @@ namespace planet::vk::engine::pipeline {
                 id::suffix = id::suffix::no);
 
 
-        vk::textures<max_frames_in_flight> textures;
+        ubo::textures<max_frames_in_flight> textures;
         vk::graphics_pipeline pipeline;
 
 

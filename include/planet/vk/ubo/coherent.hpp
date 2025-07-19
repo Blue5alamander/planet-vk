@@ -5,13 +5,19 @@
 #include <planet/vk/descriptors.hpp>
 
 
-namespace planet::vk {
+namespace planet::vk::ubo {
 
 
-    /// ## Uniform Data Object
+    /// ## Memory coherent UBO wrapper
+    /**
+     * This is for UBOs where the data to be uploaded to the GPU can simply be
+     * copied into a memory that is set to be host coherent. GPU memory is
+     * allocated on construction for each frame in flight, and data is copied to
+     * the GPU for each frame its needed.
+     */
     template<typename Struct, std::size_t Frames>
-    struct ubo {
-        ubo(device_memory_allocator &a, Struct s)
+    struct coherent {
+        coherent(device_memory_allocator &a, Struct s)
         : allocator{a}, current{std::move(s)} {
             for (std::size_t index{}; index < Frames; ++index) {
                 buffers[index] = {

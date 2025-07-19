@@ -208,7 +208,7 @@ namespace planet::vk::engine {
 
 
         /// ### Standard UBOs
-        coordinate_space::ubo_type<max_frames_in_flight> coordinates;
+        ubo::coordinate_space::ubo_type<max_frames_in_flight> coordinates;
 
 
         /// TODO This array would be better as a circular buffer

@@ -8,7 +8,7 @@
 #include <planet/vk/device.hpp>
 
 
-namespace planet::vk {
+namespace planet::vk::ubo {
 
 
     /// ## Texture UBO
