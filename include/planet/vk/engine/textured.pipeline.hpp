@@ -29,25 +29,12 @@ namespace planet::vk::engine::pipeline {
                 id::suffix = id::suffix::no);
 
 
-        vk::textures textures;
+        vk::textures<max_frames_in_flight> textures;
         vk::graphics_pipeline pipeline;
 
 
-        struct pos {
-            float x = {}, y = {};
-            friend constexpr pos operator+(pos const l, pos const r) {
-                return {l.x + r.x, l.y + r.y};
-            }
-        };
-        struct vertex {
-            planet::affine::point3d p;
-            colour col = colour::white;
-            pos uv;
-        };
-
-
         /// ### Texture data to be drawn
-        std::vector<vertex> vertices;
+        std::vector<vk::textures<max_frames_in_flight>::vertex> vertices;
         std::vector<std::uint32_t> indices;
 
 
@@ -92,7 +79,7 @@ namespace planet::vk::engine::pipeline {
         }
         /// #### Draw a textured mesh
         void
-                draw(std::span<vertex const>,
+                draw(std::span<vk::textures<max_frames_in_flight>::vertex const>,
                      std::span<std::uint32_t const>,
                      std::span<VkDescriptorImageInfo const>);
 
@@ -102,15 +89,6 @@ namespace planet::vk::engine::pipeline {
 
 
       private:
-        std::uint32_t max_textures_per_frame;
-
-        vk::descriptor_pool texture_pool;
-        std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
-
-        std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
-        std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
-
-
         /// ### Performance counters
         telemetry::max textures_in_frame;
     };
