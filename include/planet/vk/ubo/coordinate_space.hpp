@@ -4,8 +4,6 @@
 #include <planet/affine/matrix3d.hpp>
 #include <planet/vk/ubo/coherent.hpp>
 
-#include <cstring>
-
 
 namespace planet::vk::ubo {
 
@@ -19,11 +17,6 @@ namespace planet::vk::ubo {
         affine::matrix3d world = {};
         affine::matrix3d screen = {};
         affine::matrix3d perspective = {};
-
-
-        void copy_to_gpu_memory(std::byte *memory) const {
-            std::memcpy(memory, this, sizeof(coordinate_space));
-        }
     };
 
 

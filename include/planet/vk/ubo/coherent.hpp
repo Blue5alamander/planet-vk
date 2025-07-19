@@ -4,6 +4,8 @@
 #include <planet/vk/buffer.hpp>
 #include <planet/vk/descriptors.hpp>
 
+#include <cstring>
+
 
 namespace planet::vk::ubo {
 
@@ -73,7 +75,7 @@ namespace planet::vk::ubo {
      */
     template<typename Struct>
     inline void do_copy_to_gpu_memory(Struct const &s, std::byte *d) {
-        s.copy_to_gpu_memory(d);
+        std::memcpy(d, &s, sizeof(Struct));
     }
 
     template<typename Struct, std::size_t M>
