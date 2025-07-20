@@ -219,7 +219,7 @@ auto planet::vk::engine::renderer::bind(planet::vk::graphics_pipeline &pl)
     vkCmdBindPipeline(cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.get());
     vkCmdBindDescriptorSets(
             cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.layout.get(), 0, 1,
-            &coordinates.sets[current_frame], 0, nullptr);
+            &coordinates.vk.sets[current_frame], 0, nullptr);
     return {*this, cb, current_frame};
 }
 

@@ -10,13 +10,28 @@
 namespace planet::vk::ubo {
 
 
-    /// ## Memory coherent UBO wrapper
+    /// ## Memory Coherent UBOs
     /**
      * This is for UBOs where the data to be uploaded to the GPU can simply be
      * copied into a memory that is set to be host coherent. GPU memory is
      * allocated on construction for each frame in flight, and data is copied to
      * the GPU for each frame its needed.
      */
+
+    /// ### Vulkan API details
+    struct coherent_details {
+        coherent_details(device &d, std::uint32_t frames)
+        : layout{vk::descriptor_set_layout::for_uniform_buffer_object(d)},
+          pool{d, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, frames},
+          sets{pool, layout, frames} {}
+
+        vk::descriptor_set_layout layout;
+        vk::descriptor_pool pool;
+        vk::descriptor_sets sets;
+    };
+
+
+    /// ### Memory Coherent UBO
     template<typename Struct, std::size_t Frames>
     struct coherent {
         coherent(device_memory_allocator &a, Struct s)
@@ -36,7 +51,7 @@ namespace planet::vk::ubo {
 
                 VkWriteDescriptorSet set{};
                 set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                set.dstSet = sets[index];
+                set.dstSet = vk.sets[index];
                 set.dstBinding = 0;
                 set.dstArrayElement = 0;
                 set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -53,12 +68,7 @@ namespace planet::vk::ubo {
 
         std::array<buffer<Struct>, Frames> buffers{};
         std::array<device_memory::mapping, Frames> mappings{};
-        vk::descriptor_set_layout layout{
-                vk::descriptor_set_layout::for_uniform_buffer_object(
-                        allocator.device)};
-        vk::descriptor_pool pool{
-                allocator.device, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Frames};
-        vk::descriptor_sets sets{pool, layout, Frames};
+        coherent_details vk{allocator.device, Frames};
 
 
         void copy_to_gpu_memory(std::size_t index) const {
@@ -67,8 +77,8 @@ namespace planet::vk::ubo {
     };
 
     /**
-     * The default implementation assumes the struct has a `copy_to_gpu_memory`
-     * member function to call.
+     * The default implementation assumes the struct is suitable for `memcpy` to
+     * copy it into the CPU memory that is coherently mapped to the GPU.
      *
      * Depending on the types involved, you may need to have `using
      * planet::vk::ubo::do_copy_to_gpu_memory;` in your code's namespace.
