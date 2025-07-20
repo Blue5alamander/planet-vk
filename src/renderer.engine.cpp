@@ -213,13 +213,17 @@ felspar::coro::task<std::size_t>
 }
 
 
-auto planet::vk::engine::renderer::bind(planet::vk::graphics_pipeline &pl)
+auto planet::vk::engine::renderer::bind(
+        planet::vk::graphics_pipeline &pl,
+        std::span<ubo::coherent_details const *const> const ubos)
         -> planet::vk::engine::render_parameters {
     auto &cb = command_buffers[current_frame];
     vkCmdBindPipeline(cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.get());
-    vkCmdBindDescriptorSets(
-            cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.layout.get(), 0, 1,
-            &coordinates.vk.sets[current_frame], 0, nullptr);
+    for (std::uint32_t set{}; auto const &ds : ubos) {
+        vkCmdBindDescriptorSets(
+                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.layout.get(),
+                set++, 1, &ds->sets[current_frame], 0, nullptr);
+    }
     return {*this, cb, current_frame};
 }
 
