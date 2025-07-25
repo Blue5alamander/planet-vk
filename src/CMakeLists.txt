@@ -21,6 +21,7 @@ target_link_libraries(planet-vk PUBLIC
         planet-sdl
         Vulkan::Vulkan
     )
+install(TARGETS planet-vk LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 if (PLANET_VK_VALIDATION)
     target_compile_definitions(planet-vk PRIVATE
         PLANET_VK_VALIDATION=1)
@@ -31,6 +32,7 @@ add_library(planet-vk-sdl
         sdl.cpp
     )
 target_link_libraries(planet-vk-sdl planet-vk)
+install(TARGETS planet-vk-sdl LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 
 
 add_library(planet-vk-engine
@@ -52,6 +54,7 @@ vk_shader(planet-vk-engine textured.frag)
 vk_shader(planet-vk-engine texture.screen.vert)
 vk_shader(planet-vk-engine texture.world.vert)
 target_link_libraries(planet-vk-engine planet-vk-sdl)
+install(TARGETS planet-vk-engine LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 
 
 install(FILES
