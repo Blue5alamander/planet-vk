@@ -43,13 +43,14 @@ namespace {
 planet::vk::engine::pipeline::mesh::mesh(
         engine::renderer &r,
         std::string_view const vertex_spirv_filename,
+        std::string_view const fragment_spirv_filename,
         blend_mode const bm,
         pipeline_layout layout)
 : pipeline{planet::vk::engine::create_graphics_pipeline(
           {.app = r.app,
            .renderer = r,
            .vertex_shader = vertex_spirv_filename,
-           .fragment_shader = "planet-vk-engine/mesh.frag.spirv",
+           .fragment_shader = fragment_spirv_filename,
            .binding_descriptions = binding_description,
            .attribute_descriptions = attribute_description,
            .blend_mode = bm,
