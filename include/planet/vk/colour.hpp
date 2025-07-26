@@ -23,9 +23,17 @@ namespace planet::vk {
         float r{}, g{}, b{}, a = {1};
 
 
+        /// ### New colours via mutation
+        colour with_alpha(float const na) const noexcept {
+            return {r, g, b, na};
+        }
+
+
+        /// ### Fixed colours
         static colour const black, white;
 
 
+        /// ### Conversions
         operator VkClearValue() const noexcept {
             VkClearValue c;
             c.color.float32[0] = r;
@@ -36,7 +44,7 @@ namespace planet::vk {
         }
 
 
-        /// ### Multiple the RGB values
+        /// ### Multiply the RGB values
         friend colour operator*(colour const &c, float const m) noexcept {
             return {c.r * m, c.g * m, c.b * m, c.a};
         }
