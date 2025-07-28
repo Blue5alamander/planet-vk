@@ -6,6 +6,7 @@
 #include <planet/telemetry/minmax.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
+#include <planet/vk/ubo/textures.hpp>
 
 
 namespace planet::vk::engine::pipeline {
@@ -33,12 +34,15 @@ namespace planet::vk::engine::pipeline {
                std::uint32_t textures_per_frame = 256,
                id::suffix = id::suffix::no);
 
-        vk::descriptor_set_layout texture_layout;
+
+        ubo::textures<max_frames_in_flight> textures;
         vk::graphics_pipeline pipeline;
+
 
         struct push_constant {
             affine::matrix3d transform;
         };
+
 
         /// ### Position for a sprite
         struct location {
@@ -72,36 +76,13 @@ namespace planet::vk::engine::pipeline {
             float z_height = {};
         };
 
-        struct pos {
-            float x = {}, y = {};
-            friend constexpr pos operator+(pos const l, pos const r) {
-                return {l.x + r.x, l.y + r.y};
-            }
-        };
-        struct vertex {
-            planet::affine::point3d p;
-            colour col = colour::white;
-            pos uv;
-        };
-
 
         /// ### The maximum number of textures
         /**
          * Used to size the descriptor pool and the descriptor sets. The number
          * of individual textures cannot be higher than this number.
          */
-        std::uint32_t max_textures_per_frame;
-
-        vk::descriptor_pool texture_pool;
-        std::array<vk::descriptor_sets, max_frames_in_flight> texture_sets;
-
-        std::vector<vertex> quads;
-        std::vector<std::uint32_t> indexes;
-        std::vector<VkDescriptorImageInfo> textures;
         std::vector<push_constant> transforms;
-
-        std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
-        std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
 
 
         /// ### Drawing API
@@ -121,11 +102,6 @@ namespace planet::vk::engine::pipeline {
 
         /// ### Add draw commands to command buffer
         void render(render_parameters);
-
-
-      private:
-        /// ### Performance counters
-        telemetry::max textures_in_frame;
     };
 
 

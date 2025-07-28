@@ -15,8 +15,8 @@ namespace planet::vk::engine {
 
     struct app;
     struct depth_buffer;
+    struct graphics_pipeline_parameters;
     class renderer;
-
 
     namespace pipeline {
 

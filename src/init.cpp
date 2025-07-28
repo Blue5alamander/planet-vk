@@ -223,7 +223,8 @@ planet::vk::device::~device() {
     staging_memory.clear_without_check();
     startup_memory.clear_without_check();
     if (handle) {
-        vkDeviceWaitIdle(handle);
+        planet::log::debug("Destructing Vulkan device");
+        wait_idle();
         vkDestroyDevice(handle, nullptr);
     }
 }
@@ -409,7 +410,10 @@ planet::vk::instance::instance(
 
 
 planet::vk::instance::instance_handle::~instance_handle() {
-    if (h) { vkDestroyInstance(h, nullptr); }
+    if (h) {
+        planet::log::debug("Destructing Vulkan instance");
+        vkDestroyInstance(h, nullptr);
+    }
 }
 
 

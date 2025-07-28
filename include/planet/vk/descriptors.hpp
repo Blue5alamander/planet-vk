@@ -59,10 +59,11 @@ namespace planet::vk {
 
     /// ## Descriptor sets
     class descriptor_sets final {
-        std::vector<VkDescriptorSet> sets;
+        std::vector<VkDescriptorSet> sets = {};
 
       public:
         /// ### Create sets for a single layout, but multiple frames
+        descriptor_sets() {}
         descriptor_sets(
                 descriptor_pool const &,
                 descriptor_set_layout const &,
@@ -70,11 +71,16 @@ namespace planet::vk {
                 felspar::source_location const & =
                         felspar::source_location::current());
 
+
+        descriptor_sets &operator=(descriptor_sets &&) = default;
+
+
         /// ### Access to individual sets
         auto &operator[](std::uint32_t const index) { return sets.at(index); }
         auto const &operator[](std::uint32_t const index) const {
             return sets.at(index);
         }
+
         std::size_t size() const noexcept { return sets.size(); }
         VkDescriptorSet *data() noexcept { return sets.data(); }
         VkDescriptorSet const *data() const noexcept { return sets.data(); }

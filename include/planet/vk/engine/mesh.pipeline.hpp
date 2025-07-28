@@ -11,10 +11,50 @@ namespace planet::vk::engine::pipeline {
 
     /// ## 2D triangle mesh with per-vertex colour
     class mesh final {
+        static pipeline_layout default_layout(engine::renderer &);
+        static constexpr std::string_view default_fragment_shader =
+                "planet-vk-engine/mesh.frag.spirv";
+        static constexpr blend_mode default_blend_mode = blend_mode::multiply;
+
+
       public:
+        /// ### Construction
+        /**
+         * Always supply the renderer and the filename of the vertex shader, but
+         * the fragment shader, blend mode and the pipeline layout are optional.
+         *
+         * If a fragment shader is provided then the vertex must also be
+         * provided as the first `std::string_view` passed in is taken as the
+         * vertex shader.
+         */
+        mesh(engine::renderer &r,
+             std::string_view const vertex_spirv,
+             blend_mode const bm = default_blend_mode)
+        : mesh{r, vertex_spirv, default_fragment_shader, bm,
+               default_layout(r)} {}
+        mesh(engine::renderer &r,
+             std::string_view const vertex_spirv,
+             pipeline_layout layout)
+        : mesh{r, vertex_spirv, default_fragment_shader, default_blend_mode,
+               std::move(layout)} {}
+        mesh(engine::renderer &r,
+             std::string_view const vertex_spirv,
+             std::string_view const fragment_spirv,
+             pipeline_layout layout)
+        : mesh{r, vertex_spirv, fragment_spirv, default_blend_mode,
+               std::move(layout)} {}
+        mesh(engine::renderer &r,
+             std::string_view const vertex_spirv,
+             blend_mode const bm,
+             pipeline_layout layout)
+        : mesh{r, vertex_spirv, default_fragment_shader, bm,
+               std::move(layout)} {}
         mesh(engine::renderer &,
              std::string_view vertex_spirv,
-             blend_mode = blend_mode::multiply);
+             std::string_view fragment_spirv,
+             blend_mode,
+             pipeline_layout);
+
 
         vk::graphics_pipeline pipeline;
 
@@ -72,7 +112,6 @@ namespace planet::vk::engine::pipeline {
 
       private:
         std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
-
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
     };
 

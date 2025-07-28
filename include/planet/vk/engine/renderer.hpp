@@ -7,6 +7,7 @@
 #include <planet/vk/engine/depth_buffer.hpp>
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
+#include <planet/vk/ubo/coordinate_space.hpp>
 
 #include <planet/affine/matrix3d.hpp>
 
@@ -17,7 +18,7 @@ namespace planet::vk::engine {
     /// ## Renderer
     class renderer final {
         std::size_t current_frame = {};
-        vk::render_pass create_render_pass();
+
 
       public:
         renderer(engine::app &);
@@ -50,9 +51,6 @@ namespace planet::vk::engine {
 
         /// ### Swap chain, command buffers and synchronisation
         vk::swap_chain swap_chain{app.device, app.window.extents()};
-        vk::descriptor_set_layout ubo_layout{
-                vk::descriptor_set_layout::for_uniform_buffer_object(
-                        app.device)};
 
         vk::command_pool command_pool{app.device, app.instance.surface};
         vk::command_buffers command_buffers{command_pool, max_frames_in_flight};
@@ -80,11 +78,13 @@ namespace planet::vk::engine {
         felspar::coro::task<std::size_t> start(VkClearValue);
 
         /// #### Bind graphics pipeline
-        render_parameters bind(vk::graphics_pipeline &);
+        render_parameters
+                bind(vk::graphics_pipeline &,
+                     std::span<ubo::coherent_details const *const>);
         /// ##### Bind and call render on the pipeline type
-        template<typename... Pipelines>
-        void render(Pipelines &...p) {
-            (p.render(bind(p.pipeline)), ...);
+        template<typename... Shaders>
+        void render(Shaders &...s) {
+            (s.render(bind(s.pipeline, find_coherent_details(s, *this))), ...);
         }
 
         /// #### Submit and present the frame
@@ -109,10 +109,10 @@ namespace planet::vk::engine {
 
         /// #### Access the world and perspective transformations
         affine::matrix3d const &world_coordinates() const noexcept {
-            return coordinates.world;
+            return coordinates.current.world;
         }
         affine::matrix3d const &perspective_projection() const noexcept {
-            return coordinates.perspective;
+            return coordinates.current.perspective;
         }
 
 
@@ -137,6 +137,21 @@ namespace planet::vk::engine {
          * aspect.
          */
         affine::transform2d logical_vulkan_space;
+
+
+        /// ### Memory coherent UBOs
+        std::span<ubo::coherent_details const *const>
+                default_coherent_ubos() const {
+            return m_default_coherent_ubos;
+        }
+
+        /// #### The UBO descriptor layout for coordinates
+        ubo::coherent_details const &coordinates_ubo_details() const {
+            return coordinates.vk;
+        }
+        descriptor_set_layout const &coordinates_ubo_layout() const {
+            return coordinates.vk.layout;
+        }
 
 
         /// ### Wait for the next render cycle
@@ -193,6 +208,9 @@ namespace planet::vk::engine {
 
 
       private:
+        vk::render_pass create_render_pass();
+
+
         /// ### Data we need to track whilst in the render loop
         std::uint32_t image_index = {};
 
@@ -204,28 +222,27 @@ namespace planet::vk::engine {
                         felspar::source_location::current());
 
 
-        /// ### View port transformation matrix and UBO
+        /// ### Standard UBOs
+        ubo::coordinate_space::ubo_type<max_frames_in_flight> coordinates;
+        std::array<ubo::coherent_details const *const, 1>
+                m_default_coherent_ubos{&coordinates.vk};
 
-        struct coordinate_space {
-            coordinate_space(renderer &rp)
-            : world{},
-              screen{rp.screen_space.into()},
-              perspective{rp.logical_vulkan_space.into()} {}
-
-            affine::matrix3d world;
-            affine::matrix3d screen;
-            affine::matrix3d perspective = {};
-        };
-        coordinate_space coordinates{*this};
-        std::array<buffer<coordinate_space>, max_frames_in_flight>
-                viewport_buffer;
-        std::array<device_memory::mapping, max_frames_in_flight> viewport_mapping;
-
-        vk::descriptor_pool ubo_pool{
-                app.device, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                max_frames_in_flight};
-        vk::descriptor_sets ubo_sets{
-                ubo_pool, ubo_layout, max_frames_in_flight};
+        /// #### Finds the coherent memory UBOs used by the shader
+        /**
+         * Any shader that uses anything different to the renderer's default
+         * memory coherent UBOs needs to implement `coherent_details_for` which
+         * returns the span of `ubo::coherent_details` pointers that are to be
+         * bound for the pipeline in the shader.
+         */
+        template<typename Shader>
+        std::span<ubo::coherent_details const *const>
+                find_coherent_details(Shader &s, renderer &r) {
+            if constexpr (requires { coherent_details_for(s); }) {
+                return coherent_details_for(s);
+            } else {
+                return r.default_coherent_ubos();
+            }
+        }
 
 
         /// TODO This array would be better as a circular buffer
