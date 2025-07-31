@@ -12,12 +12,14 @@ namespace planet::vk::engine::pipeline {
     /// ## 2D triangle mesh with per-vertex colour
     class mesh final {
         static pipeline_layout default_layout(engine::renderer &);
+
+
+      public:
         static constexpr std::string_view default_fragment_shader =
                 "planet-vk-engine/mesh.frag.spirv";
         static constexpr blend_mode default_blend_mode = blend_mode::multiply;
 
 
-      public:
         /// ### Construction
         /**
          * Always supply the renderer and the filename of the vertex shader, but
