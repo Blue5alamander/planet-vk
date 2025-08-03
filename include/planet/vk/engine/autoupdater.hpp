@@ -8,6 +8,22 @@ namespace planet::vk::engine {
 
 
     /// ## Automatically update a widget
+    /**
+     * As well as the renderer you pass it either a value to watch for changes,
+     * or a lambda that returns the value to watch for changes. Then you must
+     * pass a lambda that returns the graphics widget that is to be shown.
+     *
+     * The value is then watched for changes (or the lambda is called which
+     * returns the current value) and if the value is different from the last
+     * display then the graphics generation lambda is called again to create a
+     * new graphical element. The old graphic is held and deleted after any
+     * frames using it have been fully rendered.
+     *
+     * The graphic is updated during the layout phase, so in order to actually
+     * see any updates any UI parts containing a `autoupdater` need to be
+     * reflowed each frame.
+     */
+
     template<typename V, std::invocable<> G>
     struct autoupdater final {
         using generator_type = G;
