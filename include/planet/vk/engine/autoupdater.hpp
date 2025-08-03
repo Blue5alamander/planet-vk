@@ -79,6 +79,7 @@ namespace planet::vk::engine {
         using watching_type = decltype(std::declval<watching_lambda_type>()());
         using graphic_type =
                 std::decay_t<decltype(std::declval<generator_type>()())>;
+        using held_graphic_type = felspar::memory::holding_pen<graphic_type>;
 
         using constrained_type = typename graphic_type::constrained_type;
         using reflow_parameters = typename graphic_type::reflow_parameters;
@@ -88,9 +89,8 @@ namespace planet::vk::engine {
         watching_lambda_type watcher;
         generator_type generate;
         watching_type last_value = watcher();
-        felspar::memory::holding_pen<graphic_type> graphic{};
-        autodelete<felspar::memory::holding_pen<graphic_type>> autodeleter{
-                renderer};
+        held_graphic_type graphic{};
+        autodelete<held_graphic_type> autodeleter{renderer};
 
 
         bool needs_reflow() {
