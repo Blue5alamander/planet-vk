@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <planet/vk/engine/ui/autodelete.hpp>
+#include <planet/vk/engine/autodelete.hpp>
 
 
 namespace planet::vk::engine::ui {

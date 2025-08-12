@@ -7,7 +7,7 @@
 #include <felspar/memory/any_buffer.hpp>
 
 
-namespace planet::vk::engine::ui {
+namespace planet::vk::engine {
 
 
     /// ## Auto-delete resources after waiting a full frame cycle
