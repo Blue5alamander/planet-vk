@@ -1,10 +1,10 @@
 #pragma once
 
 
-#include <planet/vk/engine/autodelete.hpp>
+#include <planet/vk/engine/ui/autodelete.hpp>
 
 
-namespace planet::vk::engine {
+namespace planet::vk::engine::ui {
 
 
     /// ## Automatically update a widget
