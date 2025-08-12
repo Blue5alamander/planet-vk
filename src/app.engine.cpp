@@ -41,7 +41,6 @@ int planet::vk::engine::app::run(
             co_return co_await cm(*papp, renderer);
         } catch (std::exception const &e) {
             planet::log::critical("Exception caught", e.what());
-            std::terminate();
         }
     };
     return sdl.io.run(+wrapper, this, co_main);
