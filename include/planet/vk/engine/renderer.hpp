@@ -2,6 +2,7 @@
 
 
 #include <planet/affine/matrix3d.hpp>
+#include <planet/array.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/colour_attachment.hpp>
 #include <planet/vk/engine/depth_buffer.hpp>
@@ -62,10 +63,13 @@ namespace planet::vk::engine {
         vk::render_pass render_pass{create_render_pass()};
 
         std::array<vk::semaphore, max_frames_in_flight> img_avail_semaphore{
-                app.device, app.device, app.device},
-                render_finished_semaphore{app.device, app.device, app.device};
+                array_of<max_frames_in_flight>(
+                        [this]() { return vk::semaphore{app.device}; })},
+                render_finished_semaphore{array_of<max_frames_in_flight>(
+                        [this]() { return vk::semaphore{app.device}; })};
         std::array<vk::fence, max_frames_in_flight> fence{
-                app.device, app.device, app.device};
+                array_of<max_frames_in_flight>(
+                        [this]() { return vk::fence{app.device}; })};
 
 
         /// ### Drawing API
