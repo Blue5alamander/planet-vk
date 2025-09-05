@@ -41,6 +41,11 @@ namespace planet::vk::engine::pipeline {
                std::move(layout)} {}
         mesh(engine::renderer &r,
              std::string_view const vertex_spirv,
+             std::string_view const fragment_spirv)
+        : mesh{r, vertex_spirv, fragment_spirv, default_blend_mode,
+               default_layout(r)} {}
+        mesh(engine::renderer &r,
+             std::string_view const vertex_spirv,
              std::string_view const fragment_spirv,
              pipeline_layout layout)
         : mesh{r, vertex_spirv, fragment_spirv, default_blend_mode,
