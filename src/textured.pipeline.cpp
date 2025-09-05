@@ -16,8 +16,8 @@ planet::vk::engine::pipeline::textured::textured(
   pipeline{planet::vk::engine::create_graphics_pipeline(
           {.app = r.app,
            .renderer = r,
-           .vertex_shader = vs,
-           .fragment_shader = "planet-vk-engine/textured.frag.spirv",
+           .vertex_shader = {vs},
+           .fragment_shader = {"planet-vk-engine/textured.frag.spirv"},
            .binding_descriptions = textures.binding_description,
            .attribute_descriptions = textures.attribute_description,
            .pipeline_layout = pipeline_layout{

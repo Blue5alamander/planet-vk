@@ -259,12 +259,15 @@ namespace planet::vk::engine {
 
 
     /// ## Create a graphics pipeline
+    struct shader_parameters {
+        std::string_view spirv_filename;
+        char const *entry_point = "main";
+    };
     struct graphics_pipeline_parameters {
         engine::app &app;
         engine::renderer &renderer;
 
-        std::string_view vertex_shader;
-        std::string_view fragment_shader;
+        shader_parameters vertex_shader, fragment_shader;
         std::span<VkVertexInputBindingDescription const> binding_descriptions;
         std::span<VkVertexInputAttributeDescription const> attribute_descriptions;
 

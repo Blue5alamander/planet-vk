@@ -334,15 +334,20 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
 
     /// Shaders
     planet::vk::shader_module vertex_shader_module{
-            app.device, app.asset_manager.file_data(parameters.vertex_shader)};
+            app.device,
+            app.asset_manager.file_data(
+                    parameters.vertex_shader.spirv_filename)};
     planet::vk::shader_module fragment_shader_module{
             app.device,
-            app.asset_manager.file_data(parameters.fragment_shader)};
+            app.asset_manager.file_data(
+                    parameters.fragment_shader.spirv_filename)};
     std::array shader_stages{
             vertex_shader_module.shader_stage_info(
-                    VK_SHADER_STAGE_VERTEX_BIT, "main"),
+                    VK_SHADER_STAGE_VERTEX_BIT,
+                    parameters.vertex_shader.entry_point),
             fragment_shader_module.shader_stage_info(
-                    VK_SHADER_STAGE_FRAGMENT_BIT, "main")};
+                    VK_SHADER_STAGE_FRAGMENT_BIT,
+                    parameters.fragment_shader.entry_point)};
 
     /// Vertex bindings and attributes
     VkPipelineVertexInputStateCreateInfo vertex_input_info = {};

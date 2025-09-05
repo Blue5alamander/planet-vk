@@ -26,8 +26,8 @@ planet::vk::graphics_pipeline
     return planet::vk::engine::create_graphics_pipeline(
             {.app = r.app,
              .renderer = r,
-             .vertex_shader = vertex_shader,
-             .fragment_shader = "planet-vk-engine/sprite.frag.spirv",
+             .vertex_shader = {vertex_shader},
+             .fragment_shader = {"planet-vk-engine/sprite.frag.spirv"},
              .binding_descriptions = textures.binding_description,
              .attribute_descriptions = textures.attribute_description,
              .pipeline_layout = pipeline_layout{

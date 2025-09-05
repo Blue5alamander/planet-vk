@@ -49,8 +49,8 @@ planet::vk::engine::pipeline::mesh::mesh(
 : pipeline{planet::vk::engine::create_graphics_pipeline(
           {.app = r.app,
            .renderer = r,
-           .vertex_shader = vertex_spirv_filename,
-           .fragment_shader = fragment_spirv_filename,
+           .vertex_shader = {vertex_spirv_filename},
+           .fragment_shader = {fragment_spirv_filename},
            .binding_descriptions = binding_description,
            .attribute_descriptions = attribute_description,
            .blend_mode = bm,
