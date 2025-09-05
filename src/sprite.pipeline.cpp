@@ -67,11 +67,11 @@ void planet::vk::engine::pipeline::sprite::draw(
              {texture.second.top_left.x(), texture.second.bottom_right().y()}});
 
     textures.indices.push_back(quad_index);
-    textures.indices.push_back(quad_index + 2);
     textures.indices.push_back(quad_index + 1);
-    textures.indices.push_back(quad_index);
-    textures.indices.push_back(quad_index + 3);
     textures.indices.push_back(quad_index + 2);
+    textures.indices.push_back(quad_index);
+    textures.indices.push_back(quad_index + 2);
+    textures.indices.push_back(quad_index + 3);
 
     textures.descriptors.emplace_back();
     textures.descriptors.back().imageLayout =

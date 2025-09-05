@@ -408,7 +408,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     rasterizer_info.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer_info.lineWidth = 1.f;
     rasterizer_info.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer_info.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer_info.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
