@@ -22,4 +22,11 @@ namespace planet::vk::engine {
     enum class blend_mode { none, multiply, add };
 
 
+    /// ## Describe the shader code
+    struct shader_parameters {
+        std::string_view spirv_filename;
+        char const *entry_point = "main";
+    };
+
+
 }

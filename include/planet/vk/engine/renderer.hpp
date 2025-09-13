@@ -259,10 +259,6 @@ namespace planet::vk::engine {
 
 
     /// ## Create a graphics pipeline
-    struct shader_parameters {
-        std::string_view spirv_filename;
-        char const *entry_point = "main";
-    };
     struct graphics_pipeline_parameters {
         engine::app &app;
         engine::renderer &renderer;
