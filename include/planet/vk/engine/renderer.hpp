@@ -270,6 +270,7 @@ namespace planet::vk::engine {
         VkExtent2D extents = renderer.swap_chain.extents;
         view<vk::render_pass> render_pass = renderer.render_pass;
 
+        bool write_to_depth_buffer = true;
         engine::blend_mode blend_mode = blend_mode::multiply;
         std::size_t sub_pass = 0;
 
