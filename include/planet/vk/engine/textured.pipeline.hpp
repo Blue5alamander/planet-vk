@@ -18,6 +18,9 @@ namespace planet::vk::engine::pipeline {
      */
     class textured final : private telemetry::id {
       public:
+        using textures_type = ubo::textures<>;
+
+
         textured(
                 engine::renderer &r,
                 std::string_view const vertex_shader,
@@ -33,7 +36,7 @@ namespace planet::vk::engine::pipeline {
                 id::suffix = id::suffix::no);
 
 
-        ubo::textures<max_frames_in_flight> textures;
+        textures_type textures;
         vk::graphics_pipeline pipeline;
 
 

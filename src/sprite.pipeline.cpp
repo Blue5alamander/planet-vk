@@ -28,8 +28,10 @@ planet::vk::graphics_pipeline
              .renderer = r,
              .vertex_shader = {vertex_shader},
              .fragment_shader = {"planet-vk-engine/sprite.frag.spirv"},
-             .binding_descriptions = textures.binding_description,
-             .attribute_descriptions = textures.attribute_description,
+             .binding_descriptions =
+                     vertex::binding_description<textures_type::vertex_type>(),
+             .attribute_descriptions =
+                     vertex::attribute_description<textures_type::vertex_type>(),
              .pipeline_layout = pipeline_layout{
                      r.app.device,
                      std::array{

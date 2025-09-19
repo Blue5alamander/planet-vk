@@ -9,13 +9,13 @@ namespace {
                 renderer, "planet-vk-engine/mesh.world.vert.spirv"};
 
         constexpr std::array vertices{
-                planet::vk::engine::pipeline::mesh::vertex{
+                planet::vk::vertex::coloured{
                         {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-                planet::vk::engine::pipeline::mesh::vertex{
+                planet::vk::vertex::coloured{
                         {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-                planet::vk::engine::pipeline::mesh::vertex{
+                planet::vk::vertex::coloured{
                         {0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                planet::vk::engine::pipeline::mesh::vertex{
+                planet::vk::vertex::coloured{
                         {-0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 1.0f}}};
         constexpr std::array<std::uint32_t, 6> indices{0, 1, 2, 2, 3, 0};
 

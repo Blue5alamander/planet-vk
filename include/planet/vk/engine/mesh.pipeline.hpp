@@ -4,6 +4,7 @@
 #include <planet/affine/point3d.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
+#include <planet/vk/vertex/coloured.hpp>
 
 
 namespace planet::vk::engine::pipeline {
@@ -66,16 +67,10 @@ namespace planet::vk::engine::pipeline {
         vk::graphics_pipeline pipeline;
 
 
-        struct vertex {
-            planet::affine::point3d p;
-            colour c;
-        };
-
-
         /// ### Mesh data to be drawn
         class data {
             friend class mesh;
-            std::vector<vertex> vertices;
+            std::vector<vertex::coloured> vertices;
             std::vector<std::uint32_t> indices;
 
 
@@ -94,13 +89,15 @@ namespace planet::vk::engine::pipeline {
 
 
             /// #### Draw a triangle mesh
-            void draw(std::span<vertex const>, std::span<std::uint32_t const>);
             void
-                    draw(std::span<vertex const>,
+                    draw(std::span<vertex::coloured const>,
+                         std::span<std::uint32_t const>);
+            void
+                    draw(std::span<vertex::coloured const>,
                          std::span<std::uint32_t const>,
                          planet::affine::point3d const &);
             void
-                    draw(std::span<vertex const>,
+                    draw(std::span<vertex::coloured const>,
                          std::span<std::uint32_t const>,
                          planet::affine::point3d const &,
                          colour const &);
@@ -118,7 +115,7 @@ namespace planet::vk::engine::pipeline {
 
 
       private:
-        std::array<buffer<vertex>, max_frames_in_flight> vertex_buffers;
+        std::array<buffer<vertex::coloured>, max_frames_in_flight> vertex_buffers;
         std::array<buffer<std::uint32_t>, max_frames_in_flight> index_buffers;
     };
 

@@ -23,6 +23,9 @@ namespace planet::vk::engine::pipeline {
         graphics_pipeline create_pipeline(engine::renderer &, std::string_view);
 
       public:
+        using textures_type = ubo::textures<>;
+
+
         sprite(engine::renderer &r,
                std::string_view const vertex_shader,
                std::uint32_t const textures_per_frame = 256)
@@ -35,13 +38,14 @@ namespace planet::vk::engine::pipeline {
                id::suffix = id::suffix::no);
 
 
-        ubo::textures<max_frames_in_flight> textures;
+        textures_type textures;
         vk::graphics_pipeline pipeline;
 
 
         struct push_constant {
             affine::matrix3d transform;
         };
+        std::vector<push_constant> transforms;
 
 
         /// ### Position for a sprite
@@ -75,14 +79,6 @@ namespace planet::vk::engine::pipeline {
             /// ##### Z height
             float z_height = {};
         };
-
-
-        /// ### The maximum number of textures
-        /**
-         * Used to size the descriptor pool and the descriptor sets. The number
-         * of individual textures cannot be higher than this number.
-         */
-        std::vector<push_constant> transforms;
 
 
         /// ### Drawing API
