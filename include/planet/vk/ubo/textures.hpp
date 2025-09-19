@@ -7,7 +7,6 @@
 #include <planet/telemetry/minmax.hpp>
 #include <planet/vk/descriptors.hpp>
 #include <planet/vk/device.hpp>
-#include <planet/vk/vertex/textured.hpp>
 
 
 namespace planet::vk::ubo {

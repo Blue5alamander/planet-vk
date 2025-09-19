@@ -3,6 +3,7 @@
 
 #include <planet/telemetry/minmax.hpp>
 #include <planet/vk/ubo/textures.hpp>
+#include <planet/vk/vertex/coloured_textured.hpp>
 
 
 namespace planet::vk::engine {
@@ -10,7 +11,7 @@ namespace planet::vk::engine {
 
     template<std::size_t Frames = engine::max_frames_in_flight>
     struct draw_basic_textures final {
-        using vertex_type = vertex::textured;
+        using vertex_type = vertex::coloured_textured;
 
 
         draw_basic_textures(
