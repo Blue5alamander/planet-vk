@@ -92,7 +92,7 @@ void planet::vk::engine::pipeline::mesh::data::draw(
         std::span<std::uint32_t const> const ix,
         planet::affine::point3d const &p) {
     auto const start_index = vertices.size();
-    for (auto const &v : vs) { vertices.push_back({v.p + p, v.c}); }
+    for (auto const &v : vs) { vertices.push_back({v.p + p, v.col}); }
     for (auto const &i : ix) { indices.push_back(start_index + i); }
 }
 void planet::vk::engine::pipeline::mesh::data::draw(

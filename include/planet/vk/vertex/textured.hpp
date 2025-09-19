@@ -4,26 +4,23 @@
 #include <planet/affine/point3d.hpp>
 #include <planet/vk/colour.hpp>
 #include <planet/vk/vertex/forward.hpp>
+#include <planet/vk/vertex/uv.hpp>
 
 
 namespace planet::vk::vertex {
 
 
-    /// ## UV texture position
-    struct pos2d {
-        float x = {}, y = {};
-        friend constexpr pos2d operator+(pos2d const l, pos2d const r) {
-            return {l.x + r.x, l.y + r.y};
-        }
-    };
-
-
     /// ## Basic textured mesh vertex
     struct textured {
+        constexpr static std::string_view box{"_p:vk:vert:tx"};
+
+
         planet::affine::point3d p;
         colour col = colour::white;
-        pos2d uv;
+        uvpos uv;
     };
+    void save(serialise::save_buffer &, textured const &);
+    void load(serialise::box &, textured &);
 
     template<>
     inline constexpr auto binding_description<textured>() {
