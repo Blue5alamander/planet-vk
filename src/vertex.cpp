@@ -37,6 +37,18 @@ void planet::vk::vertex::load(serialise::box &box, normal &n) {
 }
 
 
+/// ## `planet::vk::vertex::normal_textured`
+
+
+void planet::vk::vertex::save(
+        serialise::save_buffer &sb, normal_textured const &n) {
+    sb.save_box(n.box, n.p, n.n, n.uv);
+}
+void planet::vk::vertex::load(serialise::box &box, normal_textured &n) {
+    box.named(n.box, n.p, n.n, n.uv);
+}
+
+
 /// ## `planet::vk::vertex::uvpos`
 
 
