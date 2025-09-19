@@ -4,7 +4,7 @@
 #include <planet/affine/point3d.hpp>
 #include <planet/serialise/forward.hpp>
 #include <planet/vk/vertex/forward.hpp>
-#include <planet/vk/vertex/uv.hpp>
+#include <planet/vk/vertex/uvpos.hpp>
 
 
 namespace planet::vk::vertex {
