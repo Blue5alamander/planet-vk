@@ -3,7 +3,7 @@
 
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
-#include <planet/vk/ubo/textures.hpp>
+#include <planet/vk/engine/textured.draw.hpp>
 
 
 namespace planet::vk::engine::pipeline {
@@ -18,7 +18,7 @@ namespace planet::vk::engine::pipeline {
      */
     class textured final : private telemetry::id {
       public:
-        using textures_type = ubo::textures<>;
+        using textures_type = draw_basic_textures<>;
 
 
         textured(

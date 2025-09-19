@@ -6,7 +6,7 @@
 #include <planet/telemetry/minmax.hpp>
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
-#include <planet/vk/ubo/textures.hpp>
+#include <planet/vk/engine/textured.draw.hpp>
 
 
 namespace planet::vk::engine::pipeline {
@@ -23,7 +23,7 @@ namespace planet::vk::engine::pipeline {
         graphics_pipeline create_pipeline(engine::renderer &, std::string_view);
 
       public:
-        using textures_type = ubo::textures<>;
+        using textures_type = draw_basic_textures<>;
 
 
         sprite(engine::renderer &r,

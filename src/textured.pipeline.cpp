@@ -26,7 +26,7 @@ planet::vk::engine::pipeline::textured::textured(
                    r.app.device,
                    std::array{
                            r.coordinates_ubo_layout().get(),
-                           textures.layout.get()}}})} {}
+                           textures.ubo.layout.get()}}})} {}
 
 
 void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
@@ -38,7 +38,7 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
         VkWriteDescriptorSet wds{};
         wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        wds.dstSet = textures.sets[rp.current_frame][index];
+        wds.dstSet = textures.ubo.sets[rp.current_frame][index];
         wds.dstBinding = 0;
         wds.dstArrayElement = 0;
         wds.descriptorCount = 1;
@@ -49,7 +49,7 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
         vkCmdBindDescriptorSets(
                 rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                 pipeline.layout.get(), 1, 1,
-                &textures.sets[rp.current_frame][index], 0, nullptr);
+                &textures.ubo.sets[rp.current_frame][index], 0, nullptr);
 
         static constexpr std::uint32_t index_count = 6;
         static constexpr std::uint32_t instance_count = 1;
