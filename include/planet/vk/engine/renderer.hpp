@@ -87,8 +87,8 @@ namespace planet::vk::engine {
                      std::span<ubo::coherent_details const *const>);
         /// ##### Bind and call render on the pipeline type
         template<typename... Shaders>
-        void render(Shaders &...s) {
-            (s.render(bind(s.pipeline, find_coherent_details(s, *this))), ...);
+        void render(Shaders &&...s) {
+            (bind_and_render(std::forward<Shaders>(s)), ...);
         }
 
         /// #### Submit and present the frame
@@ -231,6 +231,20 @@ namespace planet::vk::engine {
         std::array<ubo::coherent_details const *const, 1>
                 m_default_coherent_ubos{&coordinates.vk};
 
+        /// #### Binds and renders a shader
+        template<typename Shader, std::size_t N>
+        void bind_and_render(
+                std::pair<
+                        Shader &,
+                        std::span<
+                                planet::vk::ubo::coherent_details const *const,
+                                N>> &&p) {
+            p.first.render(bind(p.first.pipeline, p.second));
+        }
+        template<typename Shader>
+        void bind_and_render(Shader &s) {
+            s.render(bind(s.pipeline, find_coherent_details(s, *this)));
+        }
         /// #### Finds the coherent memory UBOs used by the shader
         /**
          * Any shader that uses anything different to the renderer's default
