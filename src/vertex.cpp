@@ -40,6 +40,12 @@ void planet::vk::vertex::load(serialise::box &box, normal &n) {
 /// ## `planet::vk::vertex::normal_textured`
 
 
+static_assert(sizeof(planet::vk::vertex::normal_textured::p) == 16);
+static_assert(sizeof(planet::vk::vertex::normal_textured::n) == 16);
+static_assert(sizeof(planet::vk::vertex::normal_textured::uv) == 8);
+static_assert(sizeof(planet::vk::vertex::normal_textured) == 40);
+
+
 void planet::vk::vertex::save(
         serialise::save_buffer &sb, normal_textured const &n) {
     sb.save_box(n.box, n.p, n.n, n.uv);
