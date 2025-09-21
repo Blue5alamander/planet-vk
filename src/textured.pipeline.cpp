@@ -1,3 +1,4 @@
+#include <planet/functional.hpp>
 #include <planet/vk/engine/renderer.hpp>
 #include <planet/vk/engine/textured.pipeline.hpp>
 
@@ -34,33 +35,33 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
                 rp.renderer.per_frame_memory, rp.current_frame, rp.cb)) {
         return;
     }
-    for (std::size_t index{}; auto const &tx : textures.descriptors) {
-        VkWriteDescriptorSet wds{};
-        wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        wds.dstSet = textures.ubo.sets[rp.current_frame][index];
-        wds.dstBinding = 0;
-        wds.dstArrayElement = 0;
-        wds.descriptorCount = 1;
-        wds.pImageInfo = &tx;
-        vkUpdateDescriptorSets(
-                rp.renderer.app.device.get(), 1, &wds, 0, nullptr);
+    planet::by_index(
+            textures.descriptors, [&](auto const index, auto const &tx) {
+                VkWriteDescriptorSet wds{};
+                wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                wds.dstSet = textures.ubo.sets[rp.current_frame][index];
+                wds.dstBinding = 0;
+                wds.dstArrayElement = 0;
+                wds.descriptorCount = 1;
+                wds.pImageInfo = &tx;
+                vkUpdateDescriptorSets(
+                        rp.renderer.app.device.get(), 1, &wds, 0, nullptr);
 
-        vkCmdBindDescriptorSets(
-                rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipeline.layout.get(), 1, 1,
-                &textures.ubo.sets[rp.current_frame][index], 0, nullptr);
+                vkCmdBindDescriptorSets(
+                        rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        pipeline.layout.get(), 1, 1,
+                        &textures.ubo.sets[rp.current_frame][index], 0,
+                        nullptr);
 
-        static constexpr std::uint32_t index_count = 6;
-        static constexpr std::uint32_t instance_count = 1;
-        static constexpr std::int32_t vertex_offset = 0;
-        static constexpr std::uint32_t first_instance = 0;
-        vkCmdDrawIndexed(
-                rp.cb.get(), index_count, instance_count, index * index_count,
-                vertex_offset, first_instance);
-
-        ++index;
-    }
+                static constexpr std::uint32_t index_count = 6;
+                static constexpr std::uint32_t instance_count = 1;
+                static constexpr std::int32_t vertex_offset = 0;
+                static constexpr std::uint32_t first_instance = 0;
+                vkCmdDrawIndexed(
+                        rp.cb.get(), index_count, instance_count,
+                        index * index_count, vertex_offset, first_instance);
+            });
 
     // Clear out data from this frame
     textures.clear();
