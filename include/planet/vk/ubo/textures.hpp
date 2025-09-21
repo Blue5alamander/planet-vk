@@ -15,7 +15,7 @@ namespace planet::vk::ubo {
     /// ## Texture UBO
     /**
      * A UBO that allows one out of a number of textures to be used in the
-     * fragment shader. Used for things like sprites and text written on quads.
+     * fragment shader.
      */
     template<typename Vertex, std::size_t Frames>
     struct textures final {
