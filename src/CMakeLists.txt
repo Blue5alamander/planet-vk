@@ -45,6 +45,8 @@ add_library(planet-vk-engine
         sprite.pipeline.cpp
         textured.pipeline.cpp
     )
+vk_shader(planet-vk-engine copy.frag)
+vk_shader(planet-vk-engine copy.vert)
 vk_shader(planet-vk-engine mesh.frag)
 vk_shader(planet-vk-engine mesh.screen.vert)
 vk_shader(planet-vk-engine mesh.world.vert)
@@ -59,6 +61,8 @@ install(TARGETS planet-vk-engine LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
 
 
 install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/copy.frag.spirv
+        ${CMAKE_CURRENT_BINARY_DIR}/copy.vert.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.frag.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.screen.vert.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.world.vert.spirv

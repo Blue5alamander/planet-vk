@@ -9,15 +9,14 @@
 /// ## `planet::vk::sampler`
 
 
-planet::vk::sampler::sampler(vk::device &d, std::uint32_t const mip_levels)
-: device{d} {
+planet::vk::sampler::sampler(parameters p) : device{p.device} {
     VkSamplerCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     info.magFilter = VK_FILTER_LINEAR;
     info.minFilter = VK_FILTER_LINEAR;
-    info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    info.addressModeU = p.address_mode;
+    info.addressModeV = p.address_mode;
+    info.addressModeW = p.address_mode;
     info.anisotropyEnable = VK_TRUE;
     info.maxAnisotropy =
             device().instance.gpu().properties.limits.maxSamplerAnisotropy;
@@ -27,7 +26,7 @@ planet::vk::sampler::sampler(vk::device &d, std::uint32_t const mip_levels)
     info.compareOp = VK_COMPARE_OP_ALWAYS;
     info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     info.minLod = 0.0f;
-    info.maxLod = static_cast<float>(mip_levels);
+    info.maxLod = static_cast<float>(p.mip_levels);
     info.mipLodBias = 0.0f;
 
     handle.create<vkCreateSampler>(device.get(), info);
@@ -65,7 +64,10 @@ planet::vk::texture
 
     texture.image_view = {texture.image, VK_IMAGE_ASPECT_COLOR_BIT};
 
-    texture.sampler = {args.allocator.device, mip_levels};
+    texture.sampler = {
+            {.device = args.allocator.device,
+             .mip_levels = mip_levels,
+             .address_mode = args.address_mode}};
 
     return texture;
 }
@@ -118,7 +120,9 @@ planet::vk::texture planet::vk::texture::create_without_mip_levels_from(
 
     texture.image_view = {texture.image, VK_IMAGE_ASPECT_COLOR_BIT};
 
-    texture.sampler = {args.allocator.device, 1};
+    texture.sampler = {
+            {.device = args.allocator.device,
+             .address_mode = args.address_mode}};
 
     return texture;
 }

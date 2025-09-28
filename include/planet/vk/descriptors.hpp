@@ -67,7 +67,7 @@ namespace planet::vk {
         descriptor_sets(
                 descriptor_pool const &,
                 descriptor_set_layout const &,
-                std::uint32_t count = 1,
+                std::uint32_t count,
                 felspar::source_location const & =
                         felspar::source_location::current());
 

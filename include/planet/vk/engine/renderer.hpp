@@ -7,6 +7,7 @@
 #include <planet/vk/engine/colour_attachment.hpp>
 #include <planet/vk/engine/depth_buffer.hpp>
 #include <planet/vk/engine/forward.hpp>
+#include <planet/vk/frame_buffer.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 #include <planet/vk/ubo/coordinate_space.hpp>
 
@@ -56,12 +57,51 @@ namespace planet::vk::engine {
         vk::command_pool command_pool{app.device, app.instance.surface};
         vk::command_buffers command_buffers{command_pool, max_frames_in_flight};
 
-        engine::colour_attachment colour_attachment{
-                per_swap_chain_memory, swap_chain};
-        engine::depth_buffer depth_buffer{per_swap_chain_memory, swap_chain};
 
-        vk::render_pass render_pass{create_render_pass()};
+        /// #### Attachments and frame buffers
+        std::array<engine::colour_attachment, max_frames_in_flight>
+                colour_attachments = array_of<max_frames_in_flight>([this]() {
+                    return engine::colour_attachment{
+                            per_swap_chain_memory, swap_chain,
+                            VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT};
+                });
+        std::array<engine::depth_buffer, max_frames_in_flight> depth_buffers =
+                array_of<max_frames_in_flight>([this]() {
+                    return engine::depth_buffer{
+                            per_swap_chain_memory, swap_chain};
+                });
+        std::array<engine::colour_attachment, max_frames_in_flight>
+                scene_colours = array_of<max_frames_in_flight>([this]() {
+                    return engine::colour_attachment{
+                            per_swap_chain_memory, swap_chain,
+                            VK_IMAGE_USAGE_SAMPLED_BIT};
+                });
 
+
+        /// #### Render passes
+        vk::render_pass scene_render_pass{create_scene_render_pass()};
+        std::array<frame_buffer, max_frames_in_flight> scene_frame_buffers;
+        vk::render_pass present_render_pass{create_present_render_pass()};
+
+
+        /// #### Parts for copy pipeline
+        /// TODO Should probably be its own pipeline type
+        vk::descriptor_set_layout copy_sampler_layout{
+                app.device,
+                VkDescriptorSetLayoutBinding{
+                        .binding = 0,
+                        .descriptorType =
+                                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        .descriptorCount = 1,
+                        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                        .pImmutableSamplers = nullptr}};
+        vk::graphics_pipeline copy_pipeline;
+        vk::sampler copy_sampler;
+        vk::descriptor_pool copy_descriptor_pool;
+        vk::descriptor_sets copy_descriptor_sets;
+
+
+        /// #### Synchronisation
         std::array<vk::semaphore, max_frames_in_flight> img_avail_semaphore{
                 array_of<max_frames_in_flight>(
                         [this]() { return vk::semaphore{app.device}; })},
@@ -212,7 +252,8 @@ namespace planet::vk::engine {
 
 
       private:
-        vk::render_pass create_render_pass();
+        vk::render_pass create_scene_render_pass();
+        vk::render_pass create_present_render_pass();
 
 
         /// ### Data we need to track whilst in the render loop
@@ -282,9 +323,10 @@ namespace planet::vk::engine {
         std::span<VkVertexInputAttributeDescription const> attribute_descriptions;
 
         VkExtent2D extents = renderer.swap_chain.extents;
-        view<vk::render_pass> render_pass = renderer.render_pass;
+        view<vk::render_pass> render_pass = renderer.scene_render_pass;
 
         bool write_to_depth_buffer = true;
+        VkSampleCountFlagBits multisampling = app.instance.gpu().msaa_samples;
         engine::blend_mode blend_mode = blend_mode::multiply;
         std::size_t sub_pass = 0;
 

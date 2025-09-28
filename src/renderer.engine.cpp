@@ -1,3 +1,4 @@
+#include <planet/functional.hpp>
 #include <planet/telemetry/counter.hpp>
 #include <planet/telemetry/rate.hpp>
 #include <planet/vk/engine/renderer.hpp>
@@ -14,6 +15,43 @@ using namespace std::literals;
 
 planet::vk::engine::renderer::renderer(engine::app &a)
 : app{a},
+  scene_frame_buffers{
+          array_of<max_frames_in_flight>([this](std::size_t const index) {
+              std::array attachments{
+                      colour_attachments[index].image_view.get(),
+                      depth_buffers[index].image_view.get(),
+                      scene_colours[index].image_view.get()};
+              VkFramebufferCreateInfo info = {};
+              info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+              info.renderPass = scene_render_pass.get();
+              info.attachmentCount = attachments.size();
+              info.pAttachments = attachments.data();
+              info.width = swap_chain.extents.width;
+              info.height = swap_chain.extents.height;
+              info.layers = 1;
+              return frame_buffer{app.device, info};
+          })},
+  copy_pipeline{create_graphics_pipeline(
+          {.app = app,
+           .renderer = *this,
+           .vertex_shader = {"planet-vk-engine/copy.vert.spirv"sv},
+           .fragment_shader = {"planet-vk-engine/copy.frag.spirv"sv},
+           .binding_descriptions = {},
+           .attribute_descriptions = {},
+           .render_pass = present_render_pass,
+           .write_to_depth_buffer = false,
+           .multisampling = VK_SAMPLE_COUNT_1_BIT,
+           .blend_mode = blend_mode::none,
+           .pipeline_layout =
+                   pipeline_layout{app.device, copy_sampler_layout}})},
+  copy_sampler{
+          {.device = app.device,
+           .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE}},
+  copy_descriptor_pool{
+          app.device, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+          static_cast<std::uint32_t>(max_frames_in_flight)},
+  copy_descriptor_sets{
+          copy_descriptor_pool, copy_sampler_layout, max_frames_in_flight},
   screen_space{
           affine::transform2d{}
                   .scale(2.0f / app.window.width(), -2.0f / app.window.height())
@@ -23,7 +61,26 @@ planet::vk::engine::renderer::renderer(engine::app &a)
   coordinates{
           app.device.startup_memory,
           {.screen{screen_space.into()},
-           .perspective{logical_vulkan_space.into()}}} {}
+           .perspective{logical_vulkan_space.into()}}} {
+    by_index(max_frames_in_flight, [this](std::size_t const index) {
+        VkDescriptorImageInfo image_info = {};
+        image_info.sampler = copy_sampler.get();
+        image_info.imageView = scene_colours[index].image_view.get();
+        image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkWriteDescriptorSet write = {};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = copy_descriptor_sets[index];
+        write.dstBinding = 0;
+        write.dstArrayElement = 0;
+        write.descriptorCount = 1;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        write.pImageInfo = &image_info;
+
+        vkUpdateDescriptorSets(app.device.get(), 1, &write, 0, nullptr);
+    });
+    swap_chain.create_frame_buffers(present_render_pass);
+}
 planet::vk::engine::renderer::~renderer() {
     /**
      * Because images can be in flight when we're destructed, we have to wait
@@ -49,25 +106,23 @@ void planet::vk::engine::renderer::reset_world_coordinates(
 }
 
 
-planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
+planet::vk::render_pass
+        planet::vk::engine::renderer::create_scene_render_pass() {
     auto attachments = std::array{
-            colour_attachment.attachment_description(app.instance.gpu()),
-            depth_buffer.attachment_description(app.instance.gpu()),
-            swap_chain.attachment_description()};
+            colour_attachments[0].attachment_description(app.instance.gpu()),
+            depth_buffers[0].attachment_description(app.instance.gpu()),
+            scene_colours[0].attachment_description(
+                    VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE)};
 
-    VkAttachmentReference colour_attachment_ref = {};
-    colour_attachment_ref.attachment = 0;
-    colour_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference depth_attachment_ref{};
-    depth_attachment_ref.attachment = 1;
-    depth_attachment_ref.layout =
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference colour_resolve_attachment_ref{};
-    colour_resolve_attachment_ref.attachment = 2;
-    colour_resolve_attachment_ref.layout =
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkAttachmentReference colour_attachment_ref{
+            .attachment = 0,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+    VkAttachmentReference depth_attachment_ref{
+            .attachment = 1,
+            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+    VkAttachmentReference colour_resolve_attachment_ref{
+            .attachment = 2,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -96,11 +151,40 @@ planet::vk::render_pass planet::vk::engine::renderer::create_render_pass() {
     render_pass_info.dependencyCount = 1;
     render_pass_info.pDependencies = &dependency;
 
-    planet::vk::render_pass render_pass{app.device, render_pass_info};
-    swap_chain.create_frame_buffers(
-            render_pass, colour_attachment.image_view.get(),
-            depth_buffer.image_view.get());
-    return render_pass;
+    return {app.device, render_pass_info};
+}
+
+
+planet::vk::render_pass
+        planet::vk::engine::renderer::create_present_render_pass() {
+    auto attachments = std::array{swap_chain.attachment_description()};
+    VkAttachmentReference colour_ref{
+            .attachment = 0,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+
+    VkSubpassDescription subpass = {};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colour_ref;
+
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkRenderPassCreateInfo render_pass_info = {};
+    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    render_pass_info.attachmentCount = attachments.size();
+    render_pass_info.pAttachments = attachments.data();
+    render_pass_info.subpassCount = 1;
+    render_pass_info.pSubpasses = &subpass;
+    render_pass_info.dependencyCount = 1;
+    render_pass_info.pDependencies = &dependency;
+
+    return {app.device, render_pass_info};
 }
 
 
@@ -111,23 +195,35 @@ namespace {
 void planet::vk::engine::renderer::recreate_swap_chain(
         VkResult const result, felspar::source_location const &loc) {
     ++c_recreate_swapchain;
+    /// TODO The colour and depth attachments also need to be resized!
+    /// TODO We also need to resize all of the new frame buffers we have
     auto const images =
             swap_chain.recreate(app.window.refresh_window_dimensions());
-    swap_chain.create_frame_buffers(
-            render_pass, colour_attachment.image_view.get(),
-            depth_buffer.image_view.get());
+    swap_chain.create_frame_buffers(present_render_pass);
     planet::log::info(
             "Swap chain dirty. New image count", images, detail::error(result),
             loc);
 }
 
 
+/**
+ * ### Frame rendering
+ *
+ * This is a three stage process:
+ *
+ * 1. `start` -- Start the frame render
+ * 2. `bind` -- Bind each pipeline and then record the command buffer for that
+ * pipeline
+ * 3. `submit_and_present` -- Complete the frame, perform our post-processing
+ * and then present
+ */
 namespace {
     planet::telemetry::real_time_rate c_fence_wait{
             "planet_vk_engine_renderer_fence_wait", 500ms};
     planet::telemetry::real_time_rate c_acquire_wait{
             "planet_vk_engine_renderer_acquire_next_image_wait", 500ms};
 }
+/// #### `start`
 felspar::coro::task<std::size_t>
         planet::vk::engine::renderer::start(VkClearValue const colour) {
     constexpr auto wait_time = 5ms;
@@ -181,9 +277,8 @@ felspar::coro::task<std::size_t>
 
     VkRenderPassBeginInfo render_pass_info = {};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_info.renderPass = render_pass.get();
-    render_pass_info.framebuffer =
-            swap_chain.frame_buffers.at(image_index).get();
+    render_pass_info.renderPass = scene_render_pass.get();
+    render_pass_info.framebuffer = scene_frame_buffers.at(current_frame).get();
     render_pass_info.renderArea.offset.x = 0;
     render_pass_info.renderArea.offset.y = 0;
     render_pass_info.renderArea.extent = swap_chain.extents;
@@ -213,6 +308,7 @@ felspar::coro::task<std::size_t>
 }
 
 
+/// #### `bind`
 auto planet::vk::engine::renderer::bind(
         planet::vk::graphics_pipeline &pl,
         std::span<ubo::coherent_details const *const> const ubos)
@@ -234,10 +330,73 @@ namespace {
     planet::telemetry::real_time_rate frame_rate{
             "planet_vk_engine_renderer_frame_rate", 500ms};
 }
+/// #### `submit_and_present`
 void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[current_frame];
 
     vkCmdEndRenderPass(cb.get());
+
+    /**
+     * The scene pass is now ended. We have to now set up the presentation pass,
+     * and then finally we end our command buffer so we can present our frame.
+     */
+
+    // Transition scene_color to shader-readable
+    VkImageMemoryBarrier barrier = {};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = scene_colours[current_frame].image.get();
+    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(
+            cb.get(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+            &barrier);
+
+    // Begin present pass
+    {
+        VkRenderPassBeginInfo present_info = {};
+        present_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        present_info.renderPass = present_render_pass.get();
+        present_info.framebuffer = swap_chain.frame_buffers[image_index].get();
+        present_info.renderArea.offset = {0, 0};
+        present_info.renderArea.extent = swap_chain.extents;
+        VkClearValue clear = {{{0.0f, 0.0f, 0.0f, 1.0f}}}; // Clear to black
+        present_info.clearValueCount = 1;
+        present_info.pClearValues = &clear;
+
+        vkCmdBeginRenderPass(
+                cb.get(), &present_info, VK_SUBPASS_CONTENTS_INLINE);
+
+        // Set viewport (same as scene)
+        VkViewport viewport = {
+                0.0f,
+                static_cast<float>(app.window.height()),
+                static_cast<float>(app.window.width()),
+                -static_cast<float>(app.window.height()),
+                0.0f,
+                1.0f};
+        vkCmdSetViewport(cb.get(), 0, 1, &viewport);
+
+        // Bind and draw copy pipeline (full-screen triangle)
+        vkCmdBindPipeline(
+                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, copy_pipeline.get());
+        VkDescriptorSet ds = copy_descriptor_sets[current_frame];
+        vkCmdBindDescriptorSets(
+                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                copy_pipeline.layout.get(), 0, 1, &ds, 0, nullptr);
+        vkCmdDraw(
+                cb.get(), 3, 1, 0,
+                0); // 3 verts, no instance/vertex/index buffer
+
+        vkCmdEndRenderPass(cb.get()); // End present pass
+    }
+
     planet::vk::worked(vkEndCommandBuffer(cb.get()));
 
     std::array<VkSemaphore, 1> const wait_semaphores = {
@@ -420,7 +579,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     multisampling.sType =
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = app.instance.gpu().msaa_samples;
+    multisampling.rasterizationSamples = parameters.multisampling;
 
     VkPipelineColorBlendAttachmentState blend_state = {};
     blend_state.blendEnable = VK_TRUE;

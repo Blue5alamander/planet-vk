@@ -19,8 +19,13 @@ namespace planet::vk {
 
       public:
         /// ### Construct
+        struct parameters {
+            vk::device &device;
+            std::uint32_t mip_levels = 1;
+            VkSamplerAddressMode address_mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        };
         sampler() {}
-        sampler(vk::device &, std::uint32_t mip_levels);
+        sampler(parameters);
 
 
         /// ### Query sampler
@@ -42,6 +47,7 @@ namespace planet::vk {
             std::uint32_t height;
             ui::scale scale = ui::scale::lock_aspect;
             VkFormat format = VK_FORMAT_B8G8R8A8_SRGB;
+            VkSamplerAddressMode address_mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         };
         static texture create_with_mip_levels_from(args);
         static texture create_without_mip_levels_from(args);

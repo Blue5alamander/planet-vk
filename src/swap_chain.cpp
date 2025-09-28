@@ -1,3 +1,4 @@
+#include <planet/log.hpp>
 #include <planet/vk/device.hpp>
 #include <planet/vk/instance.hpp>
 #include <planet/vk/swap_chain.hpp>
@@ -57,6 +58,10 @@ std::uint32_t planet::vk::swap_chain::create(VkExtent2D const wsize) {
             device.get(), handle.get());
 
     for (auto const image : images) { image_views.emplace_back(*this, image); }
+
+    planet::log::info(
+            "Created swap chain with", images.size(), "images and extents",
+            wsize.width, "x", wsize.height);
 
     return images.size();
 }

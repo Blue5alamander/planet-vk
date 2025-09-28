@@ -9,33 +9,44 @@
 
 
 planet::vk::engine::colour_attachment::colour_attachment(
-        device_memory_allocator &allocator, vk::swap_chain &swap_chain)
-: image{allocator,
-        swap_chain.extents.width,
-        swap_chain.extents.height,
-        1,
-        swap_chain.device->instance.gpu().msaa_samples,
-        swap_chain.image_format,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
-                | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        device_memory_allocator &allocator,
+        vk::swap_chain &swap_chain,
+        VkImageUsageFlagBits const usage)
+: image{allocator, swap_chain.extents.width, swap_chain.extents.height, 1,
+        /**
+         * TODO This is a hack for working out the correct sampling value. There
+         * should be something more sensible for this
+         */
+        usage == VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
+                ? swap_chain.device->instance.gpu().msaa_samples
+                : VK_SAMPLE_COUNT_1_BIT,
+        swap_chain.image_format, VK_IMAGE_TILING_OPTIMAL,
+        static_cast<VkImageUsageFlagBits>(
+                usage | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT},
   image_view{image, VK_IMAGE_ASPECT_COLOR_BIT} {}
 
 
 VkAttachmentDescription
         planet::vk::engine::colour_attachment::attachment_description(
-                physical_device const &device) const {
+                VkSampleCountFlagBits const samples,
+                VkAttachmentLoadOp const clear) const {
     VkAttachmentDescription ca{};
     ca.format = image.format;
-    ca.samples = device.msaa_samples;
-    ca.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    ca.samples = samples;
+    ca.loadOp = clear;
     ca.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     ca.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     ca.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     ca.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     ca.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     return ca;
+}
+VkAttachmentDescription
+        planet::vk::engine::colour_attachment::attachment_description(
+                physical_device const &device) const {
+    return attachment_description(
+            device.msaa_samples, VK_ATTACHMENT_LOAD_OP_CLEAR);
 }
 
 
