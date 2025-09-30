@@ -1,5 +1,5 @@
 #include <planet/vk/engine/renderer.hpp>
-#include <planet/vk/engine/sprite.pipeline.hpp>
+#include <planet/vk/engine/pipeline/sprite.hpp>
 
 
 /// ## `planet::vk::engine::pipeline::sprite`

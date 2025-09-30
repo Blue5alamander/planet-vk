@@ -1,5 +1,5 @@
 #include <planet/telemetry/counter.hpp>
-#include <planet/vk/engine/mesh.pipeline.hpp>
+#include <planet/vk/engine/pipeline/mesh.hpp>
 #include <planet/vk/engine/renderer.hpp>
 
 

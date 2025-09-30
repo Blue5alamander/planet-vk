@@ -3,7 +3,7 @@
 
 #include <planet/ui/reflowable.hpp>
 #include <planet/vk/colour.hpp>
-#include <planet/vk/engine/textured.pipeline.hpp>
+#include <planet/vk/engine/pipeline/textured.hpp>
 #include <planet/vk/texture.hpp>
 #include <planet/vk/engine/forward.hpp>
 

@@ -1,6 +1,6 @@
 #include <planet/functional.hpp>
 #include <planet/vk/engine/renderer.hpp>
-#include <planet/vk/engine/textured.pipeline.hpp>
+#include <planet/vk/engine/pipeline/textured.hpp>
 
 
 /// ## `planet::vk::engine::pipeline::textured`
