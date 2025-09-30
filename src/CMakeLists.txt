@@ -41,15 +41,16 @@ add_library(planet-vk-engine
         attachments.engine.cpp
         blank.engine.cpp
         mesh.pipeline.cpp
+        postprocess.pipeline.cpp
         renderer.engine.cpp
         sprite.pipeline.cpp
         textured.pipeline.cpp
     )
-vk_shader(planet-vk-engine copy.frag)
-vk_shader(planet-vk-engine copy.vert)
 vk_shader(planet-vk-engine mesh.frag)
 vk_shader(planet-vk-engine mesh.screen.vert)
 vk_shader(planet-vk-engine mesh.world.vert)
+vk_shader(planet-vk-engine postprocess.copy.frag)
+vk_shader(planet-vk-engine postprocess.vert)
 vk_shader(planet-vk-engine sprite.frag)
 vk_shader(planet-vk-engine sprite.screen.vert)
 vk_shader(planet-vk-engine sprite.world.vert)
@@ -61,11 +62,11 @@ install(TARGETS planet-vk-engine LIBRARY DESTINATION lib ARCHIVE DESTINATION lib
 
 
 install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/copy.frag.spirv
-        ${CMAKE_CURRENT_BINARY_DIR}/copy.vert.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.frag.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.screen.vert.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.world.vert.spirv
+        ${CMAKE_CURRENT_BINARY_DIR}/postprocess.copy.frag.spirv
+        ${CMAKE_CURRENT_BINARY_DIR}/postprocess.vert.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/sprite.frag.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/sprite.screen.vert.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/sprite.world.vert.spirv

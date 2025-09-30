@@ -31,27 +31,6 @@ planet::vk::engine::renderer::renderer(engine::app &a)
               info.layers = 1;
               return frame_buffer{app.device, info};
           })},
-  copy_pipeline{create_graphics_pipeline(
-          {.app = app,
-           .renderer = *this,
-           .vertex_shader = {"planet-vk-engine/copy.vert.spirv"sv},
-           .fragment_shader = {"planet-vk-engine/copy.frag.spirv"sv},
-           .binding_descriptions = {},
-           .attribute_descriptions = {},
-           .render_pass = present_render_pass,
-           .write_to_depth_buffer = false,
-           .multisampling = VK_SAMPLE_COUNT_1_BIT,
-           .blend_mode = blend_mode::none,
-           .pipeline_layout =
-                   pipeline_layout{app.device, copy_sampler_layout}})},
-  copy_sampler{
-          {.device = app.device,
-           .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE}},
-  copy_descriptor_pool{
-          app.device, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-          static_cast<std::uint32_t>(max_frames_in_flight)},
-  copy_descriptor_sets{
-          copy_descriptor_pool, copy_sampler_layout, max_frames_in_flight},
   screen_space{
           affine::transform2d{}
                   .scale(2.0f / app.window.width(), -2.0f / app.window.height())
@@ -64,13 +43,13 @@ planet::vk::engine::renderer::renderer(engine::app &a)
            .perspective{logical_vulkan_space.into()}}} {
     by_index(max_frames_in_flight, [this](std::size_t const index) {
         VkDescriptorImageInfo image_info = {};
-        image_info.sampler = copy_sampler.get();
+        image_info.sampler = postprocess.sampler.get();
         image_info.imageView = scene_colours[index].image_view.get();
         image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         VkWriteDescriptorSet write = {};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet = copy_descriptor_sets[index];
+        write.dstSet = postprocess.descriptor_sets[index];
         write.dstBinding = 0;
         write.dstArrayElement = 0;
         write.descriptorCount = 1;
@@ -385,11 +364,12 @@ void planet::vk::engine::renderer::submit_and_present() {
 
         // Bind and draw copy pipeline (full-screen triangle)
         vkCmdBindPipeline(
-                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, copy_pipeline.get());
-        VkDescriptorSet ds = copy_descriptor_sets[current_frame];
+                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                postprocess.pipeline.get());
+        VkDescriptorSet ds = postprocess.descriptor_sets[current_frame];
         vkCmdBindDescriptorSets(
                 cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                copy_pipeline.layout.get(), 0, 1, &ds, 0, nullptr);
+                postprocess.pipeline.layout.get(), 0, 1, &ds, 0, nullptr);
         vkCmdDraw(
                 cb.get(), 3, 1, 0,
                 0); // 3 verts, no instance/vertex/index buffer

@@ -8,6 +8,7 @@
 #include <planet/vk/engine/depth_buffer.hpp>
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/frame_buffer.hpp>
+#include <planet/vk/engine/pipeline/postprocess.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 #include <planet/vk/ubo/coordinate_space.hpp>
 
@@ -84,21 +85,8 @@ namespace planet::vk::engine {
         vk::render_pass present_render_pass{create_present_render_pass()};
 
 
-        /// #### Parts for copy pipeline
-        /// TODO Should probably be its own pipeline type
-        vk::descriptor_set_layout copy_sampler_layout{
-                app.device,
-                VkDescriptorSetLayoutBinding{
-                        .binding = 0,
-                        .descriptorType =
-                                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                        .descriptorCount = 1,
-                        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                        .pImmutableSamplers = nullptr}};
-        vk::graphics_pipeline copy_pipeline;
-        vk::sampler copy_sampler;
-        vk::descriptor_pool copy_descriptor_pool;
-        vk::descriptor_sets copy_descriptor_sets;
+        /// #### Post-process pipeline
+        pipeline::postprocess postprocess{{.renderer = *this}};
 
 
         /// #### Synchronisation
