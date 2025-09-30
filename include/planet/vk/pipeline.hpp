@@ -3,6 +3,8 @@
 
 #include <planet/vk/render_pass.hpp>
 
+#include <span>
+
 
 namespace planet::vk {
 
