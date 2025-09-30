@@ -33,6 +33,10 @@ namespace planet::vk::engine::pipeline {
         vk::descriptor_sets descriptor_sets;
 
         vk::graphics_pipeline pipeline;
+
+
+        void update_descriptors(renderer &);
+        void render_subpass(render_parameters, std::uint32_t);
     };
 
 

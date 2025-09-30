@@ -15,6 +15,18 @@ using namespace std::literals;
 
 planet::vk::engine::renderer::renderer(engine::app &a)
 : app{a},
+  colour_attachments{array_of<max_frames_in_flight>([this]() {
+      return engine::colour_attachment{
+              per_swap_chain_memory, swap_chain,
+              VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT};
+  })},
+  depth_buffers{array_of<max_frames_in_flight>([this]() {
+      return engine::depth_buffer{per_swap_chain_memory, swap_chain};
+  })},
+  scene_colours{array_of<max_frames_in_flight>([this]() {
+      return engine::colour_attachment{
+              per_swap_chain_memory, swap_chain, VK_IMAGE_USAGE_SAMPLED_BIT};
+  })},
   scene_frame_buffers{
           array_of<max_frames_in_flight>([this](std::size_t const index) {
               std::array attachments{
@@ -31,6 +43,7 @@ planet::vk::engine::renderer::renderer(engine::app &a)
               info.layers = 1;
               return frame_buffer{app.device, info};
           })},
+  postprocess{{.renderer = *this}},
   screen_space{
           affine::transform2d{}
                   .scale(2.0f / app.window.width(), -2.0f / app.window.height())
@@ -41,23 +54,7 @@ planet::vk::engine::renderer::renderer(engine::app &a)
           app.device.startup_memory,
           {.screen{screen_space.into()},
            .perspective{logical_vulkan_space.into()}}} {
-    by_index(max_frames_in_flight, [this](std::size_t const index) {
-        VkDescriptorImageInfo image_info = {};
-        image_info.sampler = postprocess.sampler.get();
-        image_info.imageView = scene_colours[index].image_view.get();
-        image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-        VkWriteDescriptorSet write = {};
-        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet = postprocess.descriptor_sets[index];
-        write.dstBinding = 0;
-        write.dstArrayElement = 0;
-        write.descriptorCount = 1;
-        write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        write.pImageInfo = &image_info;
-
-        vkUpdateDescriptorSets(app.device.get(), 1, &write, 0, nullptr);
-    });
+    postprocess.update_descriptors(*this);
     swap_chain.create_frame_buffers(present_render_pass);
 }
 planet::vk::engine::renderer::~renderer() {
@@ -337,45 +334,7 @@ void planet::vk::engine::renderer::submit_and_present() {
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
             &barrier);
 
-    // Begin present pass
-    {
-        VkRenderPassBeginInfo present_info = {};
-        present_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        present_info.renderPass = present_render_pass.get();
-        present_info.framebuffer = swap_chain.frame_buffers[image_index].get();
-        present_info.renderArea.offset = {0, 0};
-        present_info.renderArea.extent = swap_chain.extents;
-        VkClearValue clear = {{{0.0f, 0.0f, 0.0f, 1.0f}}}; // Clear to black
-        present_info.clearValueCount = 1;
-        present_info.pClearValues = &clear;
-
-        vkCmdBeginRenderPass(
-                cb.get(), &present_info, VK_SUBPASS_CONTENTS_INLINE);
-
-        // Set viewport (same as scene)
-        VkViewport viewport = {
-                0.0f,
-                static_cast<float>(app.window.height()),
-                static_cast<float>(app.window.width()),
-                -static_cast<float>(app.window.height()),
-                0.0f,
-                1.0f};
-        vkCmdSetViewport(cb.get(), 0, 1, &viewport);
-
-        // Bind and draw copy pipeline (full-screen triangle)
-        vkCmdBindPipeline(
-                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                postprocess.pipeline.get());
-        VkDescriptorSet ds = postprocess.descriptor_sets[current_frame];
-        vkCmdBindDescriptorSets(
-                cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                postprocess.pipeline.layout.get(), 0, 1, &ds, 0, nullptr);
-        vkCmdDraw(
-                cb.get(), 3, 1, 0,
-                0); // 3 verts, no instance/vertex/index buffer
-
-        vkCmdEndRenderPass(cb.get()); // End present pass
-    }
+    postprocess.render_subpass({*this, cb, current_frame}, image_index);
 
     planet::vk::worked(vkEndCommandBuffer(cb.get()));
 

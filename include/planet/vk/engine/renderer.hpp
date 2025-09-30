@@ -61,22 +61,9 @@ namespace planet::vk::engine {
 
         /// #### Attachments and frame buffers
         std::array<engine::colour_attachment, max_frames_in_flight>
-                colour_attachments = array_of<max_frames_in_flight>([this]() {
-                    return engine::colour_attachment{
-                            per_swap_chain_memory, swap_chain,
-                            VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT};
-                });
-        std::array<engine::depth_buffer, max_frames_in_flight> depth_buffers =
-                array_of<max_frames_in_flight>([this]() {
-                    return engine::depth_buffer{
-                            per_swap_chain_memory, swap_chain};
-                });
-        std::array<engine::colour_attachment, max_frames_in_flight>
-                scene_colours = array_of<max_frames_in_flight>([this]() {
-                    return engine::colour_attachment{
-                            per_swap_chain_memory, swap_chain,
-                            VK_IMAGE_USAGE_SAMPLED_BIT};
-                });
+                colour_attachments;
+        std::array<engine::depth_buffer, max_frames_in_flight> depth_buffers;
+        std::array<engine::colour_attachment, max_frames_in_flight> scene_colours;
 
 
         /// #### Render passes
@@ -86,7 +73,7 @@ namespace planet::vk::engine {
 
 
         /// #### Post-process pipeline
-        pipeline::postprocess postprocess{{.renderer = *this}};
+        pipeline::postprocess postprocess;
 
 
         /// #### Synchronisation
