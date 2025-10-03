@@ -82,7 +82,7 @@ void planet::vk::engine::pipeline::postprocess::render_subpass(
             1.0f};
     vkCmdSetViewport(rp.cb.get(), 0, 1, &viewport);
 
-    // Bind and draw copy pipeline (full-screen triangle)
+    /// Bind and draw copy pipeline (full-screen triangle)
     vkCmdBindPipeline(
             rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
     VkDescriptorSet ds = descriptor_sets[rp.current_frame];

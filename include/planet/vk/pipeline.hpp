@@ -1,15 +1,12 @@
 #pragma once
 
 
-#include <planet/vk/render_pass.hpp>
+#include <planet/vk/forward.hpp>
 
 #include <span>
 
 
 namespace planet::vk {
-
-
-    class descriptor_set_layout;
 
 
     class pipeline_layout final {
