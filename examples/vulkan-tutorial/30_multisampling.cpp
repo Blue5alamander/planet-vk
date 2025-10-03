@@ -154,7 +154,9 @@ class HelloTriangleApplication {
 
     planet::vk::swap_chain swapChain{device, chooseSwapExtent()};
     planet::vk::engine::colour_attachment colorAttachment{
-            device.startup_memory, swapChain};
+            {.allocator = device.startup_memory,
+             .extents = swapChain.extents,
+             .format = swapChain.image_format}};
     planet::vk::engine::depth_buffer depthBuffer{
             device.startup_memory, swapChain};
 
@@ -426,7 +428,10 @@ class HelloTriangleApplication {
         device.wait_idle();
 
         createSwapChain();
-        colorAttachment = {device.startup_memory, swapChain};
+        colorAttachment = {
+                {.allocator = device.startup_memory,
+                 .extents = swapChain.extents,
+                 .format = swapChain.image_format}};
         depthBuffer = {device.startup_memory, swapChain};
         swapChain.create_frame_buffers(
                 graphicsPipeline.render_pass, colorAttachment.image_view.get(),

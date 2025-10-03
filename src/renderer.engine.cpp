@@ -17,15 +17,20 @@ planet::vk::engine::renderer::renderer(engine::app &a)
 : app{a},
   colour_attachments{array_of<max_frames_in_flight>([this]() {
       return engine::colour_attachment{
-              per_swap_chain_memory, swap_chain,
-              VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT};
+              {.allocator = per_swap_chain_memory,
+               .extents = swap_chain.extents,
+               .format = swap_chain.image_format,
+               .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT}};
   })},
   depth_buffers{array_of<max_frames_in_flight>([this]() {
       return engine::depth_buffer{per_swap_chain_memory, swap_chain};
   })},
   scene_colours{array_of<max_frames_in_flight>([this]() {
       return engine::colour_attachment{
-              per_swap_chain_memory, swap_chain, VK_IMAGE_USAGE_SAMPLED_BIT};
+              {.allocator = per_swap_chain_memory,
+               .extents = swap_chain.extents,
+               .format = swap_chain.image_format,
+               .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT}};
   })},
   scene_frame_buffers{
           array_of<max_frames_in_flight>([this](std::size_t const index) {
