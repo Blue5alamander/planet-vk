@@ -6,7 +6,8 @@ namespace {
             planet::vk::engine::app &app,
             planet::vk::engine::renderer &renderer) {
         planet::vk::engine::pipeline::mesh mesh{
-                renderer, "planet-vk-engine/mesh.world.vert.spirv"};
+                {.renderer = renderer,
+                 .vertex_shader{"planet-vk-engine/mesh.world.vert.spirv"}}};
 
         constexpr std::array vertices{
                 planet::vk::vertex::coloured{

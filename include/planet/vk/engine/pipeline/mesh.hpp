@@ -3,7 +3,7 @@
 
 #include <planet/affine/point3d.hpp>
 #include <planet/vk/engine/app.hpp>
-#include <planet/vk/engine/render_parameters.hpp>
+#include <planet/vk/engine/renderer.hpp>
 #include <planet/vk/vertex/coloured.hpp>
 
 
@@ -16,11 +16,6 @@ namespace planet::vk::engine::pipeline {
 
 
       public:
-        static constexpr std::string_view default_fragment_shader =
-                "planet-vk-engine/mesh.frag.spirv";
-        static constexpr blend_mode default_blend_mode = blend_mode::multiply;
-
-
         /// ### Construction
         /**
          * Always supply the renderer and the filename of the vertex shader, but
@@ -30,38 +25,16 @@ namespace planet::vk::engine::pipeline {
          * provided as the first `std::string_view` passed in is taken as the
          * vertex shader.
          */
-        mesh(engine::renderer &r,
-             std::string_view const vertex_spirv,
-             blend_mode const bm = default_blend_mode)
-        : mesh{r, vertex_spirv, default_fragment_shader, bm,
-               default_layout(r)} {}
-        mesh(engine::renderer &r,
-             std::string_view const vertex_spirv,
-             pipeline_layout layout)
-        : mesh{r, vertex_spirv, default_fragment_shader, default_blend_mode,
-               std::move(layout)} {}
-        mesh(engine::renderer &r,
-             std::string_view const vertex_spirv,
-             std::string_view const fragment_spirv)
-        : mesh{r, vertex_spirv, fragment_spirv, default_blend_mode,
-               default_layout(r)} {}
-        mesh(engine::renderer &r,
-             std::string_view const vertex_spirv,
-             std::string_view const fragment_spirv,
-             pipeline_layout layout)
-        : mesh{r, vertex_spirv, fragment_spirv, default_blend_mode,
-               std::move(layout)} {}
-        mesh(engine::renderer &r,
-             std::string_view const vertex_spirv,
-             blend_mode const bm,
-             pipeline_layout layout)
-        : mesh{r, vertex_spirv, default_fragment_shader, bm,
-               std::move(layout)} {}
-        mesh(engine::renderer &,
-             std::string_view vertex_spirv,
-             std::string_view fragment_spirv,
-             blend_mode,
-             pipeline_layout);
+        struct parameters {
+            engine::renderer &renderer;
+            shader_parameters vertex_shader;
+            shader_parameters fragment_shader{
+                    .spirv_filename = "planet-vk-engine/mesh.frag.spirv"};
+            blend_mode bm = blend_mode::multiply;
+            pipeline_layout layout{
+                    renderer.app.device, renderer.coordinates_ubo_layout()};
+        };
+        mesh(parameters);
 
 
         vk::graphics_pipeline pipeline;

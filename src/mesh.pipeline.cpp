@@ -6,23 +6,18 @@
 /// ## `planet::vk::engine::pipeline::mesh`
 
 
-planet::vk::engine::pipeline::mesh::mesh(
-        engine::renderer &r,
-        std::string_view const vertex_spirv_filename,
-        std::string_view const fragment_spirv_filename,
-        blend_mode const bm,
-        pipeline_layout layout)
+planet::vk::engine::pipeline::mesh::mesh(parameters p)
 : pipeline{planet::vk::engine::create_graphics_pipeline(
-          {.app = r.app,
-           .renderer = r,
-           .vertex_shader = {vertex_spirv_filename},
-           .fragment_shader = {fragment_spirv_filename},
+          {.app = p.renderer.app,
+           .renderer = p.renderer,
+           .vertex_shader = p.vertex_shader,
+           .fragment_shader = p.fragment_shader,
            .binding_descriptions =
                    vertex::binding_description<vertex::coloured>(),
            .attribute_descriptions =
                    vertex::attribute_description<vertex::coloured>(),
-           .blend_mode = bm,
-           .pipeline_layout = std::move(layout)})} {}
+           .blend_mode = p.bm,
+           .pipeline_layout = std::move(p.layout)})} {}
 
 
 planet::vk::pipeline_layout planet::vk::engine::pipeline::mesh::default_layout(
