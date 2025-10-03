@@ -313,11 +313,11 @@ void planet::vk::engine::renderer::submit_and_present() {
     vkCmdEndRenderPass(cb.get());
 
     /**
-     * The scene pass is now ended. We have to now set up the presentation pass,
+     * The scene pass is now ended. Now we have to set up the presentation pass,
      * and then finally we end our command buffer so we can present our frame.
      */
 
-    // Transition scene_color to shader-readable
+    /// Transition scene_color to shader-readable
     VkImageMemoryBarrier barrier = {};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -358,7 +358,7 @@ void planet::vk::engine::renderer::submit_and_present() {
             app.device.graphics_queue, 1, &submit_info,
             fence[current_frame].get()));
 
-    // Finally, present the updated image in the swap chain
+    /// Finally, present the updated image in the swap chain
     std::array<VkSwapchainKHR, 1> present_chain = {swap_chain.get()};
     VkPresentInfoKHR present_info = {};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -448,17 +448,18 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
                     parameters.fragment_shader.entry_point)};
 
     /// Vertex bindings and attributes
-    VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
-    vertex_input_info.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_info.vertexBindingDescriptionCount =
-            parameters.binding_descriptions.size();
-    vertex_input_info.pVertexBindingDescriptions =
-            parameters.binding_descriptions.data();
-    vertex_input_info.vertexAttributeDescriptionCount =
-            parameters.attribute_descriptions.size();
-    vertex_input_info.pVertexAttributeDescriptions =
-            parameters.attribute_descriptions.data();
+    VkPipelineVertexInputStateCreateInfo vertex_input_info{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .pNext = {},
+            .flags = {},
+            .vertexBindingDescriptionCount = static_cast<std::uint32_t>(
+                    parameters.binding_descriptions.size()),
+            .pVertexBindingDescriptions =
+                    parameters.binding_descriptions.data(),
+            .vertexAttributeDescriptionCount = static_cast<std::uint32_t>(
+                    parameters.attribute_descriptions.size()),
+            .pVertexAttributeDescriptions =
+                    parameters.attribute_descriptions.data()};
 
     // Primitive type
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
