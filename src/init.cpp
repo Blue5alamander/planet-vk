@@ -188,7 +188,9 @@ planet::vk::device::device(
     }
 
     VkPhysicalDeviceFeatures device_features = {};
+    device_features.independentBlend = VK_TRUE;
     device_features.samplerAnisotropy = VK_TRUE;
+    device_features.sampleRateShading = VK_TRUE;
 
     VkDeviceCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

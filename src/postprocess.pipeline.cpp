@@ -25,6 +25,7 @@ planet::vk::engine::pipeline::postprocess::postprocess(parameters p)
            .fragment_shader = {"planet-vk-engine/postprocess.copy.frag.spirv"sv},
            .binding_descriptions = {},
            .attribute_descriptions = {},
+           .colour_attachments = 1,
            .render_pass = p.renderer.present_render_pass,
            .write_to_depth_buffer = false,
            .multisampling = VK_SAMPLE_COUNT_1_BIT,

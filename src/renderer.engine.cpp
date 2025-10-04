@@ -22,6 +22,13 @@ planet::vk::engine::renderer::renderer(engine::app &a)
                .format = swap_chain.image_format,
                .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT}};
   })},
+  glow_attachments{array_of<max_frames_in_flight>([this]() {
+      return engine::colour_attachment{
+              {.allocator = per_swap_chain_memory,
+               .extents = swap_chain.extents,
+               .format = swap_chain.image_format,
+               .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT}};
+  })},
   depth_buffers{array_of<max_frames_in_flight>([this]() {
       return engine::depth_buffer{per_swap_chain_memory, swap_chain};
   })},
@@ -32,12 +39,21 @@ planet::vk::engine::renderer::renderer(engine::app &a)
                .format = swap_chain.image_format,
                .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT}};
   })},
+  glow_colours{array_of<max_frames_in_flight>([this]() {
+      return engine::colour_attachment{
+              {.allocator = per_swap_chain_memory,
+               .extents = swap_chain.extents,
+               .format = swap_chain.image_format,
+               .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT}};
+  })},
   scene_frame_buffers{
           array_of<max_frames_in_flight>([this](std::size_t const index) {
               std::array attachments{
                       colour_attachments[index].image_view.get(),
+                      glow_attachments[index].image_view.get(),
                       depth_buffers[index].image_view.get(),
-                      scene_colours[index].image_view.get()};
+                      scene_colours[index].image_view.get(),
+                      glow_colours[index].image_view.get()};
               VkFramebufferCreateInfo info = {};
               info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
               info.renderPass = scene_render_pass.get();
@@ -91,26 +107,40 @@ planet::vk::render_pass
         planet::vk::engine::renderer::create_scene_render_pass() {
     auto attachments = std::array{
             colour_attachments[0].attachment_description(app.instance.gpu()),
+            glow_attachments[0].attachment_description(app.instance.gpu()),
             depth_buffers[0].attachment_description(app.instance.gpu()),
             scene_colours[0].attachment_description(
+                    VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE),
+            glow_colours[0].attachment_description(
                     VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE)};
 
-    VkAttachmentReference colour_attachment_ref{
-            .attachment = 0,
-            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+    auto colour_attachment_refs = std::array{
+            VkAttachmentReference{
+                    .attachment = 0,
+                    .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+            VkAttachmentReference{
+                    .attachment = 1,
+                    .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}};
     VkAttachmentReference depth_attachment_ref{
-            .attachment = 1,
-            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
-    VkAttachmentReference colour_resolve_attachment_ref{
             .attachment = 2,
-            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+    auto colour_resolve_attachment_refs = std::array{
+            VkAttachmentReference{
+                    .attachment = 3,
+                    .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+            VkAttachmentReference{
+                    .attachment = 4,
+                    .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}};
+    static_assert(
+            colour_attachment_refs.size()
+            == colour_resolve_attachment_refs.size());
 
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colour_attachment_ref;
+    subpass.colorAttachmentCount = colour_attachment_refs.size();
+    subpass.pColorAttachments = colour_attachment_refs.data();
     subpass.pDepthStencilAttachment = &depth_attachment_ref;
-    subpass.pResolveAttachments = &colour_resolve_attachment_ref;
+    subpass.pResolveAttachments = colour_resolve_attachment_refs.data();
 
     VkSubpassDependency dependency{};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -264,8 +294,9 @@ felspar::coro::task<std::size_t>
     render_pass_info.renderArea.offset.y = 0;
     render_pass_info.renderArea.extent = swap_chain.extents;
 
-    std::array<VkClearValue, 2> clear_values{
-            colour, {.depthStencil = {0.0f, 0}}};
+    auto clear_values = std::array{
+            colour, static_cast<VkClearValue>(vk::colour::black),
+            VkClearValue{.depthStencil = {0.0f, 0}}};
     render_pass_info.clearValueCount = clear_values.size();
     render_pass_info.pClearValues = clear_values.data();
 
@@ -432,7 +463,8 @@ std::size_t
 
 
 planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
-        graphics_pipeline_parameters parameters) {
+        graphics_pipeline_parameters parameters,
+        felspar::source_location const &loc) {
     auto &app = parameters.app;
 
     /// Shaders
@@ -526,32 +558,51 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = parameters.multisampling;
 
-    VkPipelineColorBlendAttachmentState blend_state = {};
-    blend_state.blendEnable = VK_TRUE;
-    blend_state.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
-            | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT
-            | VK_COLOR_COMPONENT_A_BIT;
-    blend_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    blend_state.colorBlendOp = VK_BLEND_OP_ADD;
-    blend_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    blend_state.alphaBlendOp = VK_BLEND_OP_ADD;
-    switch (parameters.blend_mode) {
-    case blend_mode::none: blend_state.blendEnable = VK_FALSE; break;
-    case blend_mode::multiply:
-        blend_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        blend_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        break;
-    case blend_mode::add:
-        blend_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-        blend_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        break;
+    auto blend_state = array_of<2>([&]() {
+        VkPipelineColorBlendAttachmentState bas{};
+        bas.blendEnable =
+                parameters.blend_mode == blend_mode::none ? VK_FALSE : VK_TRUE;
+        bas.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        bas.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        bas.colorBlendOp = VK_BLEND_OP_ADD;
+        bas.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        bas.alphaBlendOp = VK_BLEND_OP_ADD;
+        switch (parameters.blend_mode) {
+        case blend_mode::none: bas.blendEnable = VK_FALSE; break;
+        case blend_mode::multiply:
+            bas.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            bas.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            break;
+        case blend_mode::add:
+            bas.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+            bas.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            break;
+        }
+        return bas;
+    });
+    blend_state[1] = blend_state[0];
+    blend_state[1].blendEnable = VK_TRUE;
+    blend_state[1].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    blend_state[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    blend_state[1].colorBlendOp = VK_BLEND_OP_ADD;
+    blend_state[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    blend_state[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    blend_state[1].alphaBlendOp = VK_BLEND_OP_ADD;
+
+    if (parameters.colour_attachments > blend_state.size()) {
+        throw felspar::stdexcept::logic_error{
+                "The number of colour attachments is too high\n"
+                "The value must be "
+                        + std::to_string(blend_state.size()) + " or less",
+                loc};
     }
 
     VkPipelineColorBlendStateCreateInfo blend_info = {};
     blend_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     blend_info.logicOpEnable = VK_FALSE;
-    blend_info.attachmentCount = 1;
-    blend_info.pAttachments = &blend_state;
+    blend_info.attachmentCount = parameters.colour_attachments;
+    blend_info.pAttachments = blend_state.data();
 
     VkPipelineDepthStencilStateCreateInfo depth_stencil{};
     depth_stencil.sType =

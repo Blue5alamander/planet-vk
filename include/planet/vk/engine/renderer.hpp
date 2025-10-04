@@ -61,9 +61,10 @@ namespace planet::vk::engine {
 
         /// #### Attachments and frame buffers
         std::array<engine::colour_attachment, max_frames_in_flight>
-                colour_attachments;
+                colour_attachments, glow_attachments;
         std::array<engine::depth_buffer, max_frames_in_flight> depth_buffers;
-        std::array<engine::colour_attachment, max_frames_in_flight> scene_colours;
+        std::array<engine::colour_attachment, max_frames_in_flight>
+                scene_colours, glow_colours;
 
 
         /// #### Render passes
@@ -296,6 +297,7 @@ namespace planet::vk::engine {
         shader_parameters vertex_shader, fragment_shader;
         std::span<VkVertexInputBindingDescription const> binding_descriptions;
         std::span<VkVertexInputAttributeDescription const> attribute_descriptions;
+        std::uint32_t colour_attachments = 2;
 
         VkExtent2D extents = renderer.swap_chain.extents;
         view<vk::render_pass> render_pass = renderer.scene_render_pass;
@@ -307,7 +309,10 @@ namespace planet::vk::engine {
 
         vk::pipeline_layout pipeline_layout;
     };
-    graphics_pipeline create_graphics_pipeline(graphics_pipeline_parameters);
+    graphics_pipeline create_graphics_pipeline(
+            graphics_pipeline_parameters,
+            felspar::source_location const & =
+                    felspar::source_location::current());
 
 
 }
