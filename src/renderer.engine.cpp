@@ -32,8 +32,8 @@ planet::vk::engine::renderer::renderer(engine::app &a)
                .format = swap_chain.image_format,
                .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT}};
   })},
-postprocess{{.renderer = *this}},
-scene_render_pass{[this]() {
+  postprocess{{.renderer = *this}},
+  scene_render_pass{[this]() {
       auto attachments = std::array{
               colour_attachments[0].attachment_description(app.instance.gpu()),
               postprocess.input_attachments[0].attachment_description(
@@ -94,7 +94,7 @@ scene_render_pass{[this]() {
 
       return vk::render_pass{app.device, render_pass_info};
   }()},
-scene_frame_buffers{
+  scene_frame_buffers{
           array_of<max_frames_in_flight>([this](std::size_t const index) {
               std::array attachments{
                       colour_attachments[index].image_view.get(),
@@ -305,11 +305,11 @@ void planet::vk::engine::renderer::submit_and_present() {
      */
 
     /// Transition scene and glow color to shader-readable
-    auto const transition = [&](auto &colours) {
+    auto const transition = [&](auto &colours, VkImageLayout const new_layout) {
         VkImageMemoryBarrier barrier = {};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier.newLayout = new_layout;
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = colours[current_frame].image.get();
@@ -322,8 +322,7 @@ void planet::vk::engine::renderer::submit_and_present() {
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
                 nullptr, 1, &barrier);
     };
-    transition(scene_colours);
-    transition(postprocess.input_colours);
+    transition(scene_colours, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     postprocess.render_subpass({*this, cb, current_frame}, image_index);
 

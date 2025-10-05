@@ -32,7 +32,7 @@ namespace planet::vk::engine::postprocess {
         engine::renderer &renderer;
 
         std::array<engine::colour_attachment, max_frames_in_flight>
-                input_attachments, input_colours;
+                input_attachments, input_colours, downsized_input;
 
         vk::descriptor_set_layout sampler_layout;
         vk::sampler sampler;
