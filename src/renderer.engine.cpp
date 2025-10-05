@@ -22,13 +22,6 @@ planet::vk::engine::renderer::renderer(engine::app &a)
                .format = swap_chain.image_format,
                .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT}};
   })},
-  glow_attachments{array_of<max_frames_in_flight>([this]() {
-      return engine::colour_attachment{
-              {.allocator = per_swap_chain_memory,
-               .extents = swap_chain.extents,
-               .format = swap_chain.image_format,
-               .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT}};
-  })},
   depth_buffers{array_of<max_frames_in_flight>([this]() {
       return engine::depth_buffer{per_swap_chain_memory, swap_chain};
   })},
@@ -39,21 +32,76 @@ planet::vk::engine::renderer::renderer(engine::app &a)
                .format = swap_chain.image_format,
                .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT}};
   })},
-  glow_colours{array_of<max_frames_in_flight>([this]() {
-      return engine::colour_attachment{
-              {.allocator = per_swap_chain_memory,
-               .extents = swap_chain.extents,
-               .format = swap_chain.image_format,
-               .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT}};
-  })},
-  scene_frame_buffers{
+postprocess{{.renderer = *this}},
+scene_render_pass{[this]() {
+      auto attachments = std::array{
+              colour_attachments[0].attachment_description(app.instance.gpu()),
+              postprocess.input_attachments[0].attachment_description(
+                      app.instance.gpu()),
+              depth_buffers[0].attachment_description(app.instance.gpu()),
+              scene_colours[0].attachment_description(
+                      VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE),
+              postprocess.input_colours[0].attachment_description(
+                      VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE)};
+
+      auto colour_attachment_refs = std::array{
+              VkAttachmentReference{
+                      .attachment = 0,
+                      .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+              VkAttachmentReference{
+                      .attachment = 1,
+                      .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}};
+      VkAttachmentReference depth_attachment_ref{
+              .attachment = 2,
+              .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+      auto colour_resolve_attachment_refs = std::array{
+              VkAttachmentReference{
+                      .attachment = 3,
+                      .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+              VkAttachmentReference{
+                      .attachment = 4,
+                      .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}};
+      static_assert(
+              colour_attachment_refs.size()
+              == colour_resolve_attachment_refs.size());
+
+      VkSubpassDescription subpass = {};
+      subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+      subpass.colorAttachmentCount = colour_attachment_refs.size();
+      subpass.pColorAttachments = colour_attachment_refs.data();
+      subpass.pDepthStencilAttachment = &depth_attachment_ref;
+      subpass.pResolveAttachments = colour_resolve_attachment_refs.data();
+
+      VkSubpassDependency dependency{};
+      dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+      dependency.dstSubpass = 0;
+      dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+              | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+      dependency.srcAccessMask = 0;
+      dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+              | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+      dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+              | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+      VkRenderPassCreateInfo render_pass_info = {};
+      render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+      render_pass_info.attachmentCount = attachments.size();
+      render_pass_info.pAttachments = attachments.data();
+      render_pass_info.subpassCount = 1;
+      render_pass_info.pSubpasses = &subpass;
+      render_pass_info.dependencyCount = 1;
+      render_pass_info.pDependencies = &dependency;
+
+      return vk::render_pass{app.device, render_pass_info};
+  }()},
+scene_frame_buffers{
           array_of<max_frames_in_flight>([this](std::size_t const index) {
               std::array attachments{
                       colour_attachments[index].image_view.get(),
-                      glow_attachments[index].image_view.get(),
+                      postprocess.input_attachments[index].image_view.get(),
                       depth_buffers[index].image_view.get(),
                       scene_colours[index].image_view.get(),
-                      glow_colours[index].image_view.get()};
+                      postprocess.input_colours[index].image_view.get()};
               VkFramebufferCreateInfo info = {};
               info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
               info.renderPass = scene_render_pass.get();
@@ -64,7 +112,6 @@ planet::vk::engine::renderer::renderer(engine::app &a)
               info.layers = 1;
               return frame_buffer{app.device, info};
           })},
-  postprocess{{.renderer = *this}},
   screen_space{
           affine::transform2d{}
                   .scale(2.0f / app.window.width(), -2.0f / app.window.height())
@@ -75,8 +122,8 @@ planet::vk::engine::renderer::renderer(engine::app &a)
           app.device.startup_memory,
           {.screen{screen_space.into()},
            .perspective{logical_vulkan_space.into()}}} {
-    postprocess.update_descriptors(*this);
-    swap_chain.create_frame_buffers(present_render_pass);
+    postprocess.update_descriptors();
+    swap_chain.create_frame_buffers(postprocess.present_render_pass);
 }
 planet::vk::engine::renderer::~renderer() {
     /**
@@ -103,102 +150,6 @@ void planet::vk::engine::renderer::reset_world_coordinates(
 }
 
 
-planet::vk::render_pass
-        planet::vk::engine::renderer::create_scene_render_pass() {
-    auto attachments = std::array{
-            colour_attachments[0].attachment_description(app.instance.gpu()),
-            glow_attachments[0].attachment_description(app.instance.gpu()),
-            depth_buffers[0].attachment_description(app.instance.gpu()),
-            scene_colours[0].attachment_description(
-                    VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE),
-            glow_colours[0].attachment_description(
-                    VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE)};
-
-    auto colour_attachment_refs = std::array{
-            VkAttachmentReference{
-                    .attachment = 0,
-                    .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
-            VkAttachmentReference{
-                    .attachment = 1,
-                    .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}};
-    VkAttachmentReference depth_attachment_ref{
-            .attachment = 2,
-            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
-    auto colour_resolve_attachment_refs = std::array{
-            VkAttachmentReference{
-                    .attachment = 3,
-                    .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
-            VkAttachmentReference{
-                    .attachment = 4,
-                    .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}};
-    static_assert(
-            colour_attachment_refs.size()
-            == colour_resolve_attachment_refs.size());
-
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = colour_attachment_refs.size();
-    subpass.pColorAttachments = colour_attachment_refs.data();
-    subpass.pDepthStencilAttachment = &depth_attachment_ref;
-    subpass.pResolveAttachments = colour_resolve_attachment_refs.data();
-
-    VkSubpassDependency dependency{};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-            | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-            | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-            | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-    VkRenderPassCreateInfo render_pass_info = {};
-    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    render_pass_info.attachmentCount = attachments.size();
-    render_pass_info.pAttachments = attachments.data();
-    render_pass_info.subpassCount = 1;
-    render_pass_info.pSubpasses = &subpass;
-    render_pass_info.dependencyCount = 1;
-    render_pass_info.pDependencies = &dependency;
-
-    return {app.device, render_pass_info};
-}
-
-
-planet::vk::render_pass
-        planet::vk::engine::renderer::create_present_render_pass() {
-    auto attachments = std::array{swap_chain.attachment_description()};
-    VkAttachmentReference colour_ref{
-            .attachment = 0,
-            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colour_ref;
-
-    VkSubpassDependency dependency = {};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    VkRenderPassCreateInfo render_pass_info = {};
-    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    render_pass_info.attachmentCount = attachments.size();
-    render_pass_info.pAttachments = attachments.data();
-    render_pass_info.subpassCount = 1;
-    render_pass_info.pSubpasses = &subpass;
-    render_pass_info.dependencyCount = 1;
-    render_pass_info.pDependencies = &dependency;
-
-    return {app.device, render_pass_info};
-}
-
-
 namespace {
     planet::telemetry::counter c_recreate_swapchain{
             "planet_vk_engine_renderer_recreate_swapchain_count"};
@@ -210,7 +161,7 @@ void planet::vk::engine::renderer::recreate_swap_chain(
     /// TODO We also need to resize all of the new frame buffers we have
     auto const images =
             swap_chain.recreate(app.window.refresh_window_dimensions());
-    swap_chain.create_frame_buffers(present_render_pass);
+    swap_chain.create_frame_buffers(postprocess.present_render_pass);
     planet::log::info(
             "Swap chain dirty. New image count", images, detail::error(result),
             loc);
@@ -372,7 +323,7 @@ void planet::vk::engine::renderer::submit_and_present() {
                 nullptr, 1, &barrier);
     };
     transition(scene_colours);
-    transition(glow_colours);
+    transition(postprocess.input_colours);
 
     postprocess.render_subpass({*this, cb, current_frame}, image_index);
 

@@ -4,15 +4,11 @@
 #include <planet/affine/matrix3d.hpp>
 #include <planet/array.hpp>
 #include <planet/vk/engine/app.hpp>
-#include <planet/vk/engine/colour_attachment.hpp>
 #include <planet/vk/engine/depth_buffer.hpp>
-#include <planet/vk/engine/forward.hpp>
 #include <planet/vk/frame_buffer.hpp>
 #include <planet/vk/engine/postprocess/glow.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 #include <planet/vk/ubo/coordinate_space.hpp>
-
-#include <planet/affine/matrix3d.hpp>
 
 
 namespace planet::vk::engine {
@@ -61,20 +57,18 @@ namespace planet::vk::engine {
 
         /// #### Attachments and frame buffers
         std::array<engine::colour_attachment, max_frames_in_flight>
-                colour_attachments, glow_attachments;
+                colour_attachments;
         std::array<engine::depth_buffer, max_frames_in_flight> depth_buffers;
-        std::array<engine::colour_attachment, max_frames_in_flight>
-                scene_colours, glow_colours;
-
-
-        /// #### Render passes
-        vk::render_pass scene_render_pass{create_scene_render_pass()};
-        std::array<frame_buffer, max_frames_in_flight> scene_frame_buffers;
-        vk::render_pass present_render_pass{create_present_render_pass()};
+        std::array<engine::colour_attachment, max_frames_in_flight> scene_colours;
 
 
         /// #### Post-process pipeline
         postprocess::glow postprocess;
+
+
+        /// #### Render passes
+        vk::render_pass scene_render_pass;
+        std::array<frame_buffer, max_frames_in_flight> scene_frame_buffers;
 
 
         /// #### Synchronisation
@@ -228,10 +222,6 @@ namespace planet::vk::engine {
 
 
       private:
-        vk::render_pass create_scene_render_pass();
-        vk::render_pass create_present_render_pass();
-
-
         /// ### Data we need to track whilst in the render loop
         std::uint32_t image_index = {};
 
