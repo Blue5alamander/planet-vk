@@ -8,7 +8,7 @@
 #include <planet/vk/engine/depth_buffer.hpp>
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/frame_buffer.hpp>
-#include <planet/vk/engine/pipeline/postprocess.hpp>
+#include <planet/vk/engine/postprocess/glow.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 #include <planet/vk/ubo/coordinate_space.hpp>
 
@@ -74,7 +74,7 @@ namespace planet::vk::engine {
 
 
         /// #### Post-process pipeline
-        pipeline::postprocess postprocess;
+        postprocess::glow postprocess;
 
 
         /// #### Synchronisation

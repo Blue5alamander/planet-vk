@@ -368,8 +368,8 @@ void planet::vk::engine::renderer::submit_and_present() {
 
         vkCmdPipelineBarrier(
                 cb.get(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-                &barrier);
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
+                nullptr, 1, &barrier);
     };
     transition(scene_colours);
     transition(glow_colours);

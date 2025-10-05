@@ -9,22 +9,22 @@
 #include <planet/vk/texture.hpp>
 
 
-namespace planet::vk::engine::pipeline {
+namespace planet::vk::engine::postprocess {
 
 
-    /// ## Post-processing pipeline
+    /// ## Glow postprocess
     /**
      * Intended to perform post-processing in the fragment shader. The vertex
      * shader is always a single full-screen triangle that outputs position and
      * UV coordinates for sampling the input image. The default fragment shader
      * simply copies the input.
      */
-    class postprocess final : private telemetry::id {
+    class glow final : private telemetry::id {
       public:
         struct parameters {
             engine::renderer &renderer;
         };
-        postprocess(parameters);
+        glow(parameters);
 
 
         vk::descriptor_set_layout sampler_layout;

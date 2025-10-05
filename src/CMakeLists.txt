@@ -40,8 +40,8 @@ add_library(planet-vk-engine
         app.engine.cpp
         attachments.engine.cpp
         blank.engine.cpp
+        glow.postprocess.cpp
         mesh.pipeline.cpp
-        postprocess.pipeline.cpp
         renderer.engine.cpp
         sprite.pipeline.cpp
         textured.pipeline.cpp

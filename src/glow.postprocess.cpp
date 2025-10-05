@@ -1,5 +1,5 @@
 #include <planet/functional.hpp>
-#include <planet/vk/engine/pipeline/postprocess.hpp>
+#include <planet/vk/engine/postprocess/glow.hpp>
 #include <planet/vk/engine/renderer.hpp>
 
 
@@ -9,7 +9,7 @@ using namespace std::literals;
 /// ## `planet::vk::engine::pipeline::postprocess`
 
 
-planet::vk::engine::pipeline::postprocess::postprocess(parameters p)
+planet::vk::engine::postprocess::glow::glow(parameters p)
 : sampler_layout{p.renderer.app.device, VkDescriptorSetLayoutBinding{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .pImmutableSamplers = nullptr}},
   sampler{
           {.device = p.renderer.app.device,
@@ -34,7 +34,7 @@ planet::vk::engine::pipeline::postprocess::postprocess(parameters p)
                    pipeline_layout{p.renderer.app.device, sampler_layout}})} {}
 
 
-void planet::vk::engine::pipeline::postprocess::update_descriptors(
+void planet::vk::engine::postprocess::glow::update_descriptors(
         engine::renderer &renderer) {
     by_index(max_frames_in_flight, [&](std::size_t const index) {
         VkDescriptorImageInfo image_info = {};
@@ -57,7 +57,7 @@ void planet::vk::engine::pipeline::postprocess::update_descriptors(
 }
 
 
-void planet::vk::engine::pipeline::postprocess::render_subpass(
+void planet::vk::engine::postprocess::glow::render_subpass(
         render_parameters rp, std::uint32_t const image_index) {
     VkRenderPassBeginInfo present_info = {};
     present_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
