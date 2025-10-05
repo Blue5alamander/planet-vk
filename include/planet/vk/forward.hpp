@@ -9,6 +9,7 @@ namespace planet::vk {
     class device;
     class device_memory;
     class device_memory_allocator;
+    class frame_buffer;
     class instance;
     class physical_device;
     class queue;

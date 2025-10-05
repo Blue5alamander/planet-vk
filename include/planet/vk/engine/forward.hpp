@@ -15,6 +15,7 @@ namespace planet::vk::engine {
 
 
     struct app;
+    struct colour_attachment;
     struct depth_buffer;
     struct graphics_pipeline_parameters;
     struct render_parameters;
