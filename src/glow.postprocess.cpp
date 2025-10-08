@@ -101,9 +101,7 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
            .pipeline_layout =
                    pipeline_layout{renderer.app.device, sampler_layout}})} {
     /// ### Initial image transitions
-    by_index(max_frames_in_flight, [&](auto const index) {
-        auto cb = planet::vk::command_buffer::single_use(renderer.command_pool);
-
+    auto barriers = array_of<max_frames_in_flight>([&](auto const index) {
         VkImageMemoryBarrier barrier = {};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -116,15 +114,9 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
         barrier.subresourceRange.levelCount = 1;
         barrier.subresourceRange.baseArrayLayer = 0;
         barrier.subresourceRange.layerCount = 1;
-
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        vkCmdPipelineBarrier(
-                cb.get(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
-                nullptr, 1, &barrier);
-        cb.end_and_submit();
+        return barrier;
     });
     /**
      * When we use the glow effect image it needs to transition between states
@@ -135,6 +127,12 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
      * first time where the creation format doesn't match the one it'll have at
      * the end of the frame render loop.
      */
+    auto cb = planet::vk::command_buffer::single_use(renderer.command_pool);
+    vkCmdPipelineBarrier(
+            cb.get(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr,
+            barriers.size(), barriers.data());
+    cb.end_and_submit();
 }
 
 
