@@ -50,6 +50,10 @@ namespace planet::vk {
         T const *address() const noexcept { return &handle; }
         O owner() const noexcept { return owner_handle; }
 
+        explicit operator bool() const noexcept {
+            return owner_handle != VK_NULL_HANDLE and handle != VK_NULL_HANDLE;
+        }
+
 
         /// ### Remove the current content (if any)
         void reset() noexcept {

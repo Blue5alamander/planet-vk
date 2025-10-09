@@ -63,6 +63,9 @@ namespace planet::vk {
 
         /// ### Queries
         VkBuffer get() const noexcept { return buffer_handle.get(); }
+        explicit operator bool() const noexcept {
+            return static_cast<bool>(buffer_handle);
+        }
 
         /// #### Number of items in the buffer
         std::size_t size() const noexcept { return count; }
