@@ -2,16 +2,11 @@
 
 
 #include <planet/affine/extents2d.hpp>
+#include <planet/vk/forward.hpp>
 #include <planet/vk/memory.hpp>
 
 
 namespace planet::vk {
-
-
-    template<typename T>
-    class buffer;
-    class command_pool;
-    class swap_chain;
 
 
     /// ## Vulkan image

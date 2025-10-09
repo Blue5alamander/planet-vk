@@ -4,6 +4,8 @@
 namespace planet::vk {
 
 
+    template<typename T>
+    class buffer;
     class command_pool;
     class descriptor_set_layout;
     class device;
@@ -15,6 +17,7 @@ namespace planet::vk {
     class queue;
     class render_pass;
     class surface;
+    class swap_chain;
     class texture;
 
 
