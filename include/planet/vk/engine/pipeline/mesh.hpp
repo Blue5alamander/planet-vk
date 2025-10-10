@@ -30,7 +30,7 @@ namespace planet::vk::engine::pipeline {
             shader_parameters vertex_shader;
             shader_parameters fragment_shader{
                     .spirv_filename = "planet-vk-engine/mesh.frag.spirv"};
-            blend_mode bm = blend_mode::multiply;
+            engine::blend_mode blend_mode = engine::blend_mode::multiply;
             pipeline_layout layout{
                     renderer.app.device, renderer.coordinates_ubo_layout()};
         };

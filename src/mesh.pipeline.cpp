@@ -16,7 +16,7 @@ planet::vk::engine::pipeline::mesh::mesh(parameters p)
                    vertex::binding_description<vertex::coloured>(),
            .attribute_descriptions =
                    vertex::attribute_description<vertex::coloured>(),
-           .blend_mode = p.bm,
+           .blend_mode = p.blend_mode,
            .pipeline_layout = std::move(p.layout)})} {}
 
 
