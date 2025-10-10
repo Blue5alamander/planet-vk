@@ -40,7 +40,7 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
                        VK_IMAGE_USAGE_SAMPLED_BIT
                        | VK_IMAGE_USAGE_TRANSFER_DST_BIT)}};
   })},
-  sampler_layout{
+  present_sampler_layout{
           p.renderer.app.device,
           VkDescriptorSetLayoutBinding{
                   .binding = 0,
@@ -48,13 +48,15 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
                   .descriptorCount = 1,
                   .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
                   .pImmutableSamplers = nullptr}},
-  sampler{
+  present_sampler{
           {.device = p.renderer.app.device,
            .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE}},
-  descriptor_pool{
+  present_descriptor_pool{
           p.renderer.app.device, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
           static_cast<std::uint32_t>(max_frames_in_flight)},
-  descriptor_sets{descriptor_pool, sampler_layout, max_frames_in_flight},
+  present_descriptor_sets{
+          present_descriptor_pool, present_sampler_layout,
+          max_frames_in_flight},
   present_render_pass{[this]() {
       auto attachments =
               std::array{renderer.swap_chain.attachment_description()};
@@ -86,7 +88,7 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
 
       return vk::render_pass{app.device, render_pass_info};
   }()},
-  pipeline{create_graphics_pipeline(
+  present_pipeline{create_graphics_pipeline(
           {.app = app,
            .renderer = renderer,
            .vertex_shader = {"planet-vk-engine/postprocess.vert.spirv"sv},
@@ -98,8 +100,8 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
            .write_to_depth_buffer = false,
            .multisampling = VK_SAMPLE_COUNT_1_BIT,
            .blend_mode = blend_mode::none,
-           .pipeline_layout =
-                   pipeline_layout{renderer.app.device, sampler_layout}})} {
+           .pipeline_layout = pipeline_layout{
+                   renderer.app.device, present_sampler_layout}})} {
     /// ### Initial image transitions
     auto barriers = array_of<max_frames_in_flight>([&](auto const index) {
         VkImageMemoryBarrier barrier = {};
@@ -139,13 +141,13 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
 void planet::vk::engine::postprocess::glow::update_descriptors() {
     by_index(max_frames_in_flight, [&](std::size_t const index) {
         VkDescriptorImageInfo image_info = {};
-        image_info.sampler = sampler.get();
+        image_info.sampler = present_sampler.get();
         image_info.imageView = renderer.scene_colours[index].image_view.get();
         image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         VkWriteDescriptorSet write = {};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet = descriptor_sets[index];
+        write.dstSet = present_descriptor_sets[index];
         write.dstBinding = 0;
         write.dstArrayElement = 0;
         write.descriptorCount = 1;
@@ -272,11 +274,12 @@ void planet::vk::engine::postprocess::glow::render_subpass(
 
     /// Bind and draw copy pipeline (full-screen triangle)
     vkCmdBindPipeline(
-            rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
-    VkDescriptorSet ds = descriptor_sets[rp.current_frame];
+            rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+            present_pipeline.get());
+    VkDescriptorSet ds = present_descriptor_sets[rp.current_frame];
     vkCmdBindDescriptorSets(
-            rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout.get(),
-            0, 1, &ds, 0, nullptr);
+            rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+            present_pipeline.layout.get(), 0, 1, &ds, 0, nullptr);
     vkCmdDraw(
             rp.cb.get(), 3, 1, 0,
             0); // 3 verts, no instance/vertex/index buffer

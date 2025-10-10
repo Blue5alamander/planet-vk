@@ -34,14 +34,14 @@ namespace planet::vk::engine::postprocess {
         std::array<engine::colour_attachment, max_frames_in_flight>
                 input_attachments, input_colours, downsized_input;
 
-        vk::descriptor_set_layout sampler_layout;
-        vk::sampler sampler;
-        vk::descriptor_pool descriptor_pool;
-        vk::descriptor_sets descriptor_sets;
+        vk::descriptor_set_layout present_sampler_layout;
+        vk::sampler present_sampler;
+        vk::descriptor_pool present_descriptor_pool;
+        vk::descriptor_sets present_descriptor_sets;
 
         vk::render_pass present_render_pass;
 
-        vk::graphics_pipeline pipeline;
+        vk::graphics_pipeline present_pipeline;
 
 
         void update_descriptors();
