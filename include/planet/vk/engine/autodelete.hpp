@@ -25,14 +25,13 @@ namespace planet::vk::engine {
       public:
         autodelete(engine::renderer &r)
         : renderer{r}, deleter{delete_holds()} {}
-
-        autodelete(autodelete const &) = delete;
         autodelete(autodelete &&ad)
         : renderer{ad.renderer}, deleter{delete_holds()} {
             assert_empty(ad);
             ad.deleter.destroy();
         }
 
+        autodelete(autodelete const &) = delete;
         autodelete &operator=(autodelete const &) = delete;
         autodelete &operator=(autodelete &&) = delete;
 
