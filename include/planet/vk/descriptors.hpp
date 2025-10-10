@@ -40,16 +40,27 @@ namespace planet::vk {
         handle_type handle;
 
       public:
-        /// ### General purpose set layout creation
+        /// ### Construction
+        /// #### General purpose set layout creation
         descriptor_set_layout(
                 vk::device &, VkDescriptorSetLayoutCreateInfo const &);
-        /// ### Create a set layout for only a single binding
+        /// #### Create a set layout for only a single binding
         descriptor_set_layout(
                 vk::device &, VkDescriptorSetLayoutBinding const &);
-        /// ### For a uniform buffer object
+        /// #### For multiple bindings
+        descriptor_set_layout(
+                vk::device &, std::span<VkDescriptorSetLayoutBinding const>);
+        template<std::size_t N>
+        descriptor_set_layout(
+                vk::device &d,
+                std::array<VkDescriptorSetLayoutBinding, N> const &a)
+        : descriptor_set_layout{d, std::span{a}} {}
+        /// #### For a uniform buffer object
         static descriptor_set_layout for_uniform_buffer_object(vk::device &);
 
+
         device_view device;
+
         VkDescriptorSetLayout get() const noexcept { return handle.get(); }
         VkDescriptorSetLayout const *address() const noexcept {
             return handle.address();

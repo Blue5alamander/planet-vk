@@ -49,10 +49,26 @@ planet::vk::descriptor_set_layout::descriptor_set_layout(
 planet::vk::descriptor_set_layout::descriptor_set_layout(
         vk::device &d, VkDescriptorSetLayoutBinding const &layout)
 : device{d} {
-    VkDescriptorSetLayoutCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    info.bindingCount = 1;
-    info.pBindings = &layout;
+    VkDescriptorSetLayoutCreateInfo info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = {},
+            .bindingCount = 1,
+            .pBindings = &layout};
+
+    handle.create<vkCreateDescriptorSetLayout>(device.get(), info);
+}
+
+planet::vk::descriptor_set_layout::descriptor_set_layout(
+        vk::device &d,
+        std::span<VkDescriptorSetLayoutBinding const> const layout)
+: device{d} {
+    VkDescriptorSetLayoutCreateInfo info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = {},
+            .bindingCount = static_cast<std::uint32_t>(layout.size()),
+            .pBindings = layout.data()};
 
     handle.create<vkCreateDescriptorSetLayout>(device.get(), info);
 }
