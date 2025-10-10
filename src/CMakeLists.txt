@@ -49,7 +49,10 @@ add_library(planet-vk-engine
 vk_shader(planet-vk-engine mesh.frag)
 vk_shader(planet-vk-engine mesh.screen.vert)
 vk_shader(planet-vk-engine mesh.world.vert)
+vk_shader(planet-vk-engine postprocess.blur.frag horizontal)
+vk_shader(planet-vk-engine postprocess.blur.frag vertical)
 vk_shader(planet-vk-engine postprocess.copy.frag)
+vk_shader(planet-vk-engine postprocess.glow.frag)
 vk_shader(planet-vk-engine postprocess.vert)
 vk_shader(planet-vk-engine sprite.frag)
 vk_shader(planet-vk-engine sprite.screen.vert)
@@ -65,7 +68,10 @@ install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.frag.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.screen.vert.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.world.vert.spirv
+        ${CMAKE_CURRENT_BINARY_DIR}/postprocess.blur.frag.horizontal.spirv
+        ${CMAKE_CURRENT_BINARY_DIR}/postprocess.blur.frag.vertical.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/postprocess.copy.frag.spirv
+        ${CMAKE_CURRENT_BINARY_DIR}/postprocess.glow.frag.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/postprocess.vert.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/sprite.frag.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/sprite.screen.vert.spirv

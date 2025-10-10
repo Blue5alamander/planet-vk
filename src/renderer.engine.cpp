@@ -304,26 +304,6 @@ void planet::vk::engine::renderer::submit_and_present() {
      * and then finally we end our command buffer so we can present our frame.
      */
 
-    /// Transition scene and glow color to shader-readable
-    auto const transition = [&](auto &colours, VkImageLayout const new_layout) {
-        VkImageMemoryBarrier barrier = {};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        barrier.newLayout = new_layout;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = colours[current_frame].image.get();
-        barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        vkCmdPipelineBarrier(
-                cb.get(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
-                nullptr, 1, &barrier);
-    };
-    transition(scene_colours, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
     postprocess.render_subpass({*this, cb, current_frame}, image_index);
 
     planet::vk::worked(vkEndCommandBuffer(cb.get()));

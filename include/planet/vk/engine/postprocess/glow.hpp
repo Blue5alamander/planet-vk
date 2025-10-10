@@ -5,6 +5,7 @@
 #include <planet/vk/descriptors.hpp>
 #include <planet/vk/engine/colour_attachment.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
+#include <planet/vk/frame_buffer.hpp>
 #include <planet/vk/pipeline.hpp>
 #include <planet/vk/render_pass.hpp>
 #include <planet/vk/texture.hpp>
@@ -31,9 +32,26 @@ namespace planet::vk::engine::postprocess {
         engine::app &app;
         engine::renderer &renderer;
 
-        std::array<engine::colour_attachment, max_frames_in_flight>
-                input_attachments, input_colours, downsized_input;
 
+        /// ### Inputs, downsize and blur
+        std::array<engine::colour_attachment, max_frames_in_flight>
+                input_attachments, input_colours, downsized_input,
+                horizontal_blur, vertical_blur;
+
+        vk::descriptor_set_layout blur_sampler_layout;
+        vk::sampler blur_sampler;
+        vk::descriptor_pool blur_descriptor_pool;
+        vk::descriptor_sets horizontal_descriptor_sets,
+                vertical_descriptor_sets;
+
+        vk::render_pass blur_render_pass;
+        vk::graphics_pipeline horizontal_pipeline, vertical_pipeline;
+
+        std::array<vk::frame_buffer, max_frames_in_flight>
+                horizontal_frame_buffers, vertical_frame_buffers;
+
+
+        /// ### Presentation
         vk::descriptor_set_layout present_sampler_layout;
         vk::sampler present_sampler;
         vk::descriptor_pool present_descriptor_pool;
