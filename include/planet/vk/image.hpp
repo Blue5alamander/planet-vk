@@ -34,10 +34,13 @@ namespace planet::vk {
               VkMemoryPropertyFlags);
 
 
-        /// ### Query image view
-
+        /// ### Attributes
+        VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
         std::uint32_t width = {}, height = {}, mip_levels = {};
         VkFormat format = {};
+
+
+        /// ### Query image view
         auto device_handle() const noexcept { return handle.owner(); }
         auto get() const noexcept { return handle.get(); }
 
@@ -45,12 +48,44 @@ namespace planet::vk {
             return {static_cast<float>(width), static_cast<float>(height)};
         }
 
+
         /// ### Image manipulation
 
-        /// #### Set up a layout transition
+        /// #### Transition memory barrier
+        struct transition_parameters {
+            std::optional<VkImageLayout> old_layout = {};
+            VkImageLayout new_layout;
+            VkAccessFlags source_access_mask = VK_ACCESS_NONE,
+                          destination_access_mask;
+            std::uint32_t source_queue_family_index = VK_QUEUE_FAMILY_IGNORED,
+                          destination_queue_family_index =
+                                  VK_QUEUE_FAMILY_IGNORED;
+            std::uint32_t base_mip_level = {}, mip_levels = 1;
+        };
+        VkImageMemoryBarrier transition(transition_parameters const p) {
+            return VkImageMemoryBarrier{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .pNext = nullptr,
+                    .srcAccessMask = p.source_access_mask,
+                    .dstAccessMask = p.destination_access_mask,
+                    .oldLayout = p.old_layout
+                            ? *p.old_layout
+                            : std::exchange(layout, p.new_layout),
+                    .newLayout = p.new_layout,
+                    .srcQueueFamilyIndex = p.source_queue_family_index,
+                    .dstQueueFamilyIndex = p.destination_queue_family_index,
+                    .image = get(),
+                    .subresourceRange = {
+                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .baseMipLevel = p.base_mip_level,
+                            .levelCount = p.mip_levels,
+                            .baseArrayLayer = {},
+                            .layerCount = 1}};
+        }
+
+        /// #### Perform a layout transition
         void transition_layout(
                 command_pool &,
-                VkImageLayout old_layout,
                 VkImageLayout new_layout,
                 std::uint32_t mip_levels);
 

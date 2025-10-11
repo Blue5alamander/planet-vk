@@ -268,28 +268,18 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
            .pipeline_layout = pipeline_layout{
                    renderer.app.device, present_sampler_layout}})} {
     /// ### Initial image transitions
-    felspar::memory::small_vector<VkImageMemoryBarrier, max_frames_in_flight * 3>
+    felspar::memory::small_vector<VkImageMemoryBarrier, max_frames_in_flight * 2>
             barriers;
-    auto const barriers_for = [&](auto const &images) {
+    auto const barriers_for = [&](auto &images) {
         by_index(max_frames_in_flight, [&](auto const index) {
-            VkImageMemoryBarrier barrier = {};
-            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.image = images[index].image.get();
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            barrier.subresourceRange.baseMipLevel = 0;
-            barrier.subresourceRange.levelCount = 1;
-            barrier.subresourceRange.baseArrayLayer = 0;
-            barrier.subresourceRange.layerCount = 1;
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            barriers.push_back(barrier);
+            barriers.push_back(
+                    images[index].image.transition(
+                            {.new_layout =
+                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                             .destination_access_mask =
+                                     VK_ACCESS_SHADER_READ_BIT}));
         });
     };
-    barriers_for(downsized_input);
     barriers_for(horizontal_blur);
     barriers_for(vertical_blur);
     /**
@@ -300,13 +290,16 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
      * the end of a frame. That stops errors when the image is used for the
      * first time where the creation format doesn't match the one it'll have at
      * the end of the frame render loop.
+     *
+     * The `downsized_image` doesn't need a transition because all transitions
+     * are explicit in the code below, so the `image`'s default tracking of
+     * layouts works fine.
      */
-    auto cb = planet::vk::command_buffer::single_use(renderer.command_pool);
-    vkCmdPipelineBarrier(
-            cb.get(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr,
-            barriers.size(), barriers.data());
-    cb.end_and_submit();
+    planet::vk::command_buffer::single_use(renderer.command_pool)
+            .pipeline_barrier(
+                    VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, barriers)
+            .end_and_submit();
 }
 
 
@@ -390,45 +383,21 @@ void planet::vk::engine::postprocess::glow::render_subpass(
     auto &input_image = input_colours[rp.current_frame].image;
     auto &downsized_image = downsized_input[rp.current_frame].image;
 
-    VkImageMemoryBarrier src_barrier = {};
-    src_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    src_barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    src_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    src_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    src_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    src_barrier.image = input_image.get();
-    src_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    src_barrier.subresourceRange.baseMipLevel = 0;
-    src_barrier.subresourceRange.levelCount = 1;
-    src_barrier.subresourceRange.baseArrayLayer = 0;
-    src_barrier.subresourceRange.layerCount = 1;
-    src_barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    src_barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-    vkCmdPipelineBarrier(
-            rp.cb.get(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-            &src_barrier);
-
-    VkImageMemoryBarrier dst_barrier = {};
-    dst_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    dst_barrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    dst_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    dst_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    dst_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    dst_barrier.image = downsized_image.get();
-    dst_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    dst_barrier.subresourceRange.baseMipLevel = 0;
-    dst_barrier.subresourceRange.levelCount = 1;
-    dst_barrier.subresourceRange.baseArrayLayer = 0;
-    dst_barrier.subresourceRange.layerCount = 1;
-    dst_barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    dst_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-    vkCmdPipelineBarrier(
-            rp.cb.get(), VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-            &dst_barrier);
+    rp.cb.pipeline_barrier(
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            std::array{input_image.transition(
+                    {.old_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     .new_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                     .source_access_mask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     .destination_access_mask = VK_ACCESS_TRANSFER_READ_BIT})});
+    rp.cb.pipeline_barrier(
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            std::array{downsized_image.transition(
+                    {.new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     .source_access_mask = VK_ACCESS_SHADER_READ_BIT,
+                     .destination_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT})});
 
     VkImageBlit blit_region = {};
     blit_region.srcOffsets[0] = {0, 0, 0};
@@ -455,15 +424,13 @@ void planet::vk::engine::postprocess::glow::render_subpass(
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit_region,
             VK_FILTER_LINEAR);
 
-    dst_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    dst_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    dst_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    dst_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    vkCmdPipelineBarrier(
-            rp.cb.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-            &dst_barrier);
+    rp.cb.pipeline_barrier(
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            std::array{downsized_image.transition(
+                    {.new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     .source_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                     .destination_access_mask = VK_ACCESS_SHADER_READ_BIT})});
 
 
     /// #### Perform horizontal then vertical blur
@@ -537,21 +504,14 @@ void planet::vk::engine::postprocess::glow::render_subpass(
 
     /// #### Composite the two images together
 
-    VkImageMemoryBarrier barrier = {};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = renderer.scene_colours[rp.current_frame].image.get();
-    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    vkCmdPipelineBarrier(
-            rp.cb.get(), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-            &barrier);
+    rp.cb.pipeline_barrier(
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            std::array{renderer.scene_colours[rp.current_frame].image.transition(
+                    {.old_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     .new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     .source_access_mask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     .destination_access_mask = VK_ACCESS_SHADER_READ_BIT})});
 
     VkRenderPassBeginInfo present_info = {};
     present_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

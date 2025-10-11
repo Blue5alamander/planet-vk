@@ -57,8 +57,8 @@ planet::vk::texture
                     | VK_IMAGE_USAGE_SAMPLED_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
     texture.image.transition_layout(
-            args.command_pool, VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mip_levels);
+            args.command_pool, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            mip_levels);
     texture.image.copy_from(args.command_pool, args.buffer);
     texture.image.generate_mip_maps(args.command_pool, mip_levels);
 
@@ -91,32 +91,20 @@ planet::vk::texture planet::vk::texture::create_without_mip_levels_from(
                     | VK_IMAGE_USAGE_SAMPLED_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
     texture.image.transition_layout(
-            args.command_pool, VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+            args.command_pool, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
     texture.image.copy_from(args.command_pool, args.buffer);
 
-    auto cb = planet::vk::command_buffer::single_use(args.command_pool);
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.image = texture.image.get();
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-    barrier.subresourceRange.levelCount = 1;
-
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    vkCmdPipelineBarrier(
-            cb.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-            &barrier);
-    cb.end_and_submit();
+    planet::vk::command_buffer::single_use(args.command_pool)
+            .pipeline_barrier(
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    std::array{texture.image.transition(
+                            {.new_layout =
+                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                             .source_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                             .destination_access_mask =
+                                     VK_ACCESS_SHADER_READ_BIT})})
+            .end_and_submit();
 
     texture.image_view = {texture.image, VK_IMAGE_ASPECT_COLOR_BIT};
 

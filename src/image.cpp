@@ -28,7 +28,7 @@ planet::vk::image::image(
     info.arrayLayers = 1;
     info.format = format;
     info.tiling = tiling;
-    info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    info.initialLayout = layout;
     info.usage = usage;
     info.samples = num_samples;
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -45,39 +45,26 @@ planet::vk::image::image(
 
 void planet::vk::image::transition_layout(
         command_pool &cp,
-        VkImageLayout const old_layout,
         VkImageLayout const new_layout,
         std::uint32_t const mip_levels) {
-    auto cb = planet::vk::command_buffer::single_use(cp);
-
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = old_layout;
-    barrier.newLayout = new_layout;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = get();
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = mip_levels;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
 
     VkPipelineStageFlags source_stage;
     VkPipelineStageFlags destination_stage;
+    VkAccessFlags source_access_flags;
+    VkAccessFlags destination_access_flags;
 
-    if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED
+    if (layout == VK_IMAGE_LAYOUT_UNDEFINED
         && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_NONE;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        source_access_flags = VK_ACCESS_NONE;
+        destination_access_flags = VK_ACCESS_TRANSFER_WRITE_BIT;
 
         source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
     } else if (
-            old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+            layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
             && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        source_access_flags = VK_ACCESS_TRANSFER_WRITE_BIT;
+        destination_access_flags = VK_ACCESS_SHADER_READ_BIT;
 
         source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destination_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -85,11 +72,15 @@ void planet::vk::image::transition_layout(
         throw felspar::stdexcept::logic_error("Unsupported layout transition!");
     }
 
-    vkCmdPipelineBarrier(
-            cb.get(), source_stage, destination_stage, 0, 0, nullptr, 0,
-            nullptr, 1, &barrier);
-
-    cb.end_and_submit();
+    planet::vk::command_buffer::single_use(cp)
+            .pipeline_barrier(
+                    source_stage, destination_stage,
+                    std::array{transition(
+                            {.new_layout = new_layout,
+                             .source_access_mask = source_access_flags,
+                             .destination_access_mask = destination_access_flags,
+                             .mip_levels = mip_levels})})
+            .end_and_submit();
 }
 
 
@@ -125,16 +116,6 @@ void planet::vk::image::generate_mip_maps(
 
     auto cb = planet::vk::command_buffer::single_use(cp);
 
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.image = get();
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-    barrier.subresourceRange.levelCount = 1;
-
     std::int32_t mip_width = width, next_mip_width = {};
     std::int32_t mip_height = height, next_mip_height = {};
 
@@ -142,16 +123,14 @@ void planet::vk::image::generate_mip_maps(
         next_mip_width = mip_width > 1 ? mip_width / 2 : 1;
         next_mip_height = mip_height > 1 ? mip_height / 2 : 1;
 
-        barrier.subresourceRange.baseMipLevel = i - 1;
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-        vkCmdPipelineBarrier(
-                cb.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-                &barrier);
+        cb.pipeline_barrier(
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                std::array{transition(
+                        {.old_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                         .new_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                         .source_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                         .destination_access_mask = VK_ACCESS_TRANSFER_READ_BIT,
+                         .base_mip_level = i - 1})});
 
         VkImageBlit blit{};
         blit.srcOffsets[0] = {0, 0, 0};
@@ -172,30 +151,29 @@ void planet::vk::image::generate_mip_maps(
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit,
                 VK_FILTER_LINEAR);
 
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        vkCmdPipelineBarrier(
-                cb.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0,
-                nullptr, 1, &barrier);
+        cb.pipeline_barrier(
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                std::array{transition(
+                        {.old_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                         .new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                         .source_access_mask = VK_ACCESS_TRANSFER_READ_BIT,
+                         .destination_access_mask = VK_ACCESS_SHADER_READ_BIT,
+                         .base_mip_level = i - 1})});
 
         mip_width = next_mip_width;
         mip_height = next_mip_height;
     }
 
-    barrier.subresourceRange.baseMipLevel = mip_levels - 1;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    vkCmdPipelineBarrier(
-            cb.get(), VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
-            &barrier);
+    cb.pipeline_barrier(
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            std::array{transition(
+                    {.old_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                     .new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     .source_access_mask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                     .destination_access_mask = VK_ACCESS_SHADER_READ_BIT,
+                     .base_mip_level = mip_levels - 1})});
 
     cb.end_and_submit();
 }

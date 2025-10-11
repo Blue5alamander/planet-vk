@@ -6,6 +6,7 @@
 #include <planet/vk/queue.hpp>
 #include <planet/vk/view.hpp>
 
+#include <span>
 #include <vector>
 
 
@@ -41,8 +42,10 @@ namespace planet::vk {
         command_buffer &operator=(command_buffer const &) = delete;
         command_buffer &operator=(command_buffer &&);
 
+
         device_view device;
         view<vk::command_pool> command_pool;
+
         auto get() const noexcept { return handle; }
 
 
@@ -50,6 +53,7 @@ namespace planet::vk {
 
         /// #### Start a single use command buffer
         static command_buffer single_use(vk::command_pool &);
+
         /// #### End and submit on the graphics queue
         /**
          * As well as combining the `end` with a `submit` to the graphics queue,
@@ -60,10 +64,23 @@ namespace planet::vk {
 
         /// ### API wrappers
 
+        /// #### `vkCmdPipelineBarrier`
+        command_buffer &pipeline_barrier(
+                VkPipelineStageFlags const source,
+                VkPipelineStageFlags const destination,
+                std::span<VkImageMemoryBarrier const> const barriers) {
+            vkCmdPipelineBarrier(
+                    get(), source, destination, 0, 0, nullptr, 0, nullptr,
+                    barriers.size(), barriers.data());
+            return *this;
+        }
+
+
         /// #### `vkBeginCommandBuffer`
         void begin(VkCommandBufferUsageFlags = {});
         /// #### `vkEndCommandBuffer`
         void end();
+
         /// #### `vkQueueSubmit`
         /**
          * The queue that is used is the one given to the original
