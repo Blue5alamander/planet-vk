@@ -56,10 +56,9 @@ namespace planet::vk::engine {
 
 
         /// #### Attachments and frame buffers
-        std::array<engine::colour_attachment, max_frames_in_flight>
-                colour_attachments;
-        std::array<engine::depth_buffer, max_frames_in_flight> depth_buffers;
-        std::array<engine::colour_attachment, max_frames_in_flight> scene_colours;
+        engine::colour_attachment colour_attachments;
+        engine::depth_buffer depth_buffers;
+        engine::colour_attachment scene_colours;
 
 
         /// #### Post-process pipeline

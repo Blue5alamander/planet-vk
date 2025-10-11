@@ -15,33 +15,27 @@ using namespace std::literals;
 
 planet::vk::engine::renderer::renderer(engine::app &a)
 : app{a},
-  colour_attachments{array_of<max_frames_in_flight>([this]() {
-      return engine::colour_attachment{
-              {.allocator = per_swap_chain_memory,
-               .extents = swap_chain.extents,
-               .format = swap_chain.image_format,
-               .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT}};
-  })},
-  depth_buffers{array_of<max_frames_in_flight>([this]() {
-      return engine::depth_buffer{per_swap_chain_memory, swap_chain};
-  })},
-  scene_colours{array_of<max_frames_in_flight>([this]() {
-      return engine::colour_attachment{
-              {.allocator = per_swap_chain_memory,
-               .extents = swap_chain.extents,
-               .format = swap_chain.image_format,
-               .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT}};
-  })},
+  colour_attachments{
+          {.allocator = per_swap_chain_memory,
+           .extents = swap_chain.extents,
+           .format = swap_chain.image_format,
+           .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT}},
+  depth_buffers{per_swap_chain_memory, swap_chain},
+  scene_colours{
+          {.allocator = per_swap_chain_memory,
+           .extents = swap_chain.extents,
+           .format = swap_chain.image_format,
+           .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT}},
   postprocess{{.renderer = *this}},
   scene_render_pass{[this]() {
       auto attachments = std::array{
-              colour_attachments[0].attachment_description(app.instance.gpu()),
-              postprocess.input_attachments[0].attachment_description(
+              colour_attachments.attachment_description(app.instance.gpu()),
+              postprocess.input_attachments.attachment_description(
                       app.instance.gpu()),
-              depth_buffers[0].attachment_description(app.instance.gpu()),
-              scene_colours[0].attachment_description(
+              depth_buffers.attachment_description(app.instance.gpu()),
+              scene_colours.attachment_description(
                       VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE),
-              postprocess.input_colours[0].attachment_description(
+              postprocess.input_colours.attachment_description(
                       VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE)};
 
       auto colour_attachment_refs = std::array{
@@ -97,11 +91,11 @@ planet::vk::engine::renderer::renderer(engine::app &a)
   scene_frame_buffers{
           array_of<max_frames_in_flight>([this](std::size_t const index) {
               std::array attachments{
-                      colour_attachments[index].image_view.get(),
-                      postprocess.input_attachments[index].image_view.get(),
-                      depth_buffers[index].image_view.get(),
-                      scene_colours[index].image_view.get(),
-                      postprocess.input_colours[index].image_view.get()};
+                      colour_attachments.image_view[index].get(),
+                      postprocess.input_attachments.image_view[index].get(),
+                      depth_buffers.image_view[index].get(),
+                      scene_colours.image_view[index].get(),
+                      postprocess.input_colours.image_view[index].get()};
               VkFramebufferCreateInfo info = {};
               info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
               info.renderPass = scene_render_pass.get();

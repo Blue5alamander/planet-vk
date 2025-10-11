@@ -34,9 +34,8 @@ namespace planet::vk::engine::postprocess {
 
 
         /// ### Inputs, downsize and blur
-        std::array<engine::colour_attachment, max_frames_in_flight>
-                input_attachments, input_colours, downsized_input,
-                horizontal_blur, vertical_blur;
+        engine::colour_attachment input_attachments, input_colours,
+                downsized_input, horizontal_blur, vertical_blur;
 
         vk::descriptor_set_layout blur_sampler_layout;
         vk::sampler blur_sampler;

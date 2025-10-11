@@ -5,6 +5,8 @@
 #include <planet/vk/instance.hpp>
 #include <planet/vk/image.hpp>
 
+#include <planet/vk/engine/forward.hpp>
+
 
 namespace planet::vk::engine {
 
@@ -44,8 +46,8 @@ namespace planet::vk::engine {
         colour_attachment(parameters);
 
 
-        vk::image image;
-        vk::image_view image_view;
+        std::array<vk::image, max_frames_in_flight> image;
+        std::array<vk::image_view, max_frames_in_flight> image_view;
 
 
         VkAttachmentDescription

@@ -12,56 +12,45 @@ using namespace std::literals;
 planet::vk::engine::postprocess::glow::glow(parameters p)
 : app{p.renderer.app},
   renderer{p.renderer},
-  input_attachments{array_of<max_frames_in_flight>([this]() {
-      return engine::colour_attachment{
-              {.allocator = renderer.per_swap_chain_memory,
-               .extents = renderer.swap_chain.extents,
-               .format = renderer.swap_chain.image_format,
-               .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT}};
-  })},
-  input_colours{array_of<max_frames_in_flight>([this]() {
-      return engine::colour_attachment{
-              {.allocator = renderer.per_swap_chain_memory,
-               .extents = renderer.swap_chain.extents,
-               .format = renderer.swap_chain.image_format,
-               .usage_flags = static_cast<VkImageUsageFlagBits>(
-                       VK_IMAGE_USAGE_SAMPLED_BIT
-                       | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
-               .sample_count = VK_SAMPLE_COUNT_1_BIT}};
-  })},
-  downsized_input{array_of<max_frames_in_flight>([this]() {
-      return engine::colour_attachment{
-              {.allocator = renderer.per_swap_chain_memory,
-               .extents =
-                       {.width = renderer.swap_chain.extents.width / 2,
-                        .height = renderer.swap_chain.extents.height / 2},
-               .format = renderer.swap_chain.image_format,
-               .usage_flags = static_cast<VkImageUsageFlagBits>(
-                       VK_IMAGE_USAGE_SAMPLED_BIT
-                       | VK_IMAGE_USAGE_TRANSFER_DST_BIT)}};
-  })},
-  horizontal_blur{array_of<max_frames_in_flight>([this]() {
-      return engine::colour_attachment{
-              {.allocator = renderer.per_swap_chain_memory,
-               .extents =
-                       {.width = renderer.swap_chain.extents.width / 2,
-                        .height = renderer.swap_chain.extents.height / 2},
-               .format = renderer.swap_chain.image_format,
-               .usage_flags = static_cast<VkImageUsageFlagBits>(
-                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-                       | VK_IMAGE_USAGE_SAMPLED_BIT)}};
-  })},
-  vertical_blur{array_of<max_frames_in_flight>([this]() {
-      return engine::colour_attachment{
-              {.allocator = renderer.per_swap_chain_memory,
-               .extents =
-                       {.width = renderer.swap_chain.extents.width / 2,
-                        .height = renderer.swap_chain.extents.height / 2},
-               .format = renderer.swap_chain.image_format,
-               .usage_flags = static_cast<VkImageUsageFlagBits>(
-                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-                       | VK_IMAGE_USAGE_SAMPLED_BIT)}};
-  })},
+  input_attachments{
+          {.allocator = renderer.per_swap_chain_memory,
+           .extents = renderer.swap_chain.extents,
+           .format = renderer.swap_chain.image_format,
+           .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT}},
+  input_colours{
+          {.allocator = renderer.per_swap_chain_memory,
+           .extents = renderer.swap_chain.extents,
+           .format = renderer.swap_chain.image_format,
+           .usage_flags = static_cast<VkImageUsageFlagBits>(
+                   VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
+           .sample_count = VK_SAMPLE_COUNT_1_BIT}},
+  downsized_input{
+          {.allocator = renderer.per_swap_chain_memory,
+           .extents =
+                   {.width = renderer.swap_chain.extents.width / 2,
+                    .height = renderer.swap_chain.extents.height / 2},
+           .format = renderer.swap_chain.image_format,
+           .usage_flags = static_cast<VkImageUsageFlagBits>(
+                   VK_IMAGE_USAGE_SAMPLED_BIT
+                   | VK_IMAGE_USAGE_TRANSFER_DST_BIT)}},
+  horizontal_blur{
+          {.allocator = renderer.per_swap_chain_memory,
+           .extents =
+                   {.width = renderer.swap_chain.extents.width / 2,
+                    .height = renderer.swap_chain.extents.height / 2},
+           .format = renderer.swap_chain.image_format,
+           .usage_flags = static_cast<VkImageUsageFlagBits>(
+                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                   | VK_IMAGE_USAGE_SAMPLED_BIT)}},
+  vertical_blur{
+          {.allocator = renderer.per_swap_chain_memory,
+           .extents =
+                   {.width = renderer.swap_chain.extents.width / 2,
+                    .height = renderer.swap_chain.extents.height / 2},
+           .format = renderer.swap_chain.image_format,
+           .usage_flags = static_cast<VkImageUsageFlagBits>(
+                   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                   | VK_IMAGE_USAGE_SAMPLED_BIT)}},
   blur_sampler_layout{
           p.renderer.app.device,
           VkDescriptorSetLayoutBinding{
@@ -167,8 +156,8 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
                    pipeline_layout{renderer.app.device, blur_sampler_layout}})},
   horizontal_frame_buffers{
           array_of<max_frames_in_flight>([&](auto const index) {
-              auto &img = horizontal_blur[index].image;
-              std::array attachments{horizontal_blur[index].image_view.get()};
+              auto &img = horizontal_blur.image[index];
+              std::array attachments{horizontal_blur.image_view[index].get()};
               return vk::frame_buffer{
                       app.device,
                       {.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -182,8 +171,8 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
                        .layers = 1}};
           })},
   vertical_frame_buffers{array_of<max_frames_in_flight>([&](auto const index) {
-      auto &img = vertical_blur[index].image;
-      std::array attachments{vertical_blur[index].image_view.get()};
+      auto &img = vertical_blur.image[index];
+      std::array attachments{vertical_blur.image_view[index].get()};
       return vk::frame_buffer{
               app.device,
               {.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -272,12 +261,9 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
             barriers;
     auto const barriers_for = [&](auto &images) {
         by_index(max_frames_in_flight, [&](auto const index) {
-            barriers.push_back(
-                    images[index].image.transition(
-                            {.new_layout =
-                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                             .destination_access_mask =
-                                     VK_ACCESS_SHADER_READ_BIT}));
+            barriers.push_back(images.image[index].transition(
+                    {.new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                     .destination_access_mask = VK_ACCESS_SHADER_READ_BIT}));
         });
     };
     barriers_for(horizontal_blur);
@@ -309,7 +295,7 @@ void planet::vk::engine::postprocess::glow::update_descriptors() {
         /// #### Horizontal blur descriptors (samples from downsized_input)
         auto horizontal_info = VkDescriptorImageInfo{
                 .sampler = blur_sampler.get(),
-                .imageView = downsized_input[index].image_view.get(),
+                .imageView = downsized_input.image_view[index].get(),
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         VkWriteDescriptorSet horizontal_write = {};
         horizontal_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -327,7 +313,7 @@ void planet::vk::engine::postprocess::glow::update_descriptors() {
         /// #### Vertical blur descriptors (samples from horizontal_blur)
         auto vertical_info = VkDescriptorImageInfo{
                 .sampler = blur_sampler.get(),
-                .imageView = horizontal_blur[index].image_view.get(),
+                .imageView = horizontal_blur.image_view[index].get(),
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         VkWriteDescriptorSet vertical_write = {};
         vertical_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -347,7 +333,7 @@ void planet::vk::engine::postprocess::glow::update_descriptors() {
 
         auto scene_info = VkDescriptorImageInfo{
                 .sampler = present_sampler.get(),
-                .imageView = renderer.scene_colours[index].image_view.get(),
+                .imageView = renderer.scene_colours.image_view[index].get(),
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         write[0].dstSet = present_descriptor_sets[index];
@@ -359,7 +345,7 @@ void planet::vk::engine::postprocess::glow::update_descriptors() {
 
         auto glow_info = VkDescriptorImageInfo{
                 .sampler = present_sampler.get(),
-                .imageView = vertical_blur[index].image_view.get(),
+                .imageView = vertical_blur.image_view[index].get(),
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         write[1].dstSet = present_descriptor_sets[index];
@@ -380,8 +366,8 @@ void planet::vk::engine::postprocess::glow::update_descriptors() {
 void planet::vk::engine::postprocess::glow::render_subpass(
         render_parameters rp, std::uint32_t const image_index) {
     /// #### Downsample the `input_colours` to half size
-    auto &input_image = input_colours[rp.current_frame].image;
-    auto &downsized_image = downsized_input[rp.current_frame].image;
+    auto &input_image = input_colours.image[rp.current_frame];
+    auto &downsized_image = downsized_input.image[rp.current_frame];
 
     rp.cb.pipeline_barrier(
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -442,8 +428,8 @@ void planet::vk::engine::postprocess::glow::render_subpass(
             horizontal_frame_buffers[rp.current_frame].get();
     horizontal_info.renderArea.offset = {0, 0};
     horizontal_info.renderArea.extent = {
-            .width = horizontal_blur[rp.current_frame].image.width,
-            .height = horizontal_blur[rp.current_frame].image.height};
+            .width = horizontal_blur.image[rp.current_frame].width,
+            .height = horizontal_blur.image[rp.current_frame].height};
     VkClearValue horizontal_clear = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
     horizontal_info.clearValueCount = 1;
     horizontal_info.pClearValues = &horizontal_clear;
@@ -451,7 +437,7 @@ void planet::vk::engine::postprocess::glow::render_subpass(
     vkCmdBeginRenderPass(
             rp.cb.get(), &horizontal_info, VK_SUBPASS_CONTENTS_INLINE);
 
-    auto const half_size = horizontal_blur[rp.current_frame].image.extents();
+    auto const half_size = horizontal_blur.image[rp.current_frame].extents();
     VkViewport horizontal_viewport = {
             0.0f, half_size.height, half_size.width, -half_size.height, 0.0f,
             1.0f};
@@ -476,8 +462,8 @@ void planet::vk::engine::postprocess::glow::render_subpass(
     vertical_info.framebuffer = vertical_frame_buffers[rp.current_frame].get();
     vertical_info.renderArea.offset = {0, 0};
     vertical_info.renderArea.extent = {
-            .width = vertical_blur[rp.current_frame].image.width,
-            .height = vertical_blur[rp.current_frame].image.height};
+            .width = vertical_blur.image[rp.current_frame].width,
+            .height = vertical_blur.image[rp.current_frame].height};
     VkClearValue vertical_clear = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
     vertical_info.clearValueCount = 1;
     vertical_info.pClearValues = &vertical_clear;
@@ -507,7 +493,7 @@ void planet::vk::engine::postprocess::glow::render_subpass(
     rp.cb.pipeline_barrier(
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            std::array{renderer.scene_colours[rp.current_frame].image.transition(
+            std::array{renderer.scene_colours.image[rp.current_frame].transition(
                     {.old_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                      .new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                      .source_access_mask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,

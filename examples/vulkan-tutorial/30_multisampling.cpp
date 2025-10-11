@@ -390,9 +390,12 @@ class HelloTriangleApplication {
 
     void initVulkan() {
         createSwapChain();
+        /// This only has a single frame in flight, so we'll only use the first
+        /// attachments
         swapChain.create_frame_buffers(
-                graphicsPipeline.render_pass, colorAttachment.image_view.get(),
-                depthBuffer.image_view.get());
+                graphicsPipeline.render_pass,
+                colorAttachment.image_view[0].get(),
+                depthBuffer.image_view[0].get());
         createTextureImage();
         loadModel();
         createVertexBuffer();
@@ -434,8 +437,9 @@ class HelloTriangleApplication {
                  .format = swapChain.image_format}};
         depthBuffer = {device.startup_memory, swapChain};
         swapChain.create_frame_buffers(
-                graphicsPipeline.render_pass, colorAttachment.image_view.get(),
-                depthBuffer.image_view.get());
+                graphicsPipeline.render_pass,
+                colorAttachment.image_view[0].get(),
+                depthBuffer.image_view[0].get());
     }
 
     void pickPhysicalDevice() {

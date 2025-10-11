@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/vk/engine/forward.hpp>
 #include <planet/vk/image.hpp>
 
 #include <array>
@@ -13,8 +14,8 @@ namespace planet::vk::engine {
     struct depth_buffer {
         depth_buffer(device_memory_allocator &, swap_chain &);
 
-        vk::image image;
-        vk::image_view image_view;
+        std::array<vk::image, max_frames_in_flight> image;
+        std::array<vk::image_view, max_frames_in_flight> image_view;
 
 
         static VkFormat default_format(physical_device const &);
@@ -33,6 +34,7 @@ namespace planet::vk::engine {
                 VkFormatFeatureFlags const f) {
             return find_supported_format(pd, std::span{candidates}, t, f);
         }
+
 
         VkAttachmentDescription
                 attachment_description(physical_device const &) const;
