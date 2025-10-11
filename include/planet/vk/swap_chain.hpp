@@ -32,6 +32,7 @@ namespace planet::vk {
 
         /// ### Queries
         device_view device;
+
         VkSwapchainKHR get() const noexcept { return handle.get(); }
 
 
@@ -46,6 +47,11 @@ namespace planet::vk {
             device().wait_idle();
             return create(ex);
         }
+        static bool needs_recreating(VkResult const result) noexcept {
+            return result == VK_ERROR_OUT_OF_DATE_KHR
+                    or result == VK_SUBOPTIMAL_KHR;
+        }
+
 
         /// ### Extents
 
