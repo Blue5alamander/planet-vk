@@ -82,18 +82,6 @@ namespace planet::vk {
                             .baseArrayLayer = {},
                             .layerCount = 1}};
         }
-
-        /// #### Perform a layout transition
-        void transition_layout(
-                command_pool &,
-                VkImageLayout new_layout,
-                std::uint32_t mip_levels);
-
-        /// #### Copy staging buffer pixels to the image
-        void copy_from(command_pool &, buffer<std::byte> const &);
-
-        /// #### Generate MIP map layers for image
-        void generate_mip_maps(command_pool &, std::uint32_t mip_levels);
     };
 
 
