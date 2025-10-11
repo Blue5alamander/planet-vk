@@ -123,12 +123,15 @@ planet::vk::engine::renderer::~renderer() {
      * Because images can be in flight when we're destructed, we have to wait
      * for them
      */
+    planet::log::debug("Starting wait for all fences during destruction");
     for (auto &f : fence) {
         std::array waitfor{f.get()};
         vkWaitForFences(
                 app.device.get(), waitfor.size(), waitfor.data(), VK_TRUE,
                 UINT64_MAX);
     }
+    planet::log::debug(
+            "All fences have been signalled, can complete destruction");
 }
 
 
