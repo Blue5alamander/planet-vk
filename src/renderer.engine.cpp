@@ -509,7 +509,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
         bas.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
         bas.alphaBlendOp = VK_BLEND_OP_ADD;
         switch (parameters.blend_mode) {
-        case blend_mode::none: bas.blendEnable = VK_FALSE; break;
+        case blend_mode::none: break;
         case blend_mode::multiply:
             bas.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
             bas.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
