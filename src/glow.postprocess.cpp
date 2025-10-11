@@ -64,9 +64,7 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
            .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE}},
   blur_descriptor_pool{
           p.renderer.app.device, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-          static_cast<std::uint32_t>(
-                  2 * max_frames_in_flight)}, // For both horizontal and
-                                              // vertical sets
+          static_cast<std::uint32_t>(2 * max_frames_in_flight)},
   horizontal_descriptor_sets{
           blur_descriptor_pool, blur_sampler_layout, max_frames_in_flight},
   vertical_descriptor_sets{
@@ -256,6 +254,52 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
            .blend_mode = blend_mode::none,
            .pipeline_layout = pipeline_layout{
                    renderer.app.device, present_sampler_layout}})} {
+    initial_image_transition();
+    update_descriptors();
+}
+
+
+void planet::vk::engine::postprocess::glow::recreate_swap_chain() {
+    input_attachments.recreate_swap_chain(
+            {.allocator = renderer.per_swap_chain_memory,
+             .extents = renderer.swap_chain.extents,
+             .format = renderer.swap_chain.image_format,
+             .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT});
+    input_colours.recreate_swap_chain(
+            {.allocator = renderer.per_swap_chain_memory,
+             .extents = renderer.swap_chain.extents,
+             .format = renderer.swap_chain.image_format,
+             .usage_flags = static_cast<VkImageUsageFlagBits>(
+                     VK_IMAGE_USAGE_SAMPLED_BIT
+                     | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
+             .sample_count = VK_SAMPLE_COUNT_1_BIT});
+    downsized_input.recreate_swap_chain(
+            {.allocator = renderer.per_swap_chain_memory,
+             .extents =
+                     {.width = renderer.swap_chain.extents.width / 2,
+                      .height = renderer.swap_chain.extents.height / 2},
+             .format = renderer.swap_chain.image_format,
+             .usage_flags = static_cast<VkImageUsageFlagBits>(
+                     VK_IMAGE_USAGE_SAMPLED_BIT
+                     | VK_IMAGE_USAGE_TRANSFER_DST_BIT)});
+    horizontal_blur.recreate_swap_chain(
+            {.allocator = renderer.per_swap_chain_memory,
+             .extents =
+                     {.width = renderer.swap_chain.extents.width / 2,
+                      .height = renderer.swap_chain.extents.height / 2},
+             .format = renderer.swap_chain.image_format,
+             .usage_flags = static_cast<VkImageUsageFlagBits>(
+                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                     | VK_IMAGE_USAGE_SAMPLED_BIT)});
+    vertical_blur.recreate_swap_chain(
+            {.allocator = renderer.per_swap_chain_memory,
+             .extents =
+                     {.width = renderer.swap_chain.extents.width / 2,
+                      .height = renderer.swap_chain.extents.height / 2},
+             .format = renderer.swap_chain.image_format,
+             .usage_flags = static_cast<VkImageUsageFlagBits>(
+                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                     | VK_IMAGE_USAGE_SAMPLED_BIT)});
     initial_image_transition();
     update_descriptors();
 }

@@ -45,6 +45,9 @@ namespace planet::vk::engine {
         };
         colour_attachment(parameters);
 
+        /// #### Recreation
+        void recreate_swap_chain(parameters);
+
 
         std::array<vk::image, max_frames_in_flight> image;
         std::array<vk::image_view, max_frames_in_flight> image_view;

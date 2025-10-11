@@ -11,8 +11,13 @@
 namespace planet::vk::engine {
 
 
+    /// ## Depth buffer
     struct depth_buffer {
         depth_buffer(device_memory_allocator &, swap_chain &);
+
+        /// #### Recreation
+        void recreate_swap_chain(device_memory_allocator &, swap_chain &);
+
 
         std::array<vk::image, max_frames_in_flight> image;
         std::array<vk::image_view, max_frames_in_flight> image_view;

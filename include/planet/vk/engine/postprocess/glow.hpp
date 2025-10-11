@@ -28,6 +28,8 @@ namespace planet::vk::engine::postprocess {
         };
         glow(parameters);
 
+        void recreate_swap_chain();
+
 
         engine::app &app;
         engine::renderer &renderer;
@@ -59,7 +61,6 @@ namespace planet::vk::engine::postprocess {
         vk::render_pass present_render_pass;
 
         vk::graphics_pipeline present_pipeline;
-
 
         void render_subpass(render_parameters, std::uint32_t);
 

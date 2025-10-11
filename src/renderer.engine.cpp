@@ -157,6 +157,18 @@ void planet::vk::engine::renderer::recreate_swap_chain(
     /// TODO We also need to resize all of the new frame buffers we have
     auto const images =
             swap_chain.recreate(app.window.refresh_window_dimensions());
+    colour_attachments.recreate_swap_chain(
+            {.allocator = per_swap_chain_memory,
+             .extents = swap_chain.extents,
+             .format = swap_chain.image_format,
+             .usage_flags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT});
+    depth_buffers.recreate_swap_chain(per_swap_chain_memory, swap_chain);
+    scene_colours.recreate_swap_chain(
+            {.allocator = per_swap_chain_memory,
+             .extents = swap_chain.extents,
+             .format = swap_chain.image_format,
+             .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT});
+    postprocess.recreate_swap_chain();
     swap_chain.create_frame_buffers(postprocess.present_render_pass);
     planet::log::info(
             "Swap chain dirty. New image count", images, detail::error(result),
