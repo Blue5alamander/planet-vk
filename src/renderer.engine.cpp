@@ -116,7 +116,6 @@ planet::vk::engine::renderer::renderer(engine::app &a)
           app.device.startup_memory,
           {.screen{screen_space.into()},
            .perspective{logical_vulkan_space.into()}}} {
-    postprocess.update_descriptors();
     swap_chain.create_frame_buffers(postprocess.present_render_pass);
 }
 planet::vk::engine::renderer::~renderer() {

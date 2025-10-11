@@ -61,8 +61,11 @@ namespace planet::vk::engine::postprocess {
         vk::graphics_pipeline present_pipeline;
 
 
-        void update_descriptors();
         void render_subpass(render_parameters, std::uint32_t);
+
+      private:
+        void initial_image_transition();
+        void update_descriptors();
     };
 
 

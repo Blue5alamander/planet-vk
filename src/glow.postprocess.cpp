@@ -256,6 +256,12 @@ planet::vk::engine::postprocess::glow::glow(parameters p)
            .blend_mode = blend_mode::none,
            .pipeline_layout = pipeline_layout{
                    renderer.app.device, present_sampler_layout}})} {
+    initial_image_transition();
+    update_descriptors();
+}
+
+
+void planet::vk::engine::postprocess::glow::initial_image_transition() {
     /// ### Initial image transitions
     felspar::memory::small_vector<VkImageMemoryBarrier, max_frames_in_flight * 2>
             barriers;
