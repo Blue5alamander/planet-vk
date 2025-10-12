@@ -222,6 +222,7 @@ felspar::coro::task<std::size_t>
             recreate_swap_chain(result);
         } else if (result == VK_SUBOPTIMAL_KHR) {
             swap_chain_suboptimal = true;
+            break;
         } else if (result == VK_SUCCESS) {
             break;
         } else {
