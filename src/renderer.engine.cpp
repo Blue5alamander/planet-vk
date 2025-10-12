@@ -152,9 +152,13 @@ namespace {
 }
 void planet::vk::engine::renderer::recreate_swap_chain(
         VkResult const result, felspar::source_location const &loc) {
+    /**
+     * TODO This re-creates all images and frame buffers, but really we only
+     * need to do something with the images **if** the new swap chain
+     * extents are the same as the old ones. In all cases we have to replace the
+     * frame buffers.
+     */
     ++c_recreate_swapchain;
-    /// TODO The colour and depth attachments also need to be resized!
-    /// TODO We also need to resize all of the new frame buffers we have
     auto const images =
             swap_chain.recreate(app.window.refresh_window_dimensions());
     colour_attachments.recreate_swap_chain(
@@ -169,6 +173,24 @@ void planet::vk::engine::renderer::recreate_swap_chain(
              .format = swap_chain.image_format,
              .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT});
     postprocess.recreate_swap_chain();
+    scene_frame_buffers =
+            array_of<max_frames_in_flight>([this](std::size_t const index) {
+                std::array attachments{
+                        colour_attachments.image_view[index].get(),
+                        postprocess.input_attachments.image_view[index].get(),
+                        depth_buffers.image_view[index].get(),
+                        scene_colours.image_view[index].get(),
+                        postprocess.input_colours.image_view[index].get()};
+                VkFramebufferCreateInfo info = {};
+                info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+                info.renderPass = scene_render_pass.get();
+                info.attachmentCount = attachments.size();
+                info.pAttachments = attachments.data();
+                info.width = swap_chain.extents.width;
+                info.height = swap_chain.extents.height;
+                info.layers = 1;
+                return frame_buffer{app.device, info};
+            });
     swap_chain.create_frame_buffers(postprocess.present_render_pass);
     planet::log::info(
             "Swap chain dirty. New image count", images, detail::error(result),
