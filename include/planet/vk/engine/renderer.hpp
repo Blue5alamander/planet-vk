@@ -230,6 +230,7 @@ namespace planet::vk::engine {
                 VkResult,
                 felspar::source_location const & =
                         felspar::source_location::current());
+        bool swap_chain_suboptimal = false;
 
 
         /// ### Standard UBOs

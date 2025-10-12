@@ -213,8 +213,10 @@ felspar::coro::task<std::size_t>
         if (result == VK_TIMEOUT or result == VK_NOT_READY) {
             c_acquire_wait.tick();
             co_await app.sdl.io.sleep(wait_time);
-        } else if (vk::swap_chain::needs_recreating(result)) {
+        } else if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             recreate_swap_chain(result);
+        } else if (result == VK_SUBOPTIMAL_KHR) {
+            swap_chain_suboptimal = true;
         } else if (result == VK_SUCCESS) {
             break;
         } else {
@@ -345,7 +347,9 @@ void planet::vk::engine::renderer::submit_and_present() {
     present_info.pImageIndices = &image_index;
     auto const presented =
             vkQueuePresentKHR(app.device.present_queue, &present_info);
-    if (vk::swap_chain::needs_recreating(presented)) {
+    if (presented == VK_ERROR_OUT_OF_DATE_KHR or presented == VK_SUBOPTIMAL_KHR
+        or swap_chain_suboptimal) {
+        swap_chain_suboptimal = false;
         recreate_swap_chain(presented);
     } else {
         worked(presented);
