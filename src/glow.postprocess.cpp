@@ -300,6 +300,38 @@ void planet::vk::engine::postprocess::glow::recreate_swap_chain() {
              .usage_flags = static_cast<VkImageUsageFlagBits>(
                      VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
                      | VK_IMAGE_USAGE_SAMPLED_BIT)});
+    horizontal_frame_buffers =
+            array_of<max_frames_in_flight>([&](auto const index) {
+                auto &img = horizontal_blur.image[index];
+                std::array attachments{horizontal_blur.image_view[index].get()};
+                return vk::frame_buffer{
+                        app.device,
+                        {.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                         .pNext = nullptr,
+                         .flags = {},
+                         .renderPass = blur_render_pass.get(),
+                         .attachmentCount = attachments.size(),
+                         .pAttachments = attachments.data(),
+                         .width = img.width,
+                         .height = img.height,
+                         .layers = 1}};
+            });
+    vertical_frame_buffers =
+            array_of<max_frames_in_flight>([&](auto const index) {
+                auto &img = vertical_blur.image[index];
+                std::array attachments{vertical_blur.image_view[index].get()};
+                return vk::frame_buffer{
+                        app.device,
+                        {.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                         .pNext = nullptr,
+                         .flags = {},
+                         .renderPass = blur_render_pass.get(),
+                         .attachmentCount = attachments.size(),
+                         .pAttachments = attachments.data(),
+                         .width = img.width,
+                         .height = img.height,
+                         .layers = 1}};
+            });
     initial_image_transition();
     update_descriptors();
 }
