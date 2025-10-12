@@ -211,6 +211,11 @@ felspar::coro::task<std::size_t>
                 img_avail_semaphore[current_frame].get(), VK_NULL_HANDLE,
                 &image_index);
         if (result == VK_TIMEOUT or result == VK_NOT_READY) {
+            /**
+             * Whilst we wait for the frame to become available we'll sleep
+             * here. That allows coroutines for handling IO and game logic to
+             * run whilst we wait.
+             */
             c_acquire_wait.tick();
             co_await app.sdl.io.sleep(wait_time);
         } else if (result == VK_ERROR_OUT_OF_DATE_KHR) {
