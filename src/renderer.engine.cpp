@@ -553,14 +553,6 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
         }
         return bas;
     });
-    blend_state[1] = blend_state[0];
-    blend_state[1].blendEnable = VK_TRUE;
-    blend_state[1].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    blend_state[1].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    blend_state[1].colorBlendOp = VK_BLEND_OP_ADD;
-    blend_state[1].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    blend_state[1].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    blend_state[1].alphaBlendOp = VK_BLEND_OP_ADD;
 
     if (parameters.colour_attachments > blend_state.size()) {
         throw felspar::stdexcept::logic_error{
