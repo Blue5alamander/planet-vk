@@ -228,6 +228,7 @@ planet::vk::device::~device() {
         planet::log::debug("Destructing Vulkan device");
         wait_idle();
         vkDestroyDevice(handle, nullptr);
+        planet::log::debug("Device now destroyed");
     }
 }
 
