@@ -16,7 +16,11 @@ namespace planet::vk::engine {
 
     /// ## Renderer
     class renderer final {
-        std::size_t current_frame = {};
+        std::size_t fif_image_index = {};
+        /**
+         * This is the frame-in-flight index we're currently rendering.
+         * Frames-in-flight are worked through one at a time sequentially.
+         */
 
 
       public:
@@ -73,9 +77,8 @@ namespace planet::vk::engine {
         /// #### Synchronisation
         std::array<vk::semaphore, max_frames_in_flight> img_avail_semaphore{
                 array_of<max_frames_in_flight>(
-                        [this]() { return vk::semaphore{app.device}; })},
-                render_finished_semaphore{array_of<max_frames_in_flight>(
                         [this]() { return vk::semaphore{app.device}; })};
+        std::vector<vk::semaphore> render_finished_semaphore;
         std::array<vk::fence, max_frames_in_flight> fence{
                 array_of<max_frames_in_flight>(
                         [this]() { return vk::fence{app.device}; })};
@@ -222,7 +225,12 @@ namespace planet::vk::engine {
 
       private:
         /// ### Data we need to track whilst in the render loop
-        std::uint32_t image_index = {};
+        std::uint32_t scfb_image_index = {};
+        /**
+         * This is the index into the swap chain frame buffers that the GPU has
+         * told us to use to record commands and submit for the next frame to
+         * present to the user.
+         */
 
 
         /// ### Re-create the swap chain

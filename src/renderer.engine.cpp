@@ -106,6 +106,14 @@ planet::vk::engine::renderer::renderer(engine::app &a)
               info.layers = 1;
               return frame_buffer{app.device, info};
           })},
+  render_finished_semaphore{[&]() {
+      std::vector<vk::semaphore> v;
+      v.reserve(swap_chain.image_views.size());
+      by_index(swap_chain.image_views.size(), [&]() {
+          v.emplace_back(app.device);
+      });
+      return v;
+  }()},
   screen_space{
           affine::transform2d{}
                   .scale(2.0f / app.window.width(), -2.0f / app.window.height())
@@ -172,6 +180,13 @@ void planet::vk::engine::renderer::recreate_swap_chain(
              .extents = swap_chain.extents,
              .format = swap_chain.image_format,
              .usage_flags = VK_IMAGE_USAGE_SAMPLED_BIT});
+
+    render_finished_semaphore.clear();
+    render_finished_semaphore.reserve(swap_chain.image_views.size());
+    by_index(swap_chain.image_views.size(), [&]() {
+        render_finished_semaphore.emplace_back(app.device);
+    });
+
     postprocess.recreate_swap_chain();
     scene_frame_buffers =
             array_of<max_frames_in_flight>([this](std::size_t const index) {
@@ -220,18 +235,18 @@ felspar::coro::task<std::size_t>
         planet::vk::engine::renderer::start(VkClearValue const colour) {
     constexpr auto wait_time = 5ms;
     // Wait for the previous version of this frame number to finish
-    while (not fence[current_frame].is_ready()) {
+    while (not fence[fif_image_index].is_ready()) {
         c_fence_wait.tick();
         co_await app.sdl.io.sleep(wait_time);
     }
 
     // Get an image from the swap chain
-    image_index = 0;
+    scfb_image_index = 0;
     while (true) {
         auto result = vkAcquireNextImageKHR(
                 app.device.get(), swap_chain.get(), {},
-                img_avail_semaphore[current_frame].get(), VK_NULL_HANDLE,
-                &image_index);
+                img_avail_semaphore[fif_image_index].get(), VK_NULL_HANDLE,
+                &scfb_image_index);
         if (result == VK_TIMEOUT or result == VK_NOT_READY) {
             /**
              * Whilst we wait for the frame to become available we'll sleep
@@ -254,7 +269,7 @@ felspar::coro::task<std::size_t>
 
     // We need to wait for the image before we can run the commands to draw
     // to it, and signal the render finished one when we're done
-    fence[current_frame].reset();
+    fence[fif_image_index].reset();
 
     // Resume any processing waiting for the frames to cycle around
     for (auto h : render_cycle_coroutines.front()) { h.resume(); }
@@ -266,7 +281,7 @@ felspar::coro::task<std::size_t>
     pre_start_coroutines.clear();
 
     // Start to record command buffers
-    auto &cb = command_buffers[current_frame];
+    auto &cb = command_buffers[fif_image_index];
     vkResetCommandBuffer(cb.get(), {});
 
     VkCommandBufferBeginInfo begin_info = {};
@@ -276,7 +291,8 @@ felspar::coro::task<std::size_t>
     VkRenderPassBeginInfo render_pass_info = {};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     render_pass_info.renderPass = scene_render_pass.get();
-    render_pass_info.framebuffer = scene_frame_buffers.at(current_frame).get();
+    render_pass_info.framebuffer =
+            scene_frame_buffers.at(fif_image_index).get();
     render_pass_info.renderArea.offset.x = 0;
     render_pass_info.renderArea.offset.y = 0;
     render_pass_info.renderArea.extent = swap_chain.extents;
@@ -299,11 +315,11 @@ felspar::coro::task<std::size_t>
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(cb.get(), 0, 1, &viewport);
 
-    coordinates.copy_to_gpu_memory(current_frame);
+    coordinates.copy_to_gpu_memory(fif_image_index);
 
     app.baseplate.start_frame_reset();
 
-    co_return current_frame;
+    co_return fif_image_index;
 }
 
 
@@ -312,14 +328,14 @@ auto planet::vk::engine::renderer::bind(
         planet::vk::graphics_pipeline &pl,
         std::span<ubo::coherent_details const *const> const ubos)
         -> planet::vk::engine::render_parameters {
-    auto &cb = command_buffers[current_frame];
+    auto &cb = command_buffers[fif_image_index];
     vkCmdBindPipeline(cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.get());
     for (std::uint32_t set{}; auto const &ds : ubos) {
         vkCmdBindDescriptorSets(
                 cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, pl.layout.get(),
-                set++, 1, &ds->sets[current_frame], 0, nullptr);
+                set++, 1, &ds->sets[fif_image_index], 0, nullptr);
     }
-    return {*this, cb, current_frame};
+    return {*this, cb, fif_image_index};
 }
 
 
@@ -331,7 +347,7 @@ namespace {
 }
 /// #### `submit_and_present`
 void planet::vk::engine::renderer::submit_and_present() {
-    auto &cb = command_buffers[current_frame];
+    auto &cb = command_buffers[fif_image_index];
 
     vkCmdEndRenderPass(cb.get());
 
@@ -340,14 +356,14 @@ void planet::vk::engine::renderer::submit_and_present() {
      * and then finally we end our command buffer so we can present our frame.
      */
 
-    postprocess.render_subpass({*this, cb, current_frame}, image_index);
+    postprocess.render_subpass({*this, cb, fif_image_index}, scfb_image_index);
 
     planet::vk::worked(vkEndCommandBuffer(cb.get()));
 
     std::array<VkSemaphore, 1> const wait_semaphores = {
-            img_avail_semaphore[current_frame].get()};
+            img_avail_semaphore[fif_image_index].get()};
     std::array<VkSemaphore, 1> const signal_semaphores = {
-            render_finished_semaphore[current_frame].get()};
+            render_finished_semaphore[scfb_image_index].get()};
     std::array<VkPipelineStageFlags, 1> const wait_stages = {
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
     std::array command_buffer{cb.get()};
@@ -362,7 +378,7 @@ void planet::vk::engine::renderer::submit_and_present() {
     submit_info.pSignalSemaphores = signal_semaphores.data();
     planet::vk::worked(vkQueueSubmit(
             app.device.graphics_queue, 1, &submit_info,
-            fence[current_frame].get()));
+            fence[fif_image_index].get()));
 
     /// Finally, present the updated image in the swap chain
     std::array<VkSwapchainKHR, 1> present_chain = {swap_chain.get()};
@@ -372,7 +388,7 @@ void planet::vk::engine::renderer::submit_and_present() {
     present_info.pWaitSemaphores = signal_semaphores.data();
     present_info.swapchainCount = present_chain.size();
     present_info.pSwapchains = present_chain.data();
-    present_info.pImageIndices = &image_index;
+    present_info.pImageIndices = &scfb_image_index;
     auto const presented =
             vkQueuePresentKHR(app.device.present_queue, &present_info);
     if (presented == VK_ERROR_OUT_OF_DATE_KHR or presented == VK_SUBOPTIMAL_KHR
@@ -383,7 +399,7 @@ void planet::vk::engine::renderer::submit_and_present() {
         worked(presented);
     }
 
-    current_frame = (current_frame + 1) % max_frames_in_flight;
+    fif_image_index = (fif_image_index + 1) % max_frames_in_flight;
     ++frame_count;
     frame_rate.tick();
 }
@@ -427,7 +443,7 @@ void planet::vk::engine::renderer::render_prestart_awaitable::await_suspend(
 std::size_t
         planet::vk::engine::renderer::render_prestart_awaitable::await_resume()
                 const noexcept {
-    return renderer.current_frame;
+    return renderer.fif_image_index;
 }
 
 

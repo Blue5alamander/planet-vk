@@ -16,12 +16,16 @@ std::uint32_t planet::vk::swap_chain::create(VkExtent2D const wsize) {
     images.clear();
 
     auto &surface = device().instance.surface;
-
     std::uint32_t image_count = surface.capabilities.minImageCount + 1;
     if (surface.capabilities.maxImageCount > 0
         and image_count > surface.capabilities.maxImageCount) {
         image_count = surface.capabilities.maxImageCount;
     }
+    planet::log::info(
+            "Swap chain creation minImageCount",
+            surface.capabilities.minImageCount, "maxImageCount",
+            surface.capabilities.maxImageCount, "settled on", image_count);
+
 
     VkSwapchainCreateInfoKHR info{};
     info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
