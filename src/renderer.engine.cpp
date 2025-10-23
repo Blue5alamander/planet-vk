@@ -224,13 +224,15 @@ void planet::vk::engine::renderer::recreate_swap_chain(
  * 3. `submit_and_present` -- Complete the frame, perform our post-processing
  * and then present
  */
+
+
+/// #### `start`
 namespace {
     planet::telemetry::real_time_rate c_fence_wait{
             "planet_vk_engine_renderer_fence_wait", 500ms};
     planet::telemetry::real_time_rate c_acquire_wait{
             "planet_vk_engine_renderer_acquire_next_image_wait", 500ms};
 }
-/// #### `start`
 felspar::coro::task<std::size_t>
         planet::vk::engine::renderer::start(VkClearValue const colour) {
     constexpr auto wait_time = 5ms;
@@ -267,11 +269,13 @@ felspar::coro::task<std::size_t>
         }
     }
 
-    // We need to wait for the image before we can run the commands to draw
-    // to it, and signal the render finished one when we're done
+    /**
+     * We need to wait for the image before we can run the commands to draw to
+     * it, and signal the render finished one when we're done
+     */
     fence[fif_image_index].reset();
 
-    // Resume any processing waiting for the frames to cycle around
+    /// Resume any processing waiting for the frames to cycle around
     for (auto h : render_cycle_coroutines.front()) { h.resume(); }
     render_cycle_coroutines.front().clear();
     std::rotate(
@@ -280,7 +284,7 @@ felspar::coro::task<std::size_t>
     for (auto h : pre_start_coroutines) { h.resume(); }
     pre_start_coroutines.clear();
 
-    // Start to record command buffers
+    /// Start to record command buffers
     auto &cb = command_buffers[fif_image_index];
     vkResetCommandBuffer(cb.get(), {});
 
@@ -339,20 +343,20 @@ auto planet::vk::engine::renderer::bind(
 }
 
 
+/// #### `submit_and_present`
 namespace {
     planet::telemetry::counter frame_count{
             "planet_vk_engine_renderer_frame_count"};
     planet::telemetry::real_time_rate frame_rate{
             "planet_vk_engine_renderer_frame_rate", 500ms};
 }
-/// #### `submit_and_present`
 void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[fif_image_index];
 
     vkCmdEndRenderPass(cb.get());
 
     /**
-     * The scene pass is now ended. Now we have to set up the presentation pass,
+     * The scene pass is complete. Now we have to set up the presentation pass,
      * and then finally we end our command buffer so we can present our frame.
      */
 

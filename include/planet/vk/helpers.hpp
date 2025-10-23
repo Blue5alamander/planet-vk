@@ -14,8 +14,11 @@ namespace planet::vk {
     class device;
 
 
-    /// ## Checks that an API has worked
-    /// If it has not then throw an exception.
+    /**
+     * ## Checks that an API has worked
+     *
+     * If it has not then throw an exception.
+     */
     namespace detail {
         std::string error(VkResult);
     }
@@ -31,7 +34,7 @@ namespace planet::vk {
     }
 
 
-    /// Patterns for fetching a vector of data from Vulkan
+    /// ## Fetching an array of data
     template<auto Api, typename Array, typename... A>
     inline std::vector<Array> fetch_vector(A &&...arg) {
         std::uint32_t count{};
