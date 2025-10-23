@@ -1,17 +1,18 @@
 #pragma once
 
 
-#include <felspar/exceptions.hpp>
+#include <planet/vk/forward.hpp>
+
+#include <felspar/test/source.hpp>
 
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 
 namespace planet::vk {
-
-
-    class device;
 
 
     /**
@@ -21,13 +22,15 @@ namespace planet::vk {
      */
     namespace detail {
         std::string error(VkResult);
+        [[noreturn]] void
+                throw_result_error(VkResult, felspar::source_location const &);
     }
     inline VkResult
-            worked(VkResult result,
+            worked(VkResult const result,
                    felspar::source_location const &loc =
                            felspar::source_location::current()) {
         if (result != VK_SUCCESS) {
-            throw felspar::stdexcept::runtime_error{detail::error(result), loc};
+            detail::throw_result_error(result, loc);
         } else {
             return result;
         }

@@ -3,6 +3,7 @@
 #include <planet/vk/extensions.hpp>
 #include <planet/vk/instance.hpp>
 
+#include <felspar/exceptions.hpp>
 #include <felspar/memory/small_vector.hpp>
 
 
@@ -144,6 +145,12 @@ std::string planet::vk::detail::error(VkResult const code) {
         default: return "Unknown error " + std::to_string(code);
         }
     }();
+}
+
+
+void planet::vk::detail::throw_result_error(
+        VkResult const result, felspar::source_location const &loc) {
+    throw felspar::stdexcept::runtime_error{detail::error(result), loc};
 }
 
 
