@@ -179,7 +179,7 @@ namespace planet::vk::engine {
          */
         struct render_cycle_awaitable {
             engine::renderer &renderer;
-            felspar::coro::coroutine_handle<> mine = {};
+            std::coroutine_handle<> mine = {};
 
 
             render_cycle_awaitable(engine::renderer &r) : renderer{r} {}
@@ -189,7 +189,7 @@ namespace planet::vk::engine {
 
 
             bool await_ready() const noexcept { return false; }
-            void await_suspend(felspar::coro::coroutine_handle<>);
+            void await_suspend(std::coroutine_handle<>);
             void await_resume() const noexcept {}
         };
         render_cycle_awaitable full_render_cycle() { return {*this}; }
@@ -207,7 +207,7 @@ namespace planet::vk::engine {
          */
         struct render_prestart_awaitable {
             engine::renderer &renderer;
-            felspar::coro::coroutine_handle<> mine = {};
+            std::coroutine_handle<> mine = {};
 
 
             render_prestart_awaitable(engine::renderer &r) : renderer{r} {}
@@ -217,7 +217,7 @@ namespace planet::vk::engine {
 
 
             bool await_ready() const noexcept { return false; }
-            void await_suspend(felspar::coro::coroutine_handle<>);
+            void await_suspend(std::coroutine_handle<>);
             std::size_t await_resume() const noexcept;
         };
         render_prestart_awaitable next_frame_prestart() { return {*this}; }
@@ -279,11 +279,9 @@ namespace planet::vk::engine {
 
 
         /// TODO This array would be better as a circular buffer
-        std::array<
-                std::vector<felspar::coro::coroutine_handle<>>,
-                max_frames_in_flight + 1>
+        std::array<std::vector<std::coroutine_handle<>>, max_frames_in_flight + 1>
                 render_cycle_coroutines;
-        std::vector<felspar::coro::coroutine_handle<>> pre_start_coroutines;
+        std::vector<std::coroutine_handle<>> pre_start_coroutines;
     };
 
 

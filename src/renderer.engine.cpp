@@ -422,7 +422,7 @@ planet::vk::engine::renderer::render_cycle_awaitable::~render_cycle_awaitable() 
 
 
 void planet::vk::engine::renderer::render_cycle_awaitable::await_suspend(
-        felspar::coro::coroutine_handle<> h) {
+        std::coroutine_handle<> h) {
     mine = h;
     renderer.render_cycle_coroutines.back().push_back(h);
 }
@@ -438,7 +438,7 @@ planet::vk::engine::renderer::render_prestart_awaitable::
 
 
 void planet::vk::engine::renderer::render_prestart_awaitable::await_suspend(
-        felspar::coro::coroutine_handle<> h) {
+        std::coroutine_handle<> h) {
     mine = h;
     renderer.pre_start_coroutines.push_back(h);
 }
