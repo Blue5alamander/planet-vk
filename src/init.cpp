@@ -149,7 +149,7 @@ std::string planet::vk::detail::error(VkResult const code) {
 
 
 void planet::vk::detail::throw_result_error(
-        VkResult const result, felspar::source_location const &loc) {
+        VkResult const result, std::source_location const &loc) {
     throw felspar::stdexcept::runtime_error{detail::error(result), loc};
 }
 

@@ -3,11 +3,10 @@
 
 #include <planet/vk/forward.hpp>
 
-#include <felspar/test/source.hpp>
-
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
+#include <source_location>
 #include <string>
 #include <vector>
 
@@ -23,12 +22,11 @@ namespace planet::vk {
     namespace detail {
         std::string error(VkResult);
         [[noreturn]] void
-                throw_result_error(VkResult, felspar::source_location const &);
+                throw_result_error(VkResult, std::source_location const &);
     }
-    inline VkResult
-            worked(VkResult const result,
-                   felspar::source_location const &loc =
-                           felspar::source_location::current()) {
+    inline VkResult worked(
+            VkResult const result,
+            std::source_location const &loc = std::source_location::current()) {
         if (result != VK_SUCCESS) {
             detail::throw_result_error(result, loc);
         } else {

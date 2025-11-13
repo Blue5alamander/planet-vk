@@ -94,7 +94,7 @@ planet::vk::descriptor_sets::descriptor_sets(
         descriptor_pool const &pool,
         descriptor_set_layout const &layout,
         std::uint32_t const count,
-        felspar::source_location const &loc)
+        std::source_location const &loc)
 : sets(count) {
     std::vector<VkDescriptorSetLayout> layouts(count, layout.get());
     VkDescriptorSetAllocateInfo allocInfo{};

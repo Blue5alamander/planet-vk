@@ -70,8 +70,8 @@ namespace planet::vk {
                 create(O h,
                        I const &info,
                        VkAllocationCallbacks const *alloc,
-                       felspar::source_location const &loc =
-                               felspar::source_location::current()) {
+                       std::source_location const &loc =
+                               std::source_location::current()) {
             reset();
             owner_handle = h;
             allocator = alloc;
@@ -81,8 +81,8 @@ namespace planet::vk {
         void
                 create(O h,
                        I const &info,
-                       felspar::source_location const &loc =
-                               felspar::source_location::current()) {
+                       std::source_location const &loc =
+                               std::source_location::current()) {
             create<C, I>(h, info, nullptr, loc);
         }
         static owned_handle bind(O o, T h) noexcept { return {o, h, nullptr}; }

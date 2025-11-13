@@ -236,8 +236,7 @@ namespace planet::vk::engine {
         /// ### Re-create the swap chain
         void recreate_swap_chain(
                 VkResult,
-                felspar::source_location const & =
-                        felspar::source_location::current());
+                std::source_location const & = std::source_location::current());
         bool swap_chain_suboptimal = false;
 
 
@@ -307,8 +306,7 @@ namespace planet::vk::engine {
     };
     graphics_pipeline create_graphics_pipeline(
             graphics_pipeline_parameters,
-            felspar::source_location const & =
-                    felspar::source_location::current());
+            std::source_location const & = std::source_location::current());
 
 
 }

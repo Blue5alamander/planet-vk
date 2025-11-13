@@ -159,7 +159,7 @@ namespace {
             "planet_vk_engine_renderer_recreate_swapchain_count"};
 }
 void planet::vk::engine::renderer::recreate_swap_chain(
-        VkResult const result, felspar::source_location const &loc) {
+        VkResult const result, std::source_location const &loc) {
     /**
      * TODO This re-creates all images and frame buffers, but really we only
      * need to do something with the images **if** the new swap chain
@@ -456,7 +456,7 @@ std::size_t
 
 planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
         graphics_pipeline_parameters parameters,
-        felspar::source_location const &loc) {
+        std::source_location const &loc) {
     auto &app = parameters.app;
 
     /// Shaders
