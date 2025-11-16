@@ -28,7 +28,7 @@ namespace planet::vk::engine::ui {
           texture{std::move(tx)} {}
         tx(pipeline_type &p, std::string_view const n, texture_type tx)
         : reflowable{n}, pl{p}, texture{std::move(tx)} {}
-        tx(pipeline_type &p, texture_type tx, vk::colour const &c)
+        tx(pipeline_type &p, texture_type tx, planet::colour const &c)
         : reflowable{"planet::vk::engine::ui::on_screen"},
           pl{p},
           texture{std::move(tx)},
@@ -36,13 +36,13 @@ namespace planet::vk::engine::ui {
         tx(pipeline_type &p,
            std::string_view const n,
            texture_type tx,
-           vk::colour const &c)
+           planet::colour const &c)
         : reflowable{n}, pl{p}, texture{std::move(tx)}, colour{c} {}
 
 
         pipeline_type &pl;
         texture_type texture;
-        vk::colour colour = colour::white;
+        planet::colour colour = colour::white;
 
 
         void draw();

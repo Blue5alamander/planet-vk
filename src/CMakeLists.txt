@@ -1,7 +1,6 @@
 find_package (Vulkan REQUIRED)
 
 add_library(planet-vk
-        colour.cpp
         commands.cpp
         descriptors.cpp
         frame_buffer.cpp
@@ -15,7 +14,6 @@ add_library(planet-vk
         swap_chain.cpp
         synchronisation.cpp
         texture.cpp
-        vertex.cpp
     )
 target_include_directories(planet-vk PUBLIC ../include)
 target_link_libraries(planet-vk PUBLIC

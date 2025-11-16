@@ -71,7 +71,7 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
 void planet::vk::engine::pipeline::textured::draw(
         vk::sub_texture const &texture,
         affine::rectangle2d const &pos,
-        vk::colour const &colour,
+        planet::colour const &colour,
         float const z) {
     std::size_t const quad_index = textures.vertices.size();
 

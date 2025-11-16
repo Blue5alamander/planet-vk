@@ -1,4 +1,5 @@
 #include <planet/log.hpp>
+#include <planet/vk/colour.hpp>
 #include <planet/vk/engine/blank.hpp>
 #include <planet/vk/engine/renderer.hpp>
 
@@ -10,7 +11,7 @@ namespace {
     struct blanking {
         planet::vk::engine::app &app;
         planet::vk::engine::renderer &renderer;
-        planet::vk::colour colour;
+        planet::colour colour;
 
         bool active = true;
 
@@ -28,7 +29,7 @@ namespace {
 felspar::coro::task<void> planet::vk::engine::blank(
         planet::vk::engine::app &app,
         planet::vk::engine::renderer &renderer,
-        planet::vk::colour const &colour) {
+        planet::colour const &colour) {
     planet::log::debug("Starting GPU blank");
     blanking blank{app, renderer, colour};
     felspar::coro::eager<> loop;

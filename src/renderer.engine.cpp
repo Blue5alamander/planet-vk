@@ -302,7 +302,7 @@ felspar::coro::task<std::size_t>
     render_pass_info.renderArea.extent = swap_chain.extents;
 
     auto clear_values = std::array{
-            colour, static_cast<VkClearValue>(vk::colour::black),
+            colour, as_VkClearValue(colour::black),
             VkClearValue{.depthStencil = {0.0f, 0}}};
     render_pass_info.clearValueCount = clear_values.size();
     render_pass_info.pClearValues = clear_values.data();

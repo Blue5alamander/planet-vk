@@ -92,6 +92,10 @@ namespace planet::vk::engine {
          * `max_frames_in_flight` that is currently being worked on.
          */
         felspar::coro::task<std::size_t> start(VkClearValue);
+        auto start(planet::colour const &colour) {
+            return start(as_VkClearValue(colour));
+        }
+
 
         /// #### Bind graphics pipeline
         render_parameters

@@ -1,22 +1,13 @@
 #pragma once
 
 
-#include <planet/affine/point3d.hpp>
-#include <planet/serialise/forward.hpp>
-#include <planet/vk/vertex/forward.hpp>
+#include <planet/vertex/normal.hpp>
+#include <planet/vk/vertex/bindings.hpp>
+
+#include <vulkan/vulkan.h>
 
 
-namespace planet::vk::vertex {
-
-
-    struct normal {
-        constexpr static std::string_view box{"_p:vk:vert:n"};
-
-
-        affine::point3d p, n;
-    };
-    void save(serialise::save_buffer &, normal const &);
-    void load(serialise::box &, normal &);
+namespace planet::vertex {
 
 
     template<>

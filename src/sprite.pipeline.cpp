@@ -44,7 +44,7 @@ planet::vk::graphics_pipeline
 void planet::vk::engine::pipeline::sprite::draw(
         std::pair<vk::texture const &, affine::rectangle2d> texture,
         location const &loc,
-        vk::colour const &colour) {
+        planet::colour const &colour) {
     auto const pos = affine::rectangle2d{
             affine::point2d{0, loc.size.height} - loc.centre,
             affine::extents2d{loc.size.width, -loc.size.height}};

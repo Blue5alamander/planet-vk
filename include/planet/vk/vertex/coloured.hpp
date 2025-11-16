@@ -1,24 +1,13 @@
 #pragma once
 
 
-#include <planet/affine/point3d.hpp>
-#include <planet/serialise/forward.hpp>
-#include <planet/vk/colour.hpp>
-#include <planet/vk/vertex/forward.hpp>
+#include <planet/vertex/coloured.hpp>
+#include <planet/vk/vertex/bindings.hpp>
+
+#include <vulkan/vulkan.h>
 
 
-namespace planet::vk::vertex {
-
-
-    struct coloured {
-        constexpr static std::string_view box{"_p:vk:vert:col"};
-
-
-        affine::point3d p;
-        colour col = colour::white;
-    };
-    void save(serialise::save_buffer &, coloured const &);
-    void load(serialise::box &, coloured &);
+namespace planet::vertex {
 
 
     template<>

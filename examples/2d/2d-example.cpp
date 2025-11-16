@@ -10,13 +10,12 @@ namespace {
                  .vertex_shader{"planet-vk-engine/mesh.world.vert.spirv"}}};
 
         constexpr std::array vertices{
-                planet::vk::vertex::coloured{
+                planet::vertex::coloured{
                         {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-                planet::vk::vertex::coloured{
+                planet::vertex::coloured{
                         {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-                planet::vk::vertex::coloured{
-                        {0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-                planet::vk::vertex::coloured{
+                planet::vertex::coloured{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+                planet::vertex::coloured{
                         {-0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 1.0f}}};
         constexpr std::array<std::uint32_t, 6> indices{0, 1, 2, 2, 3, 0};
 
@@ -36,7 +35,7 @@ namespace {
                 }
             }
 
-            co_await renderer.start({{{0.f, 0.f, 0.f, 1.f}}});
+            co_await renderer.start(planet::colour::black);
 
             mesh.this_frame.draw(vertices, indices);
             mesh.this_frame.draw(vertices, indices, {0.75f, 0.75f, 0.0f});

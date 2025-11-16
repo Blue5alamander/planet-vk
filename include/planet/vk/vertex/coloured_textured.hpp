@@ -1,26 +1,14 @@
 #pragma once
 
 
-#include <planet/affine/point3d.hpp>
-#include <planet/vk/colour.hpp>
-#include <planet/vk/vertex/forward.hpp>
-#include <planet/vk/vertex/uvpos.hpp>
+#include <planet/vertex/coloured_textured.hpp>
+#include <planet/vk/vertex/bindings.hpp>
+
+#include <vulkan/vulkan.h>
 
 
-namespace planet::vk::vertex {
+namespace planet::vertex {
 
-
-    /// ## Basic textured mesh vertex with colour
-    struct coloured_textured {
-        constexpr static std::string_view box{"_p:vk:vert:ctx"};
-
-
-        planet::affine::point3d p;
-        colour col = colour::white;
-        uvpos uv;
-    };
-    void save(serialise::save_buffer &, coloured_textured const &);
-    void load(serialise::box &, coloured_textured &);
 
     template<>
     inline constexpr auto binding_description<coloured_textured>() {
