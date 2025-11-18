@@ -125,7 +125,8 @@ planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
              .buffer = staging,
              .width = static_cast<std::uint32_t>(surface.width()),
              .height = static_cast<std::uint32_t>(surface.height()),
-             .scale = surface.fit});
+             .scale = surface.fit,
+             .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE});
 }
 
 
@@ -171,5 +172,6 @@ planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
              .buffer = staging,
              .width = static_cast<std::uint32_t>(surface.width()),
              .height = static_cast<std::uint32_t>(surface.height()),
-             .scale = surface.fit});
+             .scale = surface.fit,
+             .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE});
 }
