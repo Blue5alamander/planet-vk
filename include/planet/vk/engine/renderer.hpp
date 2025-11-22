@@ -123,9 +123,12 @@ namespace planet::vk::engine {
          * direction the matrix set here must be combined properly with the
          * matrix from the `logical_vulkan_space`.
          */
-        void reset_world_coordinates(affine::matrix3d const &);
         void reset_world_coordinates(
-                affine::matrix3d const &, affine::matrix3d const &);
+                affine::matrix3d const &, affine::point3d const &);
+        void reset_world_coordinates(
+                affine::matrix3d const &,
+                affine::matrix3d const &,
+                affine::point3d const &);
 
         /// #### Access the world and perspective transformations
         affine::matrix3d const &world_coordinates() const noexcept {

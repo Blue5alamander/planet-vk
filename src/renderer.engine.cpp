@@ -144,13 +144,17 @@ planet::vk::engine::renderer::~renderer() {
 
 
 void planet::vk::engine::renderer::reset_world_coordinates(
-        affine::matrix3d const &m) {
+        affine::matrix3d const &m, affine::point3d const &cp) {
     coordinates.current.world = m;
+    coordinates.current.camera_position = cp;
 }
 void planet::vk::engine::renderer::reset_world_coordinates(
-        affine::matrix3d const &m, affine::matrix3d const &p) {
+        affine::matrix3d const &m,
+        affine::matrix3d const &p,
+        affine::point3d const &cp) {
     coordinates.current.world = m;
     coordinates.current.perspective = p;
+    coordinates.current.camera_position = cp;
 }
 
 
