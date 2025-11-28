@@ -25,10 +25,12 @@ namespace planet::vk::ubo {
         textures(
                 std::string_view const name,
                 vk::device &d,
-                std::uint32_t max_textures_per_frame)
+                std::uint32_t max_textures_per_frame,
+                std::source_location const &loc =
+                        std::source_location::current())
         : device{d},
           max_per_frame{max_textures_per_frame},
-          textures_in_frame{std::string{name} + "__textures_in_frame"} {}
+          textures_in_frame{std::string{name} + "__textures_in_frame", loc} {}
 
 
         /// ### Configuration
