@@ -285,8 +285,9 @@ felspar::coro::task<std::size_t>
     std::rotate(
             render_cycle_coroutines.begin(),
             render_cycle_coroutines.begin() + 1, render_cycle_coroutines.end());
-    for (auto h : pre_start_coroutines) { h.resume(); }
-    pre_start_coroutines.clear();
+    std::swap(pre_start_coroutines, pre_start_coroutines_prev);
+    for (auto h : pre_start_coroutines_prev) { h.resume(); }
+    pre_start_coroutines_prev.clear();
 
     /// Start to record command buffers
     auto &cb = command_buffers[fif_image_index];

@@ -287,7 +287,8 @@ namespace planet::vk::engine {
         /// TODO This array would be better as a circular buffer
         std::array<std::vector<std::coroutine_handle<>>, max_frames_in_flight + 1>
                 render_cycle_coroutines;
-        std::vector<std::coroutine_handle<>> pre_start_coroutines;
+        std::vector<std::coroutine_handle<>> pre_start_coroutines,
+                pre_start_coroutines_prev;
     };
 
 
