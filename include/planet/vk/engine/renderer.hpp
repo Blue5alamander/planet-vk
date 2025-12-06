@@ -10,6 +10,8 @@
 #include <planet/vk/engine/render_parameters.hpp>
 #include <planet/vk/ubo/coordinate_space.hpp>
 
+#include <felspar/coro/barrier.hpp>
+
 
 namespace planet::vk::engine {
 
@@ -212,22 +214,7 @@ namespace planet::vk::engine {
          * point in time. Memory that has been in use for rendering _may_ be
          * freed at this point in time, but only for the frame index returned.
          */
-        struct render_prestart_awaitable {
-            engine::renderer &renderer;
-            std::coroutine_handle<> mine = {};
-
-
-            render_prestart_awaitable(engine::renderer &r) : renderer{r} {}
-            render_prestart_awaitable(render_prestart_awaitable &&rpa)
-            : renderer{rpa.renderer}, mine{std::exchange(rpa.mine, {})} {}
-            ~render_prestart_awaitable();
-
-
-            bool await_ready() const noexcept { return false; }
-            void await_suspend(std::coroutine_handle<>);
-            std::size_t await_resume() const noexcept;
-        };
-        render_prestart_awaitable next_frame_prestart() { return {*this}; }
+        auto &next_frame_prestart() { return prestart_barrier; }
 
 
       private:
@@ -287,8 +274,7 @@ namespace planet::vk::engine {
         /// TODO This array would be better as a circular buffer
         std::array<std::vector<std::coroutine_handle<>>, max_frames_in_flight + 1>
                 render_cycle_coroutines;
-        std::vector<std::coroutine_handle<>> pre_start_coroutines,
-                pre_start_coroutines_prev;
+        felspar::coro::barrier<std::size_t> prestart_barrier;
     };
 
 
