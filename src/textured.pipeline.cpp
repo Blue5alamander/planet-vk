@@ -6,27 +6,22 @@
 /// ## `planet::vk::engine::pipeline::textured`
 
 
-planet::vk::engine::pipeline::textured::textured(
-        std::string_view const n,
-        engine::renderer &r,
-        std::string_view const vs,
-        std::uint32_t const mtpf,
-        id::suffix const suffix)
-: id{n, suffix},
-  textures{name(), r.app.device, mtpf},
+planet::vk::engine::pipeline::textured::textured(parameters const p)
+: id{p.name, p.use_name_suffix},
+  textures{name(), p.renderer.app.device, p.textures_per_frame},
   pipeline{planet::vk::engine::create_graphics_pipeline(
-          {.app = r.app,
-           .renderer = r,
-           .vertex_shader = {vs},
-           .fragment_shader = {"planet-vk-engine/textured.frag.spirv"},
+          {.app = p.renderer.app,
+           .renderer = p.renderer,
+           .vertex_shader = p.vertex_shader,
+           .fragment_shader = p.fragment_shader,
            .binding_descriptions =
                    vertex::binding_description<textures_type::vertex_type>(),
            .attribute_descriptions =
                    vertex::attribute_description<textures_type::vertex_type>(),
            .pipeline_layout = pipeline_layout{
-                   r.app.device,
+                   p.renderer.app.device,
                    std::array{
-                           r.coordinates_ubo_layout().get(),
+                           p.renderer.coordinates_ubo_layout().get(),
                            textures.ubo.layout.get()}}})} {}
 
 
