@@ -214,7 +214,7 @@ namespace planet::vk {
                 vk::device &,
                 device_memory_allocator_configuration const & =
                         thread_safe_device_memory_allocator,
-                id::suffix = id::suffix::no);
+                id::suffix = id::suffix::suppress);
         ~device_memory_allocator();
 
 

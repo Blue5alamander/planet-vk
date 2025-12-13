@@ -30,12 +30,12 @@ namespace planet::vk::engine::pipeline {
                std::string_view const vertex_shader,
                std::uint32_t const textures_per_frame = 256)
         : sprite{"planet_vk_engine_pipeline_sprite", r, vertex_shader,
-                 textures_per_frame, id::suffix::yes} {}
+                 textures_per_frame, id::suffix::add} {}
         sprite(std::string_view,
                engine::renderer &,
                std::string_view vertex_shader,
                std::uint32_t textures_per_frame = 256,
-               id::suffix = id::suffix::no);
+               id::suffix = id::suffix::suppress);
 
 
         textures_type textures;

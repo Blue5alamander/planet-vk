@@ -111,7 +111,7 @@ void planet::vk::device_memory_allocation::unmap_memory() {
 
 planet::vk::device_memory_allocator::device_memory_allocator(
         vk::device &d, device_memory_allocator_configuration const &c)
-: device_memory_allocator{"unnamed", d, c, id::suffix::yes} {}
+: device_memory_allocator{"unnamed", d, c, id::suffix::add} {}
 
 planet::vk::device_memory_allocator::device_memory_allocator(
         std::string_view const n,

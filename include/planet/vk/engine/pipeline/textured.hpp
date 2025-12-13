@@ -21,19 +21,21 @@ namespace planet::vk::engine::pipeline {
         using textures_type = draw_basic_textures<>;
 
 
-        textured(
-                engine::renderer &r,
-                std::string_view const vertex_shader,
-                std::uint32_t const textures_per_frame = 256)
-        : textured{
-                  "planet_vk_engine_pipeline_textured", r, vertex_shader,
-                  textures_per_frame, id::suffix::yes} {}
-        textured(
-                std::string_view,
-                engine::renderer &,
-                std::string_view vertex_shader,
-                std::uint32_t textures_per_frame = 256,
-                id::suffix = id::suffix::no);
+        struct parameters {
+            static std::string_view constexpr default_name =
+                    "planet_vk_engine_pipeline_textured";
+
+            std::string_view name = default_name;
+            id::suffix use_name_suffix =
+                    (name == default_name ? id::suffix::add
+                                          : id::suffix::suppress);
+            engine::renderer &renderer;
+            shader_parameters vertex_shader;
+            shader_parameters fragment_shader{
+                    .spirv_filename = "planet-vk-engine/textured.frag.spirv"};
+            std::uint32_t const textures_per_frame = 256;
+        };
+        textured(parameters);
 
 
         textures_type textures;
