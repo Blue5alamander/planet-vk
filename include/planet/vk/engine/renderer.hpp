@@ -278,6 +278,24 @@ namespace planet::vk::engine {
     };
 
 
+    /// ## Combine shader with UBOs for `renderer::render`
+    template<typename Shader, std::size_t N>
+    inline auto with_ubos(
+            Shader &s,
+            std::span<ubo::coherent_details const *const, N> const u) {
+        return std::pair<
+                Shader &,
+                std::span<planet::vk::ubo::coherent_details const *const, N>>{
+                s, u};
+    }
+    template<typename Shader, std::size_t N>
+    inline auto with_ubos(
+            Shader &s,
+            std::array<ubo::coherent_details const *const, N> const &u) {
+        return with_ubos(s, std::span{u});
+    }
+
+
     /// ## Create a graphics pipeline
     struct graphics_pipeline_parameters {
         engine::app &app;
