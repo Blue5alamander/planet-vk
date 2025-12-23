@@ -246,7 +246,7 @@ namespace planet::vk::engine {
                         Shader &,
                         std::span<
                                 planet::vk::ubo::coherent_details const *const,
-                                N>> &&p) {
+                                N>> const &&p) {
             p.first.render(bind(p.first.pipeline, p.second));
         }
         template<typename Shader>
