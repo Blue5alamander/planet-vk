@@ -13,7 +13,7 @@ namespace planet::vk::ubo {
     /// ## Memory Coherent UBOs
     /**
      * This is for UBOs where the data to be uploaded to the GPU can simply be
-     * copied into a memory that is set to be host coherent. GPU memory is
+     * copied into memory that is set to be host coherent. GPU memory is
      * allocated on construction for each frame in flight, and data is copied to
      * the GPU for each frame its needed.
      */
