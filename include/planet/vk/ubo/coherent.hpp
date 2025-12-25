@@ -89,8 +89,8 @@ namespace planet::vk::ubo {
     }
 
     template<typename Struct, std::size_t M>
-    inline void
-            do_copy_to_gpu_memory(std::span<Struct const, M> const s, std::byte *d) {
+    inline void do_copy_to_gpu_memory(
+            std::span<Struct const, M> const s, std::byte *d) {
         std::memcpy(d, s.data(), s.size_bytes());
     }
     template<typename Struct, std::size_t M>
