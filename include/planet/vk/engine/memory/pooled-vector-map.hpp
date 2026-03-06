@@ -22,9 +22,12 @@ namespace planet::vk::engine::memory {
      * cleared. That way textures that are used in most frames will end up
      * requiring few, if any, allocations.
      */
-    template<typename K, typename V>
+    template<
+            typename K,
+            typename V,
+            template<typename, typename, typename...> typename Map = std::map>
     class pooled_vector_map {
-        std::map<K, std::vector<V>> storage;
+        Map<K, std::vector<V>> storage;
 
 
       public:
@@ -39,8 +42,7 @@ namespace planet::vk::engine::memory {
 
 
         /// #### Iteration over non-empty vectors
-        felspar::coro::generator<iteration_value_type>
-                non_empty_vectors()
+        felspar::coro::generator<iteration_value_type> non_empty_vectors()
         /**
          * Returns a generator that yields references to key-value pairs where
          * the vector is not empty. Empty vectors in the map are skipped.
