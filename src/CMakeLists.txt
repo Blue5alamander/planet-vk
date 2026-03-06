@@ -44,6 +44,14 @@ add_library(planet-vk-engine
         sprite.pipeline.cpp
         textured.pipeline.cpp
     )
+target_link_libraries(planet-vk-engine planet-vk-sdl)
+install(TARGETS planet-vk-engine LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+
+add_test_run(check planet-vk-engine TESTS
+        pooled-vector-map.tests.cpp
+    )
+
+
 vk_shader(planet-vk-engine mesh.frag)
 vk_shader(planet-vk-engine mesh.screen.vert)
 vk_shader(planet-vk-engine mesh.world.vert)
@@ -59,10 +67,6 @@ vk_shader(planet-vk-engine textured.frag)
 vk_shader(planet-vk-engine textured.glow.frag)
 vk_shader(planet-vk-engine texture.screen.vert)
 vk_shader(planet-vk-engine texture.world.vert)
-target_link_libraries(planet-vk-engine planet-vk-sdl)
-install(TARGETS planet-vk-engine LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
-
-
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.frag.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/mesh.screen.vert.spirv
