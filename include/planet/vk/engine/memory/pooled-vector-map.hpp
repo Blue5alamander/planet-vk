@@ -1,7 +1,9 @@
 #pragma once
 
 
+#include <felspar/coro/generator.hpp>
 #include <map>
+#include <utility>
 #include <vector>
 
 
@@ -26,16 +28,27 @@ namespace planet::vk::engine::memory {
 
 
       public:
+        using iteration_value_type = std::pair<const K &, std::vector<V> &>;
+
+
         /// ### Queries
         bool empty() const noexcept { return storage.empty(); }
         bool contains(K const &key) const noexcept {
             return storage.find(key) != storage.end();
         }
 
-        std::vector<V> const &get(K const &key) const noexcept {
-            static std::vector<V> const empty;
-            auto const it = storage.find(key);
-            return it != storage.end() ? it->second : empty;
+
+        /// #### Iteration over non-empty vectors
+        felspar::coro::generator<iteration_value_type>
+                non_empty_vectors()
+        /**
+         * Returns a generator that yields references to key-value pairs where
+         * the vector is not empty. Empty vectors in the map are skipped.
+         */
+        {
+            for (auto &[key, vec] : storage) {
+                if (not vec.empty()) { co_yield {key, vec}; }
+            }
         }
 
 
