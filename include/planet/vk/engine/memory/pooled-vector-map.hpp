@@ -36,6 +36,13 @@ namespace planet::vk::engine::memory {
         bool contains(key_type const &key) const noexcept {
             return storage.find(key) != storage.end();
         }
+        std::size_t non_empty_count() const noexcept {
+            std::size_t count = 0;
+            for (auto const &[key, vec] : storage) {
+                if (not vec.empty()) { ++count; }
+            }
+            return count;
+        }
 
 
         /// #### Iteration over non-empty vectors

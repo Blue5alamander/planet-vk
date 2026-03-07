@@ -20,6 +20,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(1, 2.0f);
+                check(m.non_empty_count()) == 1u;
                 auto gen = m.non_empty_vectors();
                 auto [key, vec] = *gen.next();
                 check(key) == 1;
@@ -33,6 +34,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(1, 2.0f);
+                check(m.non_empty_count()) == 1u;
                 auto gen = m.non_empty_vectors();
                 auto [key, vec] = *gen.next();
                 check(key) == 1;
@@ -46,6 +48,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(1, 2.0f);
+                check(m.non_empty_count()) == 1u;
                 auto gen = m.non_empty_vectors();
                 auto [key, vec] = *gen.next();
                 check(key) == 1;
@@ -59,6 +62,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(1, 2.0f);
+                check(m.non_empty_count()) == 1u;
                 auto gen = m.non_empty_vectors();
                 auto [key, vec] = *gen.next();
                 check(key) == 1;
@@ -76,7 +80,9 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(1, 2.0f);
+                check(m.non_empty_count()) == 1u;
                 m.clear();
+                check(m.non_empty_count()) == 0u;
                 // First clear - vectors emptied, keys remain
                 auto gen = m.non_empty_vectors();
                 check(gen.next()).is_falsey(); // No non-empty vectors to iterate
@@ -88,7 +94,9 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(1, 2.0f);
+                check(m.non_empty_count()) == 1u;
                 m.clear();
+                check(m.non_empty_count()) == 0u;
                 // First clear - vectors emptied, keys remain
                 auto gen = m.non_empty_vectors();
                 check(gen.next()).is_falsey(); // No non-empty vectors to iterate
@@ -100,7 +108,9 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(1, 2.0f);
+                check(m.non_empty_count()) == 1u;
                 m.clear();
+                check(m.non_empty_count()) == 0u;
                 // First clear - vectors emptied, keys remain
                 auto gen = m.non_empty_vectors();
                 check(gen.next()).is_falsey(); // No non-empty vectors to iterate
@@ -112,7 +122,9 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(1, 2.0f);
+                check(m.non_empty_count()) == 1u;
                 m.clear();
+                check(m.non_empty_count()) == 0u;
                 // First clear - vectors emptied, keys remain
                 auto gen = m.non_empty_vectors();
                 check(gen.next()).is_falsey(); // No non-empty vectors to iterate
@@ -127,9 +139,12 @@ namespace {
                         std::map<int, std::vector<float>>>
                         m;
                 m.push_back(1, 1.0f);
+                check(m.non_empty_count()) == 1u;
                 m.clear(); // First clear - vector emptied, key remains
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == true;
                 m.clear(); // Second clear - empty key removed
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == false;
             },
             [](auto check) {
@@ -137,9 +152,12 @@ namespace {
                         int, felspar::memory::small_vector<float>>>
                         m;
                 m.push_back(1, 1.0f);
+                check(m.non_empty_count()) == 1u;
                 m.clear(); // First clear - vector emptied, key remains
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == true;
                 m.clear(); // Second clear - empty key removed
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == false;
             },
             [](auto check) {
@@ -147,9 +165,12 @@ namespace {
                         std::unordered_map<int, std::vector<float>>>
                         m;
                 m.push_back(1, 1.0f);
+                check(m.non_empty_count()) == 1u;
                 m.clear(); // First clear - vector emptied, key remains
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == true;
                 m.clear(); // Second clear - empty key removed
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == false;
             },
             [](auto check) {
@@ -157,9 +178,12 @@ namespace {
                         std::map<int, felspar::memory::small_vector<float>>>
                         m;
                 m.push_back(1, 1.0f);
+                check(m.non_empty_count()) == 1u;
                 m.clear(); // First clear - vector emptied, key remains
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == true;
                 m.clear(); // Second clear - empty key removed
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == false;
             });
 
@@ -172,6 +196,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
                 std::size_t count = 0;
                 for (auto [key, vec] : m.non_empty_vectors()) {
                     check(vec.size()) == 1u;
@@ -191,6 +216,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
                 std::size_t count = 0;
                 for (auto [key, vec] : m.non_empty_vectors()) {
                     check(vec.size()) == 1u;
@@ -210,6 +236,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
                 std::size_t count = 0;
                 for (auto [key, vec] : m.non_empty_vectors()) {
                     check(vec.size()) == 1u;
@@ -229,6 +256,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
                 std::size_t count = 0;
                 for (auto [key, vec] : m.non_empty_vectors()) {
                     check(vec.size()) == 1u;
@@ -250,28 +278,36 @@ namespace {
                 planet::vk::engine::memory::pooled_vector_map<
                         std::map<int, std::vector<float>>>
                         m;
+                check(m.non_empty_count()) == 0u;
                 m.clear();
+                check(m.non_empty_count()) == 0u;
                 check(m.empty()) == true;
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<std::unordered_map<
                         int, felspar::memory::small_vector<float>>>
                         m;
+                check(m.non_empty_count()) == 0u;
                 m.clear();
+                check(m.non_empty_count()) == 0u;
                 check(m.empty()) == true;
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
                         std::unordered_map<int, std::vector<float>>>
                         m;
+                check(m.non_empty_count()) == 0u;
                 m.clear();
+                check(m.non_empty_count()) == 0u;
                 check(m.empty()) == true;
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
                         std::map<int, felspar::memory::small_vector<float>>>
                         m;
+                check(m.non_empty_count()) == 0u;
                 m.clear();
+                check(m.non_empty_count()) == 0u;
                 check(m.empty()) == true;
             });
 
@@ -285,6 +321,7 @@ namespace {
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
                 m.push_back(3, 3.0f);
+                check(m.non_empty_count()) == 3u;
 
                 std::size_t count = 0;
                 float sum = 0.0f;
@@ -306,6 +343,7 @@ namespace {
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
                 m.push_back(3, 3.0f);
+                check(m.non_empty_count()) == 3u;
 
                 std::size_t count = 0;
                 float sum = 0.0f;
@@ -327,6 +365,7 @@ namespace {
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
                 m.push_back(3, 3.0f);
+                check(m.non_empty_count()) == 3u;
 
                 std::size_t count = 0;
                 float sum = 0.0f;
@@ -348,6 +387,7 @@ namespace {
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
                 m.push_back(3, 3.0f);
+                check(m.non_empty_count()) == 3u;
 
                 std::size_t count = 0;
                 float sum = 0.0f;
@@ -373,13 +413,16 @@ namespace {
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
                 m.push_back(3, 3.0f);
+                check(m.non_empty_count()) == 3u;
                 m.clear(); // First clear - vectors emptied, keys remain
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == true;
                 check(m.contains(2)) == true;
                 check(m.contains(3)) == true;
                 // Push new values into different keys
                 m.push_back(4, 4.0f);
                 m.push_back(5, 5.0f);
+                check(m.non_empty_count()) == 2u;
 
                 std::size_t count = 0;
                 int key_sum = 0;
@@ -398,13 +441,16 @@ namespace {
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
                 m.push_back(3, 3.0f);
+                check(m.non_empty_count()) == 3u;
                 m.clear(); // First clear - vectors emptied, keys remain
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == true;
                 check(m.contains(2)) == true;
                 check(m.contains(3)) == true;
                 // Push new values into different keys
                 m.push_back(4, 4.0f);
                 m.push_back(5, 5.0f);
+                check(m.non_empty_count()) == 2u;
 
                 std::size_t count = 0;
                 int key_sum = 0;
@@ -423,13 +469,16 @@ namespace {
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
                 m.push_back(3, 3.0f);
+                check(m.non_empty_count()) == 3u;
                 m.clear(); // First clear - vectors emptied, keys remain
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == true;
                 check(m.contains(2)) == true;
                 check(m.contains(3)) == true;
                 // Push new values into different keys
                 m.push_back(4, 4.0f);
                 m.push_back(5, 5.0f);
+                check(m.non_empty_count()) == 2u;
 
                 std::size_t count = 0;
                 int key_sum = 0;
@@ -448,13 +497,16 @@ namespace {
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
                 m.push_back(3, 3.0f);
+                check(m.non_empty_count()) == 3u;
                 m.clear(); // First clear - vectors emptied, keys remain
+                check(m.non_empty_count()) == 0u;
                 check(m.contains(1)) == true;
                 check(m.contains(2)) == true;
                 check(m.contains(3)) == true;
                 // Push new values into different keys
                 m.push_back(4, 4.0f);
                 m.push_back(5, 5.0f);
+                check(m.non_empty_count()) == 2u;
 
                 std::size_t count = 0;
                 int key_sum = 0;
@@ -474,6 +526,7 @@ namespace {
                 planet::vk::engine::memory::pooled_vector_map<
                         std::map<int, std::vector<float>>>
                         m;
+                check(m.non_empty_count()) == 0u;
 
                 bool yielded = false;
                 for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
@@ -485,6 +538,7 @@ namespace {
                 planet::vk::engine::memory::pooled_vector_map<std::unordered_map<
                         int, felspar::memory::small_vector<float>>>
                         m;
+                check(m.non_empty_count()) == 0u;
 
                 bool yielded = false;
                 for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
@@ -496,6 +550,7 @@ namespace {
                 planet::vk::engine::memory::pooled_vector_map<
                         std::unordered_map<int, std::vector<float>>>
                         m;
+                check(m.non_empty_count()) == 0u;
 
                 bool yielded = false;
                 for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
@@ -507,6 +562,7 @@ namespace {
                 planet::vk::engine::memory::pooled_vector_map<
                         std::map<int, felspar::memory::small_vector<float>>>
                         m;
+                check(m.non_empty_count()) == 0u;
 
                 bool yielded = false;
                 for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
@@ -524,8 +580,11 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
                 m.clear(); // First clear - vectors emptied, keys remain
+                check(m.non_empty_count()) == 0u;
                 m.clear(); // Second clear - empty keys removed
+                check(m.non_empty_count()) == 0u;
 
                 bool yielded = false;
                 for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
@@ -539,8 +598,11 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
                 m.clear(); // First clear - vectors emptied, keys remain
+                check(m.non_empty_count()) == 0u;
                 m.clear(); // Second clear - empty keys removed
+                check(m.non_empty_count()) == 0u;
 
                 bool yielded = false;
                 for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
@@ -554,8 +616,11 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
                 m.clear(); // First clear - vectors emptied, keys remain
+                check(m.non_empty_count()) == 0u;
                 m.clear(); // Second clear - empty keys removed
+                check(m.non_empty_count()) == 0u;
 
                 bool yielded = false;
                 for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
@@ -569,8 +634,11 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
                 m.clear(); // First clear - vectors emptied, keys remain
+                check(m.non_empty_count()) == 0u;
                 m.clear(); // Second clear - empty keys removed
+                check(m.non_empty_count()) == 0u;
 
                 bool yielded = false;
                 for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
@@ -588,6 +656,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
 
                 auto gen = m.non_empty_vectors();
                 auto [key1, vec1] = *gen.next();
@@ -607,6 +676,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
 
                 auto gen = m.non_empty_vectors();
                 std::map<int, float> results;
@@ -624,6 +694,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
 
                 auto gen = m.non_empty_vectors();
                 std::map<int, float> results;
@@ -641,6 +712,7 @@ namespace {
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
+                check(m.non_empty_count()) == 2u;
 
                 auto gen = m.non_empty_vectors();
                 auto [key1, vec1] = *gen.next();
@@ -666,6 +738,7 @@ namespace {
                 m.push_back(1, 1.5f);
                 m.push_back(1, 2.0f);
                 m.push_back(2, 3.0f);
+                check(m.non_empty_count()) == 2u;
 
                 std::size_t count = 0;
                 for (auto [key, vec] : m.non_empty_vectors()) {
@@ -687,6 +760,7 @@ namespace {
                 m.push_back(1, 1.5f);
                 m.push_back(1, 2.0f);
                 m.push_back(2, 3.0f);
+                check(m.non_empty_count()) == 2u;
 
                 std::size_t count = 0;
                 for (auto [key, vec] : m.non_empty_vectors()) {
@@ -708,6 +782,7 @@ namespace {
                 m.push_back(1, 1.5f);
                 m.push_back(1, 2.0f);
                 m.push_back(2, 3.0f);
+                check(m.non_empty_count()) == 2u;
 
                 std::size_t count = 0;
                 for (auto [key, vec] : m.non_empty_vectors()) {
@@ -729,6 +804,7 @@ namespace {
                 m.push_back(1, 1.5f);
                 m.push_back(1, 2.0f);
                 m.push_back(2, 3.0f);
+                check(m.non_empty_count()) == 2u;
 
                 std::size_t count = 0;
                 for (auto [key, vec] : m.non_empty_vectors()) {
