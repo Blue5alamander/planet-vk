@@ -21,28 +21,19 @@ namespace planet::vk::engine::memory {
      * longer relevant. Any key whose vector has data in gets that vector
      * cleared. That way textures that are used in most frames will end up
      * requiring few, if any, allocations.
-     *
-     * TODO How can we use this with `felspar::memory::small_vector`? Maybe `V`
-     * should be the underlying vector type and not the value type for the
-     * vector? If we're doing that, maybe there should be only one type and
-     * that's the `map` type and we get the other types from that?
      */
-    template<
-            typename K,
-            typename V,
-            template<typename, typename...> typename Vector = std::vector,
-            template<typename, typename, typename...> typename Map = std::map>
+    template<typename Map>
     class pooled_vector_map {
-        Map<K, Vector<V>> storage;
-
-
       public:
-        using iteration_value_type = std::pair<const K &, Vector<V> &>;
+        using key_type = typename Map::key_type;
+        using vector_type = typename Map::mapped_type;
+        using value_type = typename vector_type::value_type;
+        using iteration_value_type = std::pair<key_type const &, vector_type &>;
 
 
         /// ### Queries
         bool empty() const noexcept { return storage.empty(); }
-        bool contains(K const &key) const noexcept {
+        bool contains(key_type const &key) const noexcept {
             return storage.find(key) != storage.end();
         }
 
@@ -61,12 +52,12 @@ namespace planet::vk::engine::memory {
 
 
         /// ### Mutation
-        void push_back(K const &key, V value) {
+        void push_back(key_type const &key, value_type value) {
             storage[key].push_back(std::move(value));
         }
 
         template<typename... Args>
-        void emplace_back(K const &key, Args... args) {
+        void emplace_back(key_type const &key, Args... args) {
             storage[key].emplace_back(std::forward<Args>(args)...);
         }
 
@@ -82,6 +73,10 @@ namespace planet::vk::engine::memory {
                 }
             }
         }
+
+
+      private:
+        Map storage;
     };
 
 
