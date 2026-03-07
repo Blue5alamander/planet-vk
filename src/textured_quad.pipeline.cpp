@@ -1,12 +1,12 @@
 #include <planet/functional.hpp>
 #include <planet/vk/engine/renderer.hpp>
-#include <planet/vk/engine/pipeline/textured.hpp>
+#include <planet/vk/engine/pipeline/textured_quad.hpp>
 
 
 /// ## `planet::vk::engine::pipeline::textured`
 
 
-planet::vk::engine::pipeline::textured::textured(parameters const p)
+planet::vk::engine::pipeline::textured_quad::textured_quad(parameters const p)
 : id{p.name, p.use_name_suffix},
   textures{name(), p.renderer.app.device, p.textures_per_frame},
   pipeline{planet::vk::engine::create_graphics_pipeline(
@@ -25,7 +25,7 @@ planet::vk::engine::pipeline::textured::textured(parameters const p)
                            textures.ubo.layout.get()}}})} {}
 
 
-void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
+void planet::vk::engine::pipeline::textured_quad::render(render_parameters rp) {
     if (not textures.bind(
                 rp.renderer.per_frame_memory, rp.current_frame, rp.cb)) {
         return;
@@ -63,7 +63,7 @@ void planet::vk::engine::pipeline::textured::render(render_parameters rp) {
 }
 
 
-void planet::vk::engine::pipeline::textured::draw(
+void planet::vk::engine::pipeline::textured_quad::draw(
         vk::sub_texture const &texture,
         affine::rectangle2d const &pos,
         planet::colour const &colour,

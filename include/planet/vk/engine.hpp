@@ -11,6 +11,6 @@
 #include <planet/vk/engine/renderer.hpp>
 #include <planet/vk/engine/pipeline/mesh.hpp>
 #include <planet/vk/engine/pipeline/sprite.hpp>
-#include <planet/vk/engine/pipeline/textured.hpp>
+#include <planet/vk/engine/pipeline/textured_quad.hpp>
 #include <planet/vk/engine/textured.draw.hpp>
 #include <planet/vk/engine/ui.hpp>

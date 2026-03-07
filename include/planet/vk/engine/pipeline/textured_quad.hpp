@@ -9,21 +9,21 @@
 namespace planet::vk::engine::pipeline {
 
 
-    /// ## Textured triangle pipeline
+    /// ## Textured quad pipeline
     /**
      * The current implementation assumes that only quads are being drawn. To
      * fix this it will need to save how many vertices/indices are drawn per
      * texture so it can dispatch the correct number per draw call after binding
      * the texture.
      */
-    class textured final : private telemetry::id {
+    class textured_quad final : private telemetry::id {
       public:
         using textures_type = draw_basic_textures<>;
 
 
         struct parameters {
             static std::string_view constexpr default_name =
-                    "planet_vk_engine_pipeline_textured";
+                    "planet_vk_engine_pipeline_textured_quad";
 
             std::string_view name = default_name;
             id::suffix use_name_suffix =
@@ -35,7 +35,7 @@ namespace planet::vk::engine::pipeline {
                     .spirv_filename = "planet-vk-engine/textured.frag.spirv"};
             std::uint32_t const textures_per_frame = 256;
         };
-        textured(parameters);
+        textured_quad(parameters);
 
 
         textures_type textures;

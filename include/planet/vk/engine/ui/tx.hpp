@@ -3,7 +3,7 @@
 
 #include <planet/ui/reflowable.hpp>
 #include <planet/vk/colour.hpp>
-#include <planet/vk/engine/pipeline/textured.hpp>
+#include <planet/vk/engine/pipeline/textured_quad.hpp>
 #include <planet/vk/texture.hpp>
 #include <planet/vk/engine/forward.hpp>
 
@@ -60,21 +60,21 @@ namespace planet::vk::engine::ui {
 
 
     template<>
-    inline void tx<pipeline::textured, vk::texture>::draw() {
+    inline void tx<pipeline::textured_quad, vk::texture>::draw() {
         if (texture) { pl.draw(texture, position(), colour); }
     }
     template<>
-    inline void tx<pipeline::textured, vk::texture *>::draw() {
+    inline void tx<pipeline::textured_quad, vk::texture *>::draw() {
         if (texture and *texture) { pl.draw(*texture, position(), colour); }
     }
     template<>
-    inline void tx<pipeline::textured, sub_texture>::draw() {
+    inline void tx<pipeline::textured_quad, sub_texture>::draw() {
         if (texture.first) { pl.draw(texture, position(), colour); }
     }
 
 
     template<>
-    inline auto tx<pipeline::textured, vk::texture>::do_reflow(
+    inline auto tx<pipeline::textured_quad, vk::texture>::do_reflow(
             reflow_parameters const &, constrained_type const &c)
             -> constrained_type {
         if (texture) {
@@ -86,7 +86,7 @@ namespace planet::vk::engine::ui {
         }
     }
     template<>
-    inline auto tx<pipeline::textured, vk::texture *>::do_reflow(
+    inline auto tx<pipeline::textured_quad, vk::texture *>::do_reflow(
             reflow_parameters const &, constrained_type const &c)
             -> constrained_type {
         if (texture and *texture) {
@@ -97,7 +97,7 @@ namespace planet::vk::engine::ui {
         }
     }
     template<>
-    inline auto tx<pipeline::textured, sub_texture>::do_reflow(
+    inline auto tx<pipeline::textured_quad, sub_texture>::do_reflow(
             reflow_parameters const &, constrained_type const &c)
             -> constrained_type {
         if (texture.first) {

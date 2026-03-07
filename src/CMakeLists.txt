@@ -42,7 +42,7 @@ add_library(planet-vk-engine
         mesh.pipeline.cpp
         renderer.engine.cpp
         sprite.pipeline.cpp
-        textured.pipeline.cpp
+        textured_quad.pipeline.cpp
     )
 target_link_libraries(planet-vk-engine planet-vk-sdl)
 install(TARGETS planet-vk-engine LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)

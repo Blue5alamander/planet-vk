@@ -28,7 +28,7 @@ namespace planet::vk::engine {
         class mesh;
         class postprocess;
         class sprite;
-        class textured;
+        class textured_quad;
 
 
     }
@@ -41,7 +41,7 @@ namespace planet::vk::engine {
         struct autoupdater;
 
         template<
-                typename Pipeline = pipeline::textured,
+                typename Pipeline = pipeline::textured_quad,
                 typename Texture = vk::texture>
         struct tx;
 
