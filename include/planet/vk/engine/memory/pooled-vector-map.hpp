@@ -21,17 +21,23 @@ namespace planet::vk::engine::memory {
      * longer relevant. Any key whose vector has data in gets that vector
      * cleared. That way textures that are used in most frames will end up
      * requiring few, if any, allocations.
+     *
+     * TODO How can we use this with `felspar::memory::small_vector`? Maybe `V`
+     * should be the underlying vector type and not the value type for the
+     * vector? If we're doing that, maybe there should be only one type and
+     * that's the `map` type and we get the other types from that?
      */
     template<
             typename K,
             typename V,
+            template<typename, typename...> typename Vector = std::vector,
             template<typename, typename, typename...> typename Map = std::map>
     class pooled_vector_map {
-        Map<K, std::vector<V>> storage;
+        Map<K, Vector<V>> storage;
 
 
       public:
-        using iteration_value_type = std::pair<const K &, std::vector<V> &>;
+        using iteration_value_type = std::pair<const K &, Vector<V> &>;
 
 
         /// ### Queries

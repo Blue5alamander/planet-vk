@@ -2,6 +2,7 @@
 
 #include <felspar/test.hpp>
 
+#include <deque>
 #include <unordered_map>
 
 
@@ -26,7 +27,33 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.emplace_back(1, 2.0f);
+                auto gen = m.non_empty_vectors();
+                auto [key, vec] = *gen.next();
+                check(key) == 1;
+                check(vec.size()) == 2u;
+                check(vec[0]) == 1.0f;
+                check(vec[1]) == 2.0f;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.emplace_back(1, 2.0f);
+                auto gen = m.non_empty_vectors();
+                auto [key, vec] = *gen.next();
+                check(key) == 1;
+                check(vec.size()) == 2u;
+                check(vec[0]) == 1.0f;
+                check(vec[1]) == 2.0f;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(1, 2.0f);
@@ -53,7 +80,31 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(1, 2.0f);
+                m.clear();
+                // First clear - vectors emptied, keys remain
+                auto gen = m.non_empty_vectors();
+                check(gen.next()).is_falsey(); // No non-empty vectors to iterate
+                check(m.contains(1)) == true;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(1, 2.0f);
+                m.clear();
+                // First clear - vectors emptied, keys remain
+                auto gen = m.non_empty_vectors();
+                check(gen.next()).is_falsey(); // No non-empty vectors to iterate
+                check(m.contains(1)) == true;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(1, 2.0f);
@@ -77,7 +128,27 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.clear(); // First clear - vector emptied, key remains
+                check(m.contains(1)) == true;
+                m.clear(); // Second clear - empty key removed
+                check(m.contains(1)) == false;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.clear(); // First clear - vector emptied, key remains
+                check(m.contains(1)) == true;
+                m.clear(); // Second clear - empty key removed
+                check(m.contains(1)) == false;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
                 m.push_back(1, 1.0f);
                 m.clear(); // First clear - vector emptied, key remains
@@ -108,7 +179,45 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.emplace_back(2, 2.0f);
+                std::size_t count = 0;
+                for (auto [key, vec] : m.non_empty_vectors()) {
+                    check(vec.size()) == 1u;
+                    if (key == 1) {
+                        check(vec[0]) == 1.0f;
+                    } else {
+                        check(key) == 2;
+                        check(vec[0]) == 2.0f;
+                    }
+                    ++count;
+                }
+                check(count) == 2u;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.emplace_back(2, 2.0f);
+                std::size_t count = 0;
+                for (auto [key, vec] : m.non_empty_vectors()) {
+                    check(vec.size()) == 1u;
+                    if (key == 1) {
+                        check(vec[0]) == 1.0f;
+                    } else {
+                        check(key) == 2;
+                        check(vec[0]) == 2.0f;
+                    }
+                    ++count;
+                }
+                check(count) == 2u;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
                 m.push_back(1, 1.0f);
                 m.emplace_back(2, 2.0f);
@@ -136,7 +245,21 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+                m.clear();
+                check(m.empty()) == true;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.clear();
+                check(m.empty()) == true;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
                 m.clear();
                 check(m.empty()) == true;
@@ -166,7 +289,49 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(2, 2.0f);
+                m.push_back(3, 3.0f);
+
+                std::size_t count = 0;
+                float sum = 0.0f;
+                int key_sum = 0;
+                for (auto [key, vec] : m.non_empty_vectors()) {
+                    check(vec.size()) == 1u;
+                    sum += vec[0];
+                    key_sum += key;
+                    ++count;
+                }
+                check(count) == 3u;
+                check(sum) == 6.0f;
+                check(key_sum) == 6;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(2, 2.0f);
+                m.push_back(3, 3.0f);
+
+                std::size_t count = 0;
+                float sum = 0.0f;
+                int key_sum = 0;
+                for (auto [key, vec] : m.non_empty_vectors()) {
+                    check(vec.size()) == 1u;
+                    sum += vec[0];
+                    key_sum += key;
+                    ++count;
+                }
+                check(count) == 3u;
+                check(sum) == 6.0f;
+                check(key_sum) == 6;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
@@ -214,7 +379,57 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(2, 2.0f);
+                m.push_back(3, 3.0f);
+                m.clear(); // First clear - vectors emptied, keys remain
+                check(m.contains(1)) == true;
+                check(m.contains(2)) == true;
+                check(m.contains(3)) == true;
+                // Push new values into different keys
+                m.push_back(4, 4.0f);
+                m.push_back(5, 5.0f);
+
+                std::size_t count = 0;
+                int key_sum = 0;
+                for (auto [key, vec] : m.non_empty_vectors()) {
+                    check(vec.size()) == 1u;
+                    key_sum += key;
+                    ++count;
+                }
+                check(count) == 2u; // Only keys 4 and 5 should be iterated
+                check(key_sum) == 9; // 4 + 5
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(2, 2.0f);
+                m.push_back(3, 3.0f);
+                m.clear(); // First clear - vectors emptied, keys remain
+                check(m.contains(1)) == true;
+                check(m.contains(2)) == true;
+                check(m.contains(3)) == true;
+                // Push new values into different keys
+                m.push_back(4, 4.0f);
+                m.push_back(5, 5.0f);
+
+                std::size_t count = 0;
+                int key_sum = 0;
+                for (auto [key, vec] : m.non_empty_vectors()) {
+                    check(vec.size()) == 1u;
+                    key_sum += key;
+                    ++count;
+                }
+                check(count) == 2u; // Only keys 4 and 5 should be iterated
+                check(key_sum) == 9; // 4 + 5
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
@@ -252,7 +467,29 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+
+                bool yielded = false;
+                for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
+                    yielded = true;
+                }
+                check(yielded) == false;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+
+                bool yielded = false;
+                for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
+                    yielded = true;
+                }
+                check(yielded) == false;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
 
                 bool yielded = false;
@@ -280,7 +517,37 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(2, 2.0f);
+                m.clear(); // First clear - vectors emptied, keys remain
+                m.clear(); // Second clear - empty keys removed
+
+                bool yielded = false;
+                for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
+                    yielded = true;
+                }
+                check(yielded) == false;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(2, 2.0f);
+                m.clear(); // First clear - vectors emptied, keys remain
+                m.clear(); // Second clear - empty keys removed
+
+                bool yielded = false;
+                for ([[maybe_unused]] auto [key, vec] : m.non_empty_vectors()) {
+                    yielded = true;
+                }
+                check(yielded) == false;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
@@ -316,7 +583,7 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(2, 2.0f);
@@ -330,6 +597,42 @@ namespace {
                 check(results.size()) == 2u;
                 check(results[1]) == 1.0f;
                 check(results[2]) == 2.0f;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(2, 2.0f);
+
+                auto gen = m.non_empty_vectors();
+                std::map<int, float> results;
+                for (auto [key, vec] : gen) {
+                    check(vec.size()) == 1u;
+                    results[key] = vec[0];
+                }
+                check(results.size()) == 2u;
+                check(results[1]) == 1.0f;
+                check(results[2]) == 2.0f;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(2, 2.0f);
+
+                auto gen = m.non_empty_vectors();
+                auto [key1, vec1] = *gen.next();
+                check(key1) == 1;
+                check(vec1[0]) == 1.0f;
+
+                auto [key2, vec2] = *gen.next();
+                check(key2) == 2;
+                check(vec2.size()) == 1u;
+                check(vec2[0]) == 2.0f;
+
+                check(gen.next()).is_falsey(); // No more values
             });
 
 
@@ -356,7 +659,49 @@ namespace {
             },
             [](auto check) {
                 planet::vk::engine::memory::pooled_vector_map<
-                        int, float, std::unordered_map>
+                        int, float, std::deque, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(1, 1.5f);
+                m.push_back(1, 2.0f);
+                m.push_back(2, 3.0f);
+
+                std::size_t count = 0;
+                for (auto [key, vec] : m.non_empty_vectors()) {
+                    ++count;
+                    if (key == 1) {
+                        check(vec.size()) == 3u;
+                    } else {
+                        check(key) == 2;
+                        check(vec.size()) == 1u;
+                    }
+                }
+                check(count) == 2u;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::vector, std::unordered_map>
+                        m;
+                m.push_back(1, 1.0f);
+                m.push_back(1, 1.5f);
+                m.push_back(1, 2.0f);
+                m.push_back(2, 3.0f);
+
+                std::size_t count = 0;
+                for (auto [key, vec] : m.non_empty_vectors()) {
+                    ++count;
+                    if (key == 1) {
+                        check(vec.size()) == 3u;
+                    } else {
+                        check(key) == 2;
+                        check(vec.size()) == 1u;
+                    }
+                }
+                check(count) == 2u;
+            },
+            [](auto check) {
+                planet::vk::engine::memory::pooled_vector_map<
+                        int, float, std::deque, std::map>
                         m;
                 m.push_back(1, 1.0f);
                 m.push_back(1, 1.5f);
