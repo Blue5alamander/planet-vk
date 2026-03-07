@@ -3,64 +3,27 @@
 #include <planet/vk/engine/pipeline/textured_quad.hpp>
 
 
-/// ## `planet::vk::engine::pipeline::textured`
+/// ## `planet::vk::engine::pipeline::textured_quad`
 
 
 planet::vk::engine::pipeline::textured_quad::textured_quad(parameters const p)
 : id{p.name, p.use_name_suffix},
-  textures{name(), p.renderer.app.device, p.textures_per_frame},
+  textures_ubo{
+          std::string{name()} + "__textures_ubo", p.renderer.app.device,
+          p.textures_per_frame},
   pipeline{planet::vk::engine::create_graphics_pipeline(
           {.app = p.renderer.app,
            .renderer = p.renderer,
            .vertex_shader = p.vertex_shader,
            .fragment_shader = p.fragment_shader,
-           .binding_descriptions =
-                   vertex::binding_description<textures_type::vertex_type>(),
+           .binding_descriptions = vertex::binding_description<vertex_type>(),
            .attribute_descriptions =
-                   vertex::attribute_description<textures_type::vertex_type>(),
+                   vertex::attribute_description<vertex_type>(),
            .pipeline_layout = pipeline_layout{
                    p.renderer.app.device,
                    std::array{
                            p.renderer.coordinates_ubo_layout().get(),
-                           textures.ubo.layout.get()}}})} {}
-
-
-void planet::vk::engine::pipeline::textured_quad::render(render_parameters rp) {
-    if (not textures.bind(
-                rp.renderer.per_frame_memory, rp.current_frame, rp.cb)) {
-        return;
-    }
-    planet::by_index(
-            textures.descriptors, [&](auto const index, auto const &tx) {
-                VkWriteDescriptorSet wds{};
-                wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                wds.dstSet = textures.ubo.sets[rp.current_frame][index];
-                wds.dstBinding = 0;
-                wds.dstArrayElement = 0;
-                wds.descriptorCount = 1;
-                wds.pImageInfo = &tx;
-                vkUpdateDescriptorSets(
-                        rp.renderer.app.device.get(), 1, &wds, 0, nullptr);
-
-                vkCmdBindDescriptorSets(
-                        rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                        pipeline.layout.get(), 1, 1,
-                        &textures.ubo.sets[rp.current_frame][index], 0,
-                        nullptr);
-
-                static constexpr std::uint32_t index_count = 6;
-                static constexpr std::uint32_t instance_count = 1;
-                static constexpr std::int32_t vertex_offset = 0;
-                static constexpr std::uint32_t first_instance = 0;
-                vkCmdDrawIndexed(
-                        rp.cb.get(), index_count, instance_count,
-                        index * index_count, vertex_offset, first_instance);
-            });
-
-    // Clear out data from this frame
-    textures.clear();
-}
+                           textures_ubo.layout.get()}}})} {}
 
 
 void planet::vk::engine::pipeline::textured_quad::draw(
@@ -68,38 +31,124 @@ void planet::vk::engine::pipeline::textured_quad::draw(
         affine::rectangle2d const &pos,
         planet::colour const &colour,
         float const z) {
-    std::size_t const quad_index = textures.vertices.size();
+    commands.push_back(
+            &texture.first,
+            quad_draw_info{
+                    .position = pos,
+                    .uv = texture.second,
+                    .colour = colour,
+                    .z = z});
+}
 
-    textures.vertices.push_back(
-            {planet::affine::point3d{pos.bottom_right(), z},
-             colour,
-             {texture.second.bottom_right().x(),
-              texture.second.bottom_right().y()}});
-    textures.vertices.push_back(
-            {planet::affine::point3d{
-                     pos.bottom_right().x(), pos.top_left.y(), z},
-             colour,
-             {texture.second.bottom_right().x(), texture.second.top_left.y()}});
-    textures.vertices.push_back(
-            {planet::affine::point3d{pos.top_left, z},
-             colour,
-             {texture.second.top_left.x(), texture.second.top_left.y()}});
-    textures.vertices.push_back(
-            {planet::affine::point3d{
-                     pos.top_left.x(), pos.bottom_right().y(), z},
-             colour,
-             {texture.second.top_left.x(), texture.second.bottom_right().y()}});
 
-    textures.indices.push_back(quad_index);
-    textures.indices.push_back(quad_index + 1);
-    textures.indices.push_back(quad_index + 2);
-    textures.indices.push_back(quad_index);
-    textures.indices.push_back(quad_index + 2);
-    textures.indices.push_back(quad_index + 3);
+void planet::vk::engine::pipeline::textured_quad::render(render_parameters rp) {
+    auto const texture_count = commands.non_empty_count();
+    if (texture_count == 0) { return; }
 
-    textures.descriptors.emplace_back();
-    textures.descriptors.back().imageLayout =
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    textures.descriptors.back().imageView = texture.first.image_view.get();
-    textures.descriptors.back().sampler = texture.first.sampler.get();
+    textures_ubo.textures_in_frame.value(texture_count);
+    if (texture_count > textures_ubo.max_per_frame) {
+        planet::log::critical(
+                "We will run out of texture slots for this frame");
+    }
+
+    std::size_t texture_index = 0;
+    for (auto const &[texture, cmds] : commands.non_empty_vectors()) {
+        // Build vertices and indices for all quads using this texture
+        vertices.clear();
+        vertices.reserve(cmds.size() * 4);
+        indices.clear();
+        indices.reserve(cmds.size() * 6);
+
+        for (auto const &cmd : cmds) {
+            std::size_t const quad_index = vertices.size();
+
+            auto const &pos = cmd.position;
+            auto const &uv = cmd.uv;
+            auto const uv_br = uv.bottom_right();
+
+            // Quad vertices in counter-clockwise order
+            vertices.push_back(
+                    {{pos.top_left.xh + pos.extents.width,
+                      pos.top_left.yh + pos.extents.height, cmd.z},
+                     cmd.colour,
+                     {uv_br.xh, uv_br.yh}});
+            vertices.push_back(
+                    {{pos.top_left.xh + pos.extents.width, pos.top_left.yh,
+                      cmd.z},
+                     cmd.colour,
+                     {uv_br.xh, uv.top_left.yh}});
+            vertices.push_back(
+                    {{pos.top_left.xh, pos.top_left.yh, cmd.z},
+                     cmd.colour,
+                     {uv.top_left.xh, uv.top_left.yh}});
+            vertices.push_back(
+                    {{pos.top_left.xh, pos.top_left.yh + pos.extents.height,
+                      cmd.z},
+                     cmd.colour,
+                     {uv.top_left.xh, uv_br.yh}});
+
+            indices.push_back(quad_index);
+            indices.push_back(quad_index + 1);
+            indices.push_back(quad_index + 2);
+            indices.push_back(quad_index);
+            indices.push_back(quad_index + 2);
+            indices.push_back(quad_index + 3);
+        }
+
+        // Upload vertices and indices to GPU
+        auto &vertex_buffer = vertex_buffers[rp.current_frame];
+        vertex_buffer = {
+                rp.renderer.per_frame_memory, vertices,
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+        auto &index_buffer = index_buffers[rp.current_frame];
+        index_buffer = {
+                rp.renderer.per_frame_memory, indices,
+                VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+
+        std::array buffers{vertex_buffer.get()};
+        std::array offset{VkDeviceSize{}};
+        vkCmdBindVertexBuffers(
+                rp.cb.get(), 0, buffers.size(), buffers.data(), offset.data());
+        vkCmdBindIndexBuffer(
+                rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
+
+        // Bind texture
+        VkDescriptorImageInfo const texture_info{
+                .sampler = texture->sampler.get(),
+                .imageView = texture->image_view.get(),
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+
+        VkWriteDescriptorSet wds{};
+        wds.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        wds.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        wds.dstSet = textures_ubo.sets[rp.current_frame][texture_index];
+        wds.dstBinding = 0;
+        wds.dstArrayElement = 0;
+        wds.descriptorCount = 1;
+        wds.pImageInfo = &texture_info;
+        vkUpdateDescriptorSets(
+                rp.renderer.app.device.get(), 1, &wds, 0, nullptr);
+
+        vkCmdBindDescriptorSets(
+                rp.cb.get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipeline.layout.get(), 1, 1,
+                &textures_ubo.sets[rp.current_frame][texture_index], 0,
+                nullptr);
+
+        // Draw all quads for this texture
+        static constexpr std::uint32_t instance_count = 1;
+        static constexpr std::int32_t vertex_offset = 0;
+        static constexpr std::uint32_t first_instance = 0;
+        vkCmdDrawIndexed(
+                rp.cb.get(), static_cast<std::uint32_t>(indices.size()),
+                instance_count, 0, vertex_offset, first_instance);
+
+        ++texture_index;
+    }
+
+    commands.clear();
 }

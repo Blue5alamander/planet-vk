@@ -2,8 +2,10 @@
 
 
 #include <planet/vk/engine/app.hpp>
+#include <planet/vk/engine/memory/pooled-vector-map.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
-#include <planet/vk/engine/textured.draw.hpp>
+#include <planet/vk/ubo/textures.hpp>
+#include <planet/vk/vertex/coloured_textured.hpp>
 
 
 namespace planet::vk::engine::pipeline {
@@ -11,14 +13,12 @@ namespace planet::vk::engine::pipeline {
 
     /// ## Textured quad pipeline
     /**
-     * The current implementation assumes that only quads are being drawn. To
-     * fix this it will need to save how many vertices/indices are drawn per
-     * texture so it can dispatch the correct number per draw call after binding
-     * the texture.
+     * Draws 2D axis-aligned quads with texture support. Quads are grouped by
+     * texture to reduce the number of texture bindings and descriptor updates.
      */
     class textured_quad final : private telemetry::id {
       public:
-        using textures_type = draw_basic_textures<>;
+        using vertex_type = vertex::coloured_textured;
 
 
         struct parameters {
@@ -38,7 +38,7 @@ namespace planet::vk::engine::pipeline {
         textured_quad(parameters);
 
 
-        textures_type textures;
+        ubo::textures<vertex_type, engine::max_frames_in_flight> textures_ubo;
         vk::graphics_pipeline pipeline;
 
 
@@ -79,6 +79,26 @@ namespace planet::vk::engine::pipeline {
 
         /// ### Add draw commands to command buffer
         void render(render_parameters);
+
+
+      private:
+        struct quad_draw_info {
+            affine::rectangle2d position;
+            affine::rectangle2d uv;
+            colour colour;
+            float z;
+        };
+
+        planet::vk::engine::memory::pooled_vector_map<
+                std::map<vk::texture const *, std::vector<quad_draw_info>>>
+                commands;
+
+        std::vector<vertex_type> vertices;
+        std::vector<std::uint32_t> indices;
+        std::array<buffer<vertex_type>, engine::max_frames_in_flight>
+                vertex_buffers;
+        std::array<buffer<std::uint32_t>, engine::max_frames_in_flight>
+                index_buffers;
     };
 
 
