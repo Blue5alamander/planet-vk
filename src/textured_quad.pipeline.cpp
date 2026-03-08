@@ -41,6 +41,7 @@ void planet::vk::engine::pipeline::textured_quad::draw(
 }
 
 
+/// ### Rendering
 void planet::vk::engine::pipeline::textured_quad::render(render_parameters rp) {
     auto const texture_count = commands.non_empty_count();
     if (texture_count == 0) { return; }
@@ -51,22 +52,18 @@ void planet::vk::engine::pipeline::textured_quad::render(render_parameters rp) {
                 "We will run out of texture slots for this frame");
     }
 
-    std::size_t texture_index = 0;
+    /// #### Pass 1
+    /// Build combined vertex and index buffers across all textures
+    vertices.clear();
+    indices.clear();
     for (auto const &[texture, cmds] : commands.non_empty_vectors()) {
-        // Build vertices and indices for all quads using this texture
-        vertices.clear();
-        vertices.reserve(cmds.size() * 4);
-        indices.clear();
-        indices.reserve(cmds.size() * 6);
-
         for (auto const &cmd : cmds) {
-            std::size_t const quad_index = vertices.size();
+            auto const quad_index = static_cast<std::uint32_t>(vertices.size());
 
             auto const &pos = cmd.position;
             auto const &uv = cmd.uv;
             auto const uv_br = uv.bottom_right();
 
-            // Quad vertices in counter-clockwise order
             vertices.push_back(
                     {{pos.top_left.xh + pos.extents.width,
                       pos.top_left.yh + pos.extents.height, cmd.z},
@@ -94,29 +91,36 @@ void planet::vk::engine::pipeline::textured_quad::render(render_parameters rp) {
             indices.push_back(quad_index + 2);
             indices.push_back(quad_index + 3);
         }
+    }
 
-        // Upload vertices and indices to GPU
-        auto &vertex_buffer = vertex_buffers[rp.current_frame];
-        vertex_buffer = {
-                rp.renderer.per_frame_memory, vertices,
-                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
-        auto &index_buffer = index_buffers[rp.current_frame];
-        index_buffer = {
-                rp.renderer.per_frame_memory, indices,
-                VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                        | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+    /// #### Upload combined buffers to GPU once
+    auto &vertex_buffer = vertex_buffers[rp.current_frame];
+    vertex_buffer = {
+            rp.renderer.per_frame_memory, vertices,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
+    auto &index_buffer = index_buffers[rp.current_frame];
+    index_buffer = {
+            rp.renderer.per_frame_memory, indices,
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                    | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 
-        std::array buffers{vertex_buffer.get()};
-        std::array offset{VkDeviceSize{}};
-        vkCmdBindVertexBuffers(
-                rp.cb.get(), 0, buffers.size(), buffers.data(), offset.data());
-        vkCmdBindIndexBuffer(
-                rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
+    std::array buffers{vertex_buffer.get()};
+    std::array offset{VkDeviceSize{}};
+    vkCmdBindVertexBuffers(
+            rp.cb.get(), 0, buffers.size(), buffers.data(), offset.data());
+    vkCmdBindIndexBuffer(
+            rp.cb.get(), index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
-        // Bind texture
+    /// #### Pass 2
+    /// Issue one draw call per texture using offsets into the combined buffers
+    std::size_t texture_index = 0;
+    std::uint32_t first_index = 0;
+    for (auto const &[texture, cmds] : commands.non_empty_vectors()) {
+        auto const index_count = static_cast<std::uint32_t>(cmds.size()) * 6u;
+
         VkDescriptorImageInfo const texture_info{
                 .sampler = texture->sampler.get(),
                 .imageView = texture->image_view.get(),
@@ -139,14 +143,14 @@ void planet::vk::engine::pipeline::textured_quad::render(render_parameters rp) {
                 &textures_ubo.sets[rp.current_frame][texture_index], 0,
                 nullptr);
 
-        // Draw all quads for this texture
         static constexpr std::uint32_t instance_count = 1;
         static constexpr std::int32_t vertex_offset = 0;
         static constexpr std::uint32_t first_instance = 0;
         vkCmdDrawIndexed(
-                rp.cb.get(), static_cast<std::uint32_t>(indices.size()),
-                instance_count, 0, vertex_offset, first_instance);
+                rp.cb.get(), index_count, instance_count, first_index,
+                vertex_offset, first_instance);
 
+        first_index += index_count;
         ++texture_index;
     }
 
