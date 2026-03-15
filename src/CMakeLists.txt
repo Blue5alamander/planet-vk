@@ -18,10 +18,18 @@ add_library(planet-vk
         texture.cpp
     )
 target_include_directories(planet-vk PUBLIC ../include)
-target_link_libraries(planet-vk PUBLIC
-        planet-sdl
-        Vulkan::Vulkan
-    )
+if(${BUILD_VULKAN_LOADER})
+    target_link_libraries(planet-vk PUBLIC
+            planet-sdl
+            Vulkan::Headers
+            Vulkan::Vulkan
+        )
+else()
+    target_link_libraries(planet-vk PUBLIC
+            planet-sdl
+            Vulkan::Vulkan
+        )
+endif()
 install(TARGETS planet-vk LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 if (PLANET_VK_VALIDATION)
     target_compile_definitions(planet-vk PRIVATE
