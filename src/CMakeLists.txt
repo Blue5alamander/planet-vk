@@ -1,4 +1,6 @@
-find_package (Vulkan REQUIRED)
+if(NOT ${BUILD_VULKAN_LOADER})
+    find_package(Vulkan REQUIRED)
+endif()
 
 add_library(planet-vk
         commands.cpp
