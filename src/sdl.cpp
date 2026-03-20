@@ -8,7 +8,8 @@
 #include <planet/vk/sdl/texture.hpp>
 #include <planet/vk/sdl/window.hpp>
 
-#include <felspar/exceptions.hpp>
+#include <felspar/exceptions/logic_error.hpp>
+#include <felspar/exceptions/runtime_error.hpp>
 
 #include <SDL_vulkan.h>
 

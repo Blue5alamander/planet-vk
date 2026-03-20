@@ -3,7 +3,8 @@
 #include <planet/vk/extensions.hpp>
 #include <planet/vk/instance.hpp>
 
-#include <felspar/exceptions.hpp>
+#include <felspar/exceptions/logic_error.hpp>
+#include <felspar/exceptions/runtime_error.hpp>
 #include <felspar/memory/small_vector.hpp>
 
 

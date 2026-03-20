@@ -5,6 +5,7 @@
 #include <planet/vk/surface.hpp>
 #include <planet/vk/physical_device.hpp>
 
+#include <functional>
 #include <span>
 #include <vector>
 
