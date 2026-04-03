@@ -12,6 +12,8 @@
 
 #include <felspar/coro/barrier.hpp>
 
+#include <planet/time/checkpointer.hpp>
+
 
 namespace planet::vk::engine {
 
@@ -177,6 +179,10 @@ namespace planet::vk::engine {
         descriptor_set_layout const &coordinates_ubo_layout() const {
             return coordinates.vk.layout;
         }
+
+
+        /// ### Frame timing
+        planet::time::checkpointer frame_time;
 
 
         /// ### Wait for the next render cycle

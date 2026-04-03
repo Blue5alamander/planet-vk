@@ -325,6 +325,7 @@ felspar::coro::task<std::size_t>
     coordinates.copy_to_gpu_memory(fif_image_index);
 
     app.baseplate.start_frame_reset();
+    frame_time.checkpoint();
 
     co_return fif_image_index;
 }
