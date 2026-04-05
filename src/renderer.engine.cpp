@@ -322,6 +322,11 @@ felspar::coro::task<std::size_t>
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(cb.get(), 0, 1, &viewport);
 
+    VkRect2D scissor = {};
+    scissor.offset = {0, 0};
+    scissor.extent = swap_chain.extents;
+    vkCmdSetScissor(cb.get(), 0, 1, &scissor);
+
     coordinates.copy_to_gpu_memory(fif_image_index);
 
     app.baseplate.start_frame_reset();
@@ -506,7 +511,7 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
 
     // Set up dynamic state
     static auto constexpr dynamic_states =
-            std::array{VK_DYNAMIC_STATE_VIEWPORT};
+            std::array{VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT};
     VkPipelineDynamicStateCreateInfo pipleline_dynamic_states{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
             .pNext = nullptr,
