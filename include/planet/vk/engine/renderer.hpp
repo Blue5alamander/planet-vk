@@ -111,6 +111,30 @@ namespace planet::vk::engine {
             (bind_and_render(std::forward<Shaders>(s)), ...);
         }
 
+        /// #### Viewport and Scissor settings
+        /**
+         * Sets the Vulkan viewport and scissor to the full window extent, then
+         * executes the render lambda. All GPU rendering calls should go through
+         * this scope.
+         *
+         * In practice this means that the pipeline should be bound and the
+         * command buffer recorded within the passed in lambda. For most
+         * pipelines this will be done with `renderer.render(pipeline)`.
+         *
+         * The `logical_vulkan_space` is based on the full screen render
+         * rectangle, so will need adjusting if drawing inside an sub-rectangle.
+         */
+        template<std::invocable<> Lambda>
+        void within(affine::rectangle2d const &rect, Lambda &&render) {
+            set_viewport(rect);
+            set_scissor(rect);
+            render();
+        }
+        template<std::invocable<> Lambda>
+        void full_screen(Lambda &&render) {
+            within(app.window.rectangle(), std::forward<Lambda>(render));
+        }
+
         /// #### Submit and present the frame
         /// This blocks until the frame is complete
         void submit_and_present();
@@ -334,16 +358,6 @@ namespace planet::vk::engine {
     graphics_pipeline create_graphics_pipeline(
             graphics_pipeline_parameters,
             std::source_location const & = std::source_location::current());
-
-
-    /// ## Application implementation
-    template<std::invocable<> Lambda>
-    inline void planet::vk::engine::app::full_screen(
-            engine::renderer &renderer, Lambda &&render) const {
-        renderer.set_viewport(window.rectangle());
-        renderer.set_scissor(window.rectangle());
-        render();
-    }
 
 
 }

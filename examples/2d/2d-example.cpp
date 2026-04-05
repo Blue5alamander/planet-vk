@@ -40,7 +40,7 @@ namespace {
             mesh.this_frame.draw(vertices, indices);
             mesh.this_frame.draw(vertices, indices, {0.75f, 0.75f, 0.0f});
 
-            app.full_screen(renderer, [&]() { renderer.render(mesh); });
+            renderer.full_screen([&]() { renderer.render(mesh); });
 
             renderer.submit_and_present();
         }
