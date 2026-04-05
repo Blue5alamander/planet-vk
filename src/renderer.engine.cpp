@@ -118,8 +118,8 @@ planet::vk::engine::renderer::renderer(engine::app &a)
           affine::transform2d{}
                   .scale(2.0f / app.window.width(), -2.0f / app.window.height())
                   .translate({-1.0f, 1.0f})},
-  logical_vulkan_space{affine::transform2d{}.scale(
-          app.window.height() / app.window.width(), 1.0f)},
+  logical_vulkan_space{
+          affine::transform2d::aspect_correction(app.window.extents())},
   coordinates{
           app.device.startup_memory,
           {.screen{screen_space.into()},
