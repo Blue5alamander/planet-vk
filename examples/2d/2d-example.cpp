@@ -40,8 +40,15 @@ namespace {
             mesh.this_frame.draw(vertices, indices);
             mesh.this_frame.draw(vertices, indices, {0.75f, 0.75f, 0.0f});
 
+            app.full_screen(renderer, [&]() { renderer.render(mesh); });
+
             renderer.submit_and_present();
         }
+        /**
+         * TODO We need to extend this a bit as we get validation errors because
+         * we're currently just crashing out. We have to go through a few render
+         * cycles of drawing nothing before we can actually get out scott free.
+         */
         co_return 1;
     }
 }

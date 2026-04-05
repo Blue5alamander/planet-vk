@@ -37,13 +37,14 @@ namespace planet::vk::engine {
         /**
          * ### Full-screen rendering scope
          *
-         * All rendering should go through this scope so that the Vulkan viewport
-         * and scissors will get properly set up for full-screen display.
+         * All rendering should go through this scope so that the Vulkan
+         * viewport and scissors will get properly set up for full-screen
+         * display.
+         *
+         * Implementation is in [`renderer.hpp`](./renderer.hpp).
          */
         template<std::invocable<> Lambda>
-        void full_screen(renderer &, Lambda &&callable) const {
-            callable();
-        }
+        void full_screen(renderer &, Lambda &&) const;
     };
 
 

@@ -18,6 +18,7 @@ namespace {
         felspar::coro::task<void> loop() {
             while (active) {
                 co_await renderer.start(colour);
+                app.full_screen(renderer, [] {});
                 renderer.submit_and_present();
                 co_await app.sdl.io.sleep(10ms);
             }

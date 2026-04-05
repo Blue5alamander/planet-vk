@@ -158,9 +158,37 @@ void planet::vk::engine::renderer::reset_world_coordinates(
 }
 
 
+void planet::vk::engine::renderer::set_viewport(
+        affine::rectangle2d const &rect) noexcept {
+    auto &cb = command_buffers[fif_image_index];
+    VkViewport viewport = {};
+    viewport.x = static_cast<float>(rect.top_left.x());
+    viewport.y = static_cast<float>(rect.top_left.y() + rect.extents.height);
+    viewport.width = static_cast<float>(rect.extents.width);
+    viewport.height = -static_cast<float>(rect.extents.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cb.get(), 0, 1, &viewport);
+}
+
+
+void planet::vk::engine::renderer::set_scissor(
+        affine::rectangle2d const &rect) noexcept {
+    auto &cb = command_buffers[fif_image_index];
+    VkRect2D scissor = {};
+    scissor.offset = {
+            static_cast<int32_t>(rect.top_left.x()),
+            static_cast<int32_t>(rect.top_left.y())};
+    scissor.extent = {
+            static_cast<uint32_t>(rect.extents.width),
+            static_cast<uint32_t>(rect.extents.height)};
+    vkCmdSetScissor(cb.get(), 0, 1, &scissor);
+}
+
+
 namespace {
     planet::telemetry::counter c_recreate_swapchain{
-            "planet_vk_engine_renderer_recreate_swapchain_count"};
+            "planet_vk_engine_renderer__recreate_swapchain_count"};
 }
 void planet::vk::engine::renderer::recreate_swap_chain(
         VkResult const result, std::source_location const &loc) {
@@ -312,20 +340,6 @@ felspar::coro::task<std::size_t>
 
     vkCmdBeginRenderPass(
             cb.get(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-
-    VkViewport viewport = {};
-    viewport.x = 0.0f;
-    viewport.y = app.window.height();
-    viewport.width = app.window.width();
-    viewport.height = -app.window.height();
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(cb.get(), 0, 1, &viewport);
-
-    VkRect2D scissor = {};
-    scissor.offset = {0, 0};
-    scissor.extent = swap_chain.extents;
-    vkCmdSetScissor(cb.get(), 0, 1, &scissor);
 
     coordinates.copy_to_gpu_memory(fif_image_index);
 

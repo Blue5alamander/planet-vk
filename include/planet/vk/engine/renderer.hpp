@@ -156,6 +156,15 @@ namespace planet::vk::engine {
         affine::transform2d screen_space;
 
 
+        /// #### Set viewport and scissor
+        void set_viewport(affine::rectangle2d const &) noexcept;
+        void set_scissor(affine::rectangle2d const &) noexcept;
+        /**
+         * TODO The use of rectangle2d isn't great here. It's forcing casts at
+         * both call site and implementation site.
+         */
+
+
         /// ### Transformation into and out of corrected Vulkan space
         /**
          * The Vulkan coordinate system maps both width and height to -1 to +1.
@@ -325,6 +334,16 @@ namespace planet::vk::engine {
     graphics_pipeline create_graphics_pipeline(
             graphics_pipeline_parameters,
             std::source_location const & = std::source_location::current());
+
+
+    /// ## Application implementation
+    template<std::invocable<> Lambda>
+    inline void planet::vk::engine::app::full_screen(
+            engine::renderer &renderer, Lambda &&render) const {
+        renderer.set_viewport(window.rectangle());
+        renderer.set_scissor(window.rectangle());
+        render();
+    }
 
 
 }
