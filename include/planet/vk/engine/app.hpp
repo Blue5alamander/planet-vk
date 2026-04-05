@@ -9,7 +9,12 @@
 namespace planet::vk::engine {
 
 
-    /// ## An engine for 2d texture based interfaces
+    /**
+     * ## Application
+     *
+     * A single instance of this should be created in order to manage the window
+     * and other instances needed to be able to run a Vulkan based application.
+     */
     struct app final {
         app(int argc, char const *argv[], planet::sdl::init &, version const &);
 
@@ -27,6 +32,18 @@ namespace planet::vk::engine {
 
         /// ### Run the provided UI function
         int run(felspar::coro::task<int> (*co_main)(app &, renderer &));
+
+
+        /**
+         * ### Full-screen rendering scope
+         *
+         * All rendering should go through this scope so that the Vulkan viewport
+         * and scissors will get properly set up for full-screen display.
+         */
+        template<std::invocable<> Lambda>
+        void full_screen(renderer &, Lambda &&callable) const {
+            callable();
+        }
     };
 
 
