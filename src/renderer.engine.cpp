@@ -471,10 +471,12 @@ planet::vk::graphics_pipeline planet::vk::engine::create_graphics_pipeline(
     std::array shader_stages{
             vertex_shader_module.shader_stage_info(
                     VK_SHADER_STAGE_VERTEX_BIT,
-                    parameters.vertex_shader.entry_point),
+                    parameters.vertex_shader.entry_point,
+                    parameters.vertex_shader.specialisation),
             fragment_shader_module.shader_stage_info(
                     VK_SHADER_STAGE_FRAGMENT_BIT,
-                    parameters.fragment_shader.entry_point)};
+                    parameters.fragment_shader.entry_point,
+                    parameters.fragment_shader.specialisation)};
 
     /// Vertex bindings and attributes
     VkPipelineVertexInputStateCreateInfo vertex_input_info{

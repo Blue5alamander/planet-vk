@@ -24,8 +24,10 @@ namespace planet::vk {
         VkShaderModule get() const noexcept { return handle.get(); }
 
         /// Fill in the structure from the shader module
-        VkPipelineShaderStageCreateInfo
-                shader_stage_info(VkShaderStageFlagBits, char const *);
+        VkPipelineShaderStageCreateInfo shader_stage_info(
+                VkShaderStageFlagBits,
+                char const *,
+                VkSpecializationInfo const * = nullptr);
     };
 
 

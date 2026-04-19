@@ -17,11 +17,14 @@ planet::vk::shader_module::shader_module(
 
 
 VkPipelineShaderStageCreateInfo planet::vk::shader_module::shader_stage_info(
-        VkShaderStageFlagBits const flags, char const *entry) {
+        VkShaderStageFlagBits const flags,
+        char const *entry,
+        VkSpecializationInfo const *const specialisation) {
     VkPipelineShaderStageCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     info.stage = flags;
     info.module = handle.get();
     info.pName = entry;
+    info.pSpecializationInfo = specialisation;
     return info;
 }

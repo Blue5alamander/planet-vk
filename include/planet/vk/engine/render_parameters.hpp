@@ -26,6 +26,14 @@ namespace planet::vk::engine {
     struct shader_parameters {
         std::string_view spirv_filename;
         char const *entry_point = "main";
+        /// ### Optional specialisation constants
+        /**
+         * When set, the pointed-to `VkSpecializationInfo` is used to bake
+         * constant values into the shader at pipeline creation time. The
+         * data must remain valid for the duration of the
+         * `create_graphics_pipeline` call.
+         */
+        VkSpecializationInfo const *specialisation = nullptr;
     };
 
 
