@@ -1,3 +1,4 @@
+#include <planet/log.hpp>
 #include <planet/vk/commands.hpp>
 #include <planet/vk/device.hpp>
 #include <planet/vk/surface.hpp>
@@ -151,4 +152,17 @@ VkQueue planet::vk::command_pool::command_queue() {
     } else {
         return device().graphics_queue;
     }
+}
+
+
+/// ## `planet::vk::detail`
+
+
+void planet::vk::detail::throw_command_buffer_out_of_range(
+        std::size_t const index,
+        std::size_t const size,
+        std::source_location const &loc) {
+    planet::log::critical(
+            "command_buffers index out of range", index, "size", size,
+            "requested at", loc);
 }

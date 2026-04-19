@@ -6,11 +6,19 @@
 #include <planet/vk/queue.hpp>
 #include <planet/vk/view.hpp>
 
+#include <source_location>
 #include <span>
 #include <vector>
 
 
 namespace planet::vk {
+
+    namespace detail {
+        [[noreturn]] void throw_command_buffer_out_of_range(
+                std::size_t index,
+                std::size_t size,
+                std::source_location const &);
+    }
 
 
     /// ## Command buffer
@@ -117,8 +125,16 @@ namespace planet::vk {
         view<vk::command_pool> command_pool;
 
         std::size_t size() const noexcept { return buffers.size(); }
-        command_buffer &operator[](std::size_t const i) {
-            return buffers.at(i);
+        command_buffer &operator[](
+                std::size_t const i,
+                std::source_location const &loc =
+                        std::source_location::current()) {
+            if (i >= buffers.size()) {
+                detail::throw_command_buffer_out_of_range(
+                        i, buffers.size(), loc);
+            } else {
+                return buffers[i];
+            }
         }
     };
 

@@ -1,5 +1,19 @@
+#include <planet/log.hpp>
 #include <planet/vk/descriptors.hpp>
 #include <planet/vk/device.hpp>
+
+
+/// ## `planet::vk::detail`
+
+
+void planet::vk::detail::throw_descriptor_sets_out_of_range(
+        std::uint32_t const index,
+        std::size_t const size,
+        std::source_location const &loc) {
+    planet::log::critical(
+            "descriptor_sets index out of range", index, "size", size,
+            "requested at", loc);
+}
 
 
 /// ## `planet::vk::descriptor_pool`

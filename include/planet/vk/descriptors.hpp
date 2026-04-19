@@ -4,6 +4,7 @@
 #include <planet/vk/owned_handle.hpp>
 #include <planet/vk/view.hpp>
 
+#include <source_location>
 #include <span>
 
 
@@ -68,6 +69,14 @@ namespace planet::vk {
     };
 
 
+    namespace detail {
+        [[noreturn]] void throw_descriptor_sets_out_of_range(
+                std::uint32_t index,
+                std::size_t size,
+                std::source_location const &);
+    }
+
+
     /// ## Descriptor sets
     class descriptor_sets final {
         std::vector<VkDescriptorSet> sets = {};
@@ -86,9 +95,27 @@ namespace planet::vk {
 
 
         /// ### Access to individual sets
-        auto &operator[](std::uint32_t const index) { return sets.at(index); }
-        auto const &operator[](std::uint32_t const index) const {
-            return sets.at(index);
+        auto &operator[](
+                std::uint32_t const index,
+                std::source_location const &loc =
+                        std::source_location::current()) {
+            if (index >= sets.size()) {
+                detail::throw_descriptor_sets_out_of_range(
+                        index, sets.size(), loc);
+            } else {
+                return sets[index];
+            }
+        }
+        auto const &operator[](
+                std::uint32_t const index,
+                std::source_location const &loc =
+                        std::source_location::current()) const {
+            if (index >= sets.size()) {
+                detail::throw_descriptor_sets_out_of_range(
+                        index, sets.size(), loc);
+            } else {
+                return sets[index];
+            }
         }
 
         std::size_t size() const noexcept { return sets.size(); }
