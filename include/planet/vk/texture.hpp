@@ -9,9 +9,6 @@
 namespace planet::vk {
 
 
-    class device;
-
-
     /// ## Sampler
     class sampler final {
         using handle_type = vk::device_handle<VkSampler, vkDestroySampler>;
