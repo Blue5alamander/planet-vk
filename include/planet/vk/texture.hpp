@@ -36,7 +36,7 @@ namespace planet::vk {
     class texture final {
       public:
         /// ### Construction
-        struct args {
+        struct parameters {
             device_memory_allocator &allocator;
             vk::command_pool &command_pool;
             vk::buffer<std::byte> const &buffer;
@@ -46,8 +46,8 @@ namespace planet::vk {
             VkFormat format = VK_FORMAT_B8G8R8A8_SRGB;
             VkSamplerAddressMode address_mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         };
-        static texture create_with_mip_levels_from(args);
-        static texture create_without_mip_levels_from(args);
+        static texture create_with_mip_levels_from(parameters);
+        static texture create_without_mip_levels_from(parameters);
 
 
         /// ### Attributes

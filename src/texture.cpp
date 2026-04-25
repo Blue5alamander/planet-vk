@@ -175,8 +175,8 @@ namespace {
 }
 
 
-planet::vk::texture
-        planet::vk::texture::create_with_mip_levels_from(texture::args args) {
+planet::vk::texture planet::vk::texture::create_with_mip_levels_from(
+        texture::parameters args) {
     auto const mhw = std::max(args.width, args.height);
     std::uint32_t const mip_levels = 1 + std::floor(std::log2(mhw));
 
@@ -215,7 +215,7 @@ planet::vk::texture
 
 
 planet::vk::texture planet::vk::texture::create_without_mip_levels_from(
-        texture::args args) {
+        texture::parameters args) {
     vk::texture texture;
 
     texture.fit = args.scale;
