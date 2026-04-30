@@ -85,7 +85,7 @@ namespace planet::vk::engine::pipeline {
         struct quad_draw_info {
             affine::rectangle2d position;
             affine::rectangle2d uv;
-            colour colour;
+            planet::colour colour;
             float z;
         };
 
