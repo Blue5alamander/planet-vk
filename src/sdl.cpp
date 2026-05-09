@@ -87,16 +87,18 @@ auto planet::vk::sdl::window::refresh_window_dimensions()
 planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
         device_memory_allocator &image_allocator,
         command_pool &cp,
-        planet::sdl::surface const &surface) {
+        planet::sdl::surface const &surface,
+        create_parameters const cp_args) {
     return create_texture_without_mip_levels(
             image_allocator.device->staging_memory, image_allocator, cp,
-            surface);
+            surface, cp_args);
 }
 planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
         device_memory_allocator &staging_allocator,
         device_memory_allocator &image_allocator,
         command_pool &cp,
-        planet::sdl::surface const &surface) {
+        planet::sdl::surface const &surface,
+        create_parameters const cp_args) {
     if (surface.get()->format->format != SDL_PIXELFORMAT_ARGB8888) {
         throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
     }
@@ -127,23 +129,27 @@ planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
              .width = static_cast<std::uint32_t>(surface.width()),
              .height = static_cast<std::uint32_t>(surface.height()),
              .scale = surface.fit,
-             .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE});
+             .address_mode = cp_args.address_mode,
+             .filter = cp_args.filter,
+             .border_color = cp_args.border_color});
 }
 
 
 planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
         device_memory_allocator &image_allocator,
         command_pool &cp,
-        planet::sdl::surface const &surface) {
+        planet::sdl::surface const &surface,
+        create_parameters const cp_args) {
     return create_texture_with_mip_levels(
             image_allocator.device->staging_memory, image_allocator, cp,
-            surface);
+            surface, cp_args);
 }
 planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
         device_memory_allocator &staging_allocator,
         device_memory_allocator &image_allocator,
         command_pool &cp,
-        planet::sdl::surface const &surface) {
+        planet::sdl::surface const &surface,
+        create_parameters const cp_args) {
     if (surface.get()->format->format != SDL_PIXELFORMAT_ARGB8888) {
         throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
     }
@@ -174,5 +180,7 @@ planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
              .width = static_cast<std::uint32_t>(surface.width()),
              .height = static_cast<std::uint32_t>(surface.height()),
              .scale = surface.fit,
-             .address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE});
+             .address_mode = cp_args.address_mode,
+             .filter = cp_args.filter,
+             .border_color = cp_args.border_color});
 }

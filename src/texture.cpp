@@ -13,15 +13,15 @@
 planet::vk::sampler::sampler(parameters p) : device{p.device} {
     VkSamplerCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    info.magFilter = VK_FILTER_LINEAR;
-    info.minFilter = VK_FILTER_LINEAR;
+    info.magFilter = p.filter;
+    info.minFilter = p.filter;
     info.addressModeU = p.address_mode;
     info.addressModeV = p.address_mode;
     info.addressModeW = p.address_mode;
     info.anisotropyEnable = VK_TRUE;
     info.maxAnisotropy =
             device().instance.gpu().properties.limits.maxSamplerAnisotropy;
-    info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    info.borderColor = p.border_color;
     info.unnormalizedCoordinates = VK_FALSE;
     info.compareEnable = VK_FALSE;
     info.compareOp = VK_COMPARE_OP_ALWAYS;
@@ -208,7 +208,9 @@ planet::vk::texture planet::vk::texture::create_with_mip_levels_from(
     texture.sampler = {
             {.device = args.allocator.device,
              .mip_levels = mip_levels,
-             .address_mode = args.address_mode}};
+             .address_mode = args.address_mode,
+             .filter = args.filter,
+             .border_color = args.border_color}};
 
     return texture;
 }
@@ -248,7 +250,9 @@ planet::vk::texture planet::vk::texture::create_without_mip_levels_from(
 
     texture.sampler = {
             {.device = args.allocator.device,
-             .address_mode = args.address_mode}};
+             .address_mode = args.address_mode,
+             .filter = args.filter,
+             .border_color = args.border_color}};
 
     return texture;
 }

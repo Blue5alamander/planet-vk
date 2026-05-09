@@ -20,24 +20,38 @@ namespace planet::vk::sdl {
 
 
     /// ## Create a Vulkan texture from an SDL surface
+
+    /// ### Texture creation parameters
+    struct create_parameters {
+        VkSamplerAddressMode address_mode =
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        VkFilter filter = VK_FILTER_LINEAR;
+        VkBorderColor border_color = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    };
+
+    /// ### Creation functions
     texture create_texture_with_mip_levels(
             device_memory_allocator &image,
             command_pool &,
-            planet::sdl::surface const &);
+            planet::sdl::surface const &,
+            create_parameters = {});
     texture create_texture_with_mip_levels(
             device_memory_allocator &staging,
             device_memory_allocator &image,
             command_pool &,
-            planet::sdl::surface const &);
+            planet::sdl::surface const &,
+            create_parameters = {});
     texture create_texture_without_mip_levels(
             device_memory_allocator &staging,
             device_memory_allocator &image,
             command_pool &,
-            planet::sdl::surface const &);
+            planet::sdl::surface const &,
+            create_parameters = {});
     texture create_texture_without_mip_levels(
             device_memory_allocator &image,
             command_pool &,
-            planet::sdl::surface const &);
+            planet::sdl::surface const &,
+            create_parameters = {});
 
 
     /// ##  Render text and turn it into a Vulkan texture

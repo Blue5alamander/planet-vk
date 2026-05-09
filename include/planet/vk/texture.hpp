@@ -20,6 +20,8 @@ namespace planet::vk {
             vk::device &device;
             std::uint32_t mip_levels = 1;
             VkSamplerAddressMode address_mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            VkFilter filter = VK_FILTER_LINEAR;
+            VkBorderColor border_color = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         };
         sampler() {}
         sampler(parameters);
@@ -45,6 +47,8 @@ namespace planet::vk {
             ui::scale scale = ui::scale::lock_aspect;
             VkFormat format = VK_FORMAT_B8G8R8A8_SRGB;
             VkSamplerAddressMode address_mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            VkFilter filter = VK_FILTER_LINEAR;
+            VkBorderColor border_color = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         };
         static texture create_with_mip_levels_from(parameters);
         static texture create_without_mip_levels_from(parameters);
