@@ -146,6 +146,7 @@ planet::vk::device_memory_allocator::device_memory_allocator(
 }
 
 planet::vk::device_memory_allocator::~device_memory_allocator() {
+    clear_without_check();
     ++c_allocators_destroyed;
 }
 
@@ -220,6 +221,13 @@ void planet::vk::device_memory_allocator::deallocate(
 
 void planet::vk::device_memory_allocator::clear_without_check() {
     for (auto &pool : pools) {
+        /**
+         * Return the block currently being split from to the free list. Its
+         * bytes were added to `c_bytes_in_use` when it was pulled from the
+         * driver, so without this the block would neither be accounted for in
+         * the loop below nor freed while the device is still alive.
+         */
+        pool.splitting.reset();
         c_bytes_in_use -= static_cast<std::int64_t>(
                 pool.free_memory.size() * config.allocation_block_size);
     }
