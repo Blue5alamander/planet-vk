@@ -3,6 +3,8 @@
 
 #include <planet/telemetry/counter.hpp>
 #include <planet/telemetry/id.hpp>
+#include <planet/telemetry/map.hpp>
+#include <planet/telemetry/minmax.hpp>
 #include <planet/vk/forward.hpp>
 #include <planet/vk/owned_handle.hpp>
 #include <planet/vk/view.hpp>
@@ -206,10 +208,6 @@ namespace planet::vk {
       public:
         /// ### Bind allocator to a device
         device_memory_allocator(
-                vk::device &,
-                device_memory_allocator_configuration const & =
-                        thread_safe_device_memory_allocator);
-        device_memory_allocator(
                 std::string_view name,
                 vk::device &,
                 device_memory_allocator_configuration const & =
@@ -254,6 +252,12 @@ namespace planet::vk {
                 c_block_deallocated_added_to_free_list,
                 c_block_deallocation_returned_to_driver,
                 c_memory_allocation_count, c_memory_deallocation_count;
+
+        /// ### Allocation size histograms and live/peak GPU footprint
+        telemetry::map<std::size_t, std::size_t> c_allocation_sizes,
+                c_driver_block_sizes;
+        telemetry::counter c_bytes_in_use;
+        telemetry::max c_bytes_peak;
     };
 
 

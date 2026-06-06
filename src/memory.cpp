@@ -16,6 +16,17 @@ namespace {
             "planet_vk_device_memory_allocator_memory_deallocations"};
     planet::telemetry::counter c_total_allocated{
             "planet_vk_device_memory_allocator_memory_total_allocated"};
+
+    planet::telemetry::map<std::size_t, std::size_t> c_global_allocation_sizes{
+            "planet_vk_device_memory_allocator_allocation_sizes"};
+    planet::telemetry::map<std::size_t, std::size_t> c_global_driver_block_sizes{
+            "planet_vk_device_memory_allocator_driver_block_sizes"};
+    planet::telemetry::counter c_global_bytes_in_use{
+            "planet_vk_device_memory_allocator_bytes_in_use"};
+    planet::telemetry::max c_global_bytes_peak{
+            "planet_vk_device_memory_allocator_bytes_peak"};
+
+    auto const bump = [](auto &n) { ++n; };
 }
 
 
@@ -110,10 +121,6 @@ void planet::vk::device_memory_allocation::unmap_memory() {
 
 
 planet::vk::device_memory_allocator::device_memory_allocator(
-        vk::device &d, device_memory_allocator_configuration const &c)
-: device_memory_allocator{"unnamed", d, c, id::suffix::add} {}
-
-planet::vk::device_memory_allocator::device_memory_allocator(
         std::string_view const n,
         vk::device &d,
         device_memory_allocator_configuration const &c,
@@ -130,7 +137,11 @@ planet::vk::device_memory_allocator::device_memory_allocator(
   c_block_deallocation_returned_to_driver{
           name() + "__block_deallocation_returned_to_driver"},
   c_memory_allocation_count{name() + "__memory_allocation_count"},
-  c_memory_deallocation_count{name() + "__memory_deallocation_count"} {
+  c_memory_deallocation_count{name() + "__memory_deallocation_count"},
+  c_allocation_sizes{name() + "__allocation_sizes"},
+  c_driver_block_sizes{name() + "__driver_block_sizes"},
+  c_bytes_in_use{name() + "__bytes_in_use", c_global_bytes_in_use},
+  c_bytes_peak{name() + "__bytes_peak"} {
     ++c_allocators_created;
 }
 
@@ -143,6 +154,8 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
         std::size_t const bytes_requested,
         std::uint32_t const memory_type_index,
         std::size_t const alignment) {
+    c_allocation_sizes.update(bytes_requested, 1u, bump);
+    c_global_allocation_sizes.update(bytes_requested, 1u, bump);
     auto const bytes = felspar::memory::block_size(bytes_requested, alignment);
     auto &pool = pools[memory_type_index];
     std::scoped_lock _{pool.mtx};
@@ -153,6 +166,13 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
         if (allocating > config.allocation_block_size
             or pool.free_memory.empty()) {
             ++c_block_allocation_from_driver;
+            c_driver_block_sizes.update(allocating, 1u, bump);
+            c_global_driver_block_sizes.update(allocating, 1u, bump);
+            c_bytes_in_use += static_cast<std::int64_t>(allocating);
+            c_bytes_peak.value(
+                    static_cast<std::uint64_t>(c_bytes_in_use.value()));
+            c_global_bytes_peak.value(
+                    static_cast<std::uint64_t>(c_global_bytes_in_use.value()));
             handle = device_memory_allocation::allocate(
                     device, allocating, memory_type_index);
         } else {
@@ -193,11 +213,16 @@ void planet::vk::device_memory_allocator::deallocate(
         ++c_block_deallocated_added_to_free_list;
     } else {
         ++c_block_deallocation_returned_to_driver;
+        c_bytes_in_use -= static_cast<std::int64_t>(size);
     }
 }
 
 
 void planet::vk::device_memory_allocator::clear_without_check() {
+    for (auto &pool : pools) {
+        c_bytes_in_use -= static_cast<std::int64_t>(
+                pool.free_memory.size() * config.allocation_block_size);
+    }
     pools.clear();
 }
 
