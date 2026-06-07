@@ -11,6 +11,7 @@ namespace planet::vk {
     class device;
     class device_memory;
     class device_memory_allocator;
+    struct extensions;
     class frame_buffer;
     class instance;
     class physical_device;

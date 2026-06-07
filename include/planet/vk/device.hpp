@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <planet/vk/forward.hpp>
 #include <planet/vk/memory.hpp>
 #include <planet/vk/queue.hpp>
 
@@ -8,10 +9,6 @@
 
 
 namespace planet::vk {
-
-
-    struct extensions;
-    class instance;
 
 
     /// ## Vulkan device

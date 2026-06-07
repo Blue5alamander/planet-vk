@@ -53,8 +53,9 @@ namespace planet::vk {
                 VkMemoryRequirements, VkMemoryPropertyFlags) const;
 
 
-        /// The debug messenger is automatically used if there are validation
-        /// layers present
+        /**
+         * The debug messenger is automatically used if there are validation layers present
+         */
         vk::debug_messenger debug_messenger;
 
         std::span<physical_device const> physical_devices() const {
