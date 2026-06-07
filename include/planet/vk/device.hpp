@@ -3,6 +3,7 @@
 
 #include <planet/vk/forward.hpp>
 #include <planet/vk/memory.hpp>
+#include <planet/vk/memory_block_pool.hpp>
 #include <planet/vk/queue.hpp>
 
 #include <mutex>
@@ -55,6 +56,17 @@ namespace planet::vk {
 
 
         /// ### Allocators
+
+        /// #### Shared pool of whole driver memory blocks
+        /**
+         * Declared **before** the allocators so it is constructed before them
+         * and -- because members destruct in reverse declaration order --
+         * destroyed **after** them. The allocators hand their blocks back to
+         * this pool, so it must outlive them. `~device` `clear`s it explicitly
+         * while the device is still alive so the held driver memory is freed
+         * before `vkDestroyDevice`.
+         */
+        device_memory_block_pool block_pool{"device"};
 
         /// #### Allocate start-up memory
         /**

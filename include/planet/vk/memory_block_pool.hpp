@@ -28,9 +28,9 @@ namespace planet::vk {
      * `vkAllocateMemory` again.
      *
      * This pool owns the driver-byte accounting: a block counts as in use from
-     * the moment it is allocated from the driver until `clear` frees it, whether
-     * it is currently checked out to an allocator or sitting in a free list.
-     * The telemetry counters are named from the pool's `name`.
+     * the moment it is allocated from the driver until `clear` frees it,
+     * whether it is currently checked out to an allocator or sitting in a free
+     * list. The telemetry counters are named from the pool's `name`.
      */
     class device_memory_block_pool final : private telemetry::id {
         /// ### A free list of identically keyed whole blocks

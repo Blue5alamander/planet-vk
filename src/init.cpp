@@ -232,6 +232,7 @@ planet::vk::device::device(
 planet::vk::device::~device() {
     staging_memory.clear_without_check();
     startup_memory.clear_without_check();
+    block_pool.clear();
     if (handle) {
         planet::log::debug("Destructing Vulkan device");
         wait_idle();

@@ -171,6 +171,60 @@ namespace {
             });
 
 
+    /// ### The device hosts a shared pool that recycles across consumers
+    /**
+     * The pool now lives on `vk::device`, so any consumer of the same
+     * `(memory_type_index, block_size)` draws from one shared free list. A
+     * block returned by the first consumer is reused by the next with no fresh
+     * driver allocation -- the same sharing the allocators will rely on once
+     * they are wired into this pool (chunk 1.3).
+     */
+    auto const device_hosted =
+            suite.test("device-hosted-shared-pool", [](auto check) {
+                planet::vk::headless vulkan;
+                auto const mti = any_memory_type(vulkan);
+
+                auto &pool = vulkan.device.block_pool;
+                auto const before = pool.driver_blocks_allocated();
+
+                // First consumer takes a block, then hands it back.
+                auto first = pool.acquire(vulkan.device, mti, block_64mib);
+                check(pool.driver_blocks_allocated()) == before + 1u;
+                pool.release(std::move(first), mti, block_64mib);
+
+                // Second consumer of the same key reuses the pooled block --
+                // the driver-allocation count does not move.
+                auto second = pool.acquire(vulkan.device, mti, block_64mib);
+                check(pool.driver_blocks_allocated()) == before + 1u;
+                pool.release(std::move(second), mti, block_64mib);
+            });
+
+
+    /// ### Teardown frees pooled blocks while the device is still alive
+    /**
+     * Blocks released back to the device-hosted pool are retained, not handed
+     * to the driver. `~device` `clear`s the pool before `vkDestroyDevice`, so
+     * the held driver memory is freed cleanly with no leak reported at
+     * teardown. Acquiring and releasing here leaves a block pooled for the
+     * device destructor to reclaim.
+     */
+    auto const teardown =
+            suite.test("device-teardown-frees-pool", [](auto check) {
+                planet::vk::headless vulkan;
+                auto const mti = any_memory_type(vulkan);
+
+                auto &pool = vulkan.device.block_pool;
+                auto block = pool.acquire(vulkan.device, mti, block_64mib);
+                check(pool.driver_blocks_allocated()) >= 1u;
+
+                // Hand the block back to the pool rather than freeing it, so it
+                // is still held when `vulkan` (and its device) goes out of
+                // scope. The device destructor's `block_pool.clear()` frees it.
+                pool.release(std::move(block), mti, block_64mib);
+                check(pool.driver_blocks_freed()) == 0u;
+            });
+
+
 }
 
 
