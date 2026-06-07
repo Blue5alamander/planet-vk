@@ -30,12 +30,14 @@ namespace {
             });
 
 
-    /// ### An empty pool allocates from the driver, then recycles
+    /// ## Whole-block free list
+
+
+    /// ### A released block is recycled rather than re-allocated
     /**
-     * The first `acquire` of a `(memory_type_index, block_size)` with an empty
-     * free list must perform exactly one driver allocation. After the block is
-     * `release`d, the next `acquire` of the same key must reuse it with no
-     * further driver allocation.
+     * The first `acquire` of a `(memory_type_index, block_size)` on an empty
+     * pool performs one driver allocation. Once that block is `release`d, the
+     * next `acquire` of the same key reuses it without touching the driver.
      */
     auto const recycles = suite.test("recycles-released-block", [](auto check) {
         planet::vk::headless vulkan;
@@ -59,11 +61,12 @@ namespace {
     });
 
 
-    /// ### Blocks of a different key are never interchanged
+    /// ### Blocks are kept separate by memory type and size
     /**
-     * A free list is keyed by `(memory_type_index, block_size)`, so releasing a
-     * block of one key must not satisfy an `acquire` of a different key -- the
-     * second `acquire` must hit the driver.
+     * Free lists are keyed by `(memory_type_index, block_size)`. A released
+     * block only satisfies an `acquire` of the identical key; a request that
+     * differs in either size or memory type allocates a fresh block from the
+     * driver, while the pooled block stays available for its own key.
      */
     auto const keyed = suite.test("keyed-by-type-and-size", [](auto check) {
         planet::vk::headless vulkan;
@@ -105,10 +108,81 @@ namespace {
     });
 
 
-    /// ### `clear` frees every held block
+    /// ### Blocks larger than the threshold are never pooled
     /**
-     * Every block returned to the pool is freed by `clear`, so the count of
-     * driver deallocations matches the count of driver allocations.
+     * A block larger than `driver_block_size` is allocated straight from the
+     * driver and freed straight back on `release`, never entering a free list:
+     * `driver_bytes_in_use` rises on `acquire` and falls again on `release`. A
+     * second `acquire` of the same size therefore allocates afresh rather than
+     * finding a retained block.
+     */
+    auto const oversized_bypasses =
+            suite.test("oversized-block-bypasses-pool", [](auto check) {
+                planet::vk::headless vulkan;
+                auto const mti = any_memory_type(vulkan);
+
+                // A small threshold keeps the test's driver allocations tiny.
+                constexpr std::size_t threshold = 1u << 20;
+                planet::vk::device_memory_block_pool pool{
+                        "oversized", threshold};
+
+                constexpr std::size_t big = 2u << 20; // > threshold
+
+                auto block = pool.acquire(vulkan.device, mti, big);
+                check(pool.driver_blocks_allocated()) == 1u;
+                check(pool.driver_bytes_in_use())
+                        == static_cast<std::int64_t>(big);
+
+                pool.release(std::move(block), mti, big);
+                check(pool.driver_blocks_freed()) == 1u;
+                check(pool.driver_bytes_in_use()) == 0;
+
+                // Nothing was pooled, so the next acquire hits the driver again.
+                auto again = pool.acquire(vulkan.device, mti, big);
+                check(pool.driver_blocks_allocated()) == 2u;
+                pool.release(std::move(again), mti, big);
+                check(pool.driver_blocks_freed()) == 2u;
+
+                pool.clear();
+            });
+
+
+    /// ### Blocks up to the threshold are pooled and retained
+    /**
+     * A block whose size is at most `driver_block_size` is retained on
+     * `release` and reused by the next `acquire` with no fresh driver
+     * allocation; it is freed only by `clear`.
+     */
+    auto const threshold_pooled =
+            suite.test("block-at-threshold-is-pooled", [](auto check) {
+                planet::vk::headless vulkan;
+                auto const mti = any_memory_type(vulkan);
+
+                constexpr std::size_t threshold = 1u << 20;
+                planet::vk::device_memory_block_pool pool{
+                        "poolable", threshold};
+
+                // Exactly at the threshold: poolable.
+                auto block = pool.acquire(vulkan.device, mti, threshold);
+                check(pool.driver_blocks_allocated()) == 1u;
+
+                pool.release(std::move(block), mti, threshold);
+                check(pool.driver_blocks_freed()) == 0u; // retained, not freed
+
+                auto reused = pool.acquire(vulkan.device, mti, threshold);
+                check(pool.driver_blocks_allocated()) == 1u; // reused
+                pool.release(std::move(reused), mti, threshold);
+
+                pool.clear();
+                check(pool.driver_blocks_freed()) == 1u; // freed only at clear
+            });
+
+
+    /// ### `clear` frees every pooled block
+    /**
+     * Blocks held by the pool are freed only by `clear`, at which point the
+     * driver-deallocation count matches the number of blocks allocated and the
+     * in-use byte count returns to zero.
      */
     auto const clears = suite.test("clear-frees-all", [](auto check) {
         planet::vk::headless vulkan;
@@ -134,11 +208,11 @@ namespace {
     });
 
 
-    /// ### Concurrent `acquire`/`release` neither double-frees nor races
+    /// ### Concurrent `acquire`/`release` is race-free
     /**
-     * Many threads churn blocks of the same key through the pool. The run must
-     * be TSan-clean, and once every thread has returned its block, `clear` must
-     * free exactly the blocks the pool allocated.
+     * Many threads churn blocks of one key through the pool without
+     * double-freeing or racing (TSan-clean). Once every thread has returned its
+     * block, `clear` frees exactly the blocks that were allocated.
      */
     auto const concurrent =
             suite.test("concurrent-acquire-release", [](auto check) {
@@ -161,8 +235,6 @@ namespace {
                 }
                 for (auto &&thread : threads) { thread.join(); }
 
-                // Every block the pool allocated is still held by the pool (all
-                // were released back), so `clear` frees exactly that many.
                 check(pool.driver_blocks_freed()) == 0u;
                 pool.clear();
                 check(pool.driver_blocks_freed())
@@ -171,13 +243,15 @@ namespace {
             });
 
 
-    /// ### The device hosts a shared pool that recycles across consumers
+    /// ## Pool hosted on the device
+
+
+    /// ### Consumers of one key share the device-hosted pool
     /**
-     * The pool now lives on `vk::device`, so any consumer of the same
+     * The pool lives on `vk::device`, so any consumer of the same
      * `(memory_type_index, block_size)` draws from one shared free list. A
-     * block returned by the first consumer is reused by the next with no fresh
-     * driver allocation -- the same sharing the allocators will rely on once
-     * they are wired into this pool (chunk 1.3).
+     * block one consumer acquires and releases is reused by the next consumer
+     * of the same key, so the driver-allocation count does not move.
      */
     auto const device_hosted =
             suite.test("device-hosted-shared-pool", [](auto check) {
@@ -187,26 +261,23 @@ namespace {
                 auto &pool = vulkan.device.block_pool;
                 auto const before = pool.driver_blocks_allocated();
 
-                // First consumer takes a block, then hands it back.
                 auto first = pool.acquire(vulkan.device, mti, block_64mib);
                 check(pool.driver_blocks_allocated()) == before + 1u;
                 pool.release(std::move(first), mti, block_64mib);
 
-                // Second consumer of the same key reuses the pooled block --
-                // the driver-allocation count does not move.
                 auto second = pool.acquire(vulkan.device, mti, block_64mib);
                 check(pool.driver_blocks_allocated()) == before + 1u;
                 pool.release(std::move(second), mti, block_64mib);
             });
 
 
-    /// ### Teardown frees pooled blocks while the device is still alive
+    /// ### The device destructor frees retained blocks
     /**
-     * Blocks released back to the device-hosted pool are retained, not handed
-     * to the driver. `~device` `clear`s the pool before `vkDestroyDevice`, so
-     * the held driver memory is freed cleanly with no leak reported at
-     * teardown. Acquiring and releasing here leaves a block pooled for the
-     * device destructor to reclaim.
+     * A block released back to the device-hosted pool is retained, not handed
+     * to the driver. The device destructor clears the pool before destroying
+     * the device, so the retained driver memory is freed cleanly with no leak
+     * reported at teardown. Acquiring and releasing here leaves a block pooled
+     * for the device destructor to reclaim.
      */
     auto const teardown =
             suite.test("device-teardown-frees-pool", [](auto check) {
@@ -217,11 +288,97 @@ namespace {
                 auto block = pool.acquire(vulkan.device, mti, block_64mib);
                 check(pool.driver_blocks_allocated()) >= 1u;
 
-                // Hand the block back to the pool rather than freeing it, so it
-                // is still held when `vulkan` (and its device) goes out of
-                // scope. The device destructor's `block_pool.clear()` frees it.
                 pool.release(std::move(block), mti, block_64mib);
                 check(pool.driver_blocks_freed()) == 0u;
+            });
+
+
+    /// ## Allocators draw from the shared pool
+
+
+    /// ### Two allocators share one driver block
+    /**
+     * A block one `device_memory_allocator` draws from the shared device pool
+     * and releases is reused by a different, later allocator with no new
+     * `vkAllocateMemory`. Requesting more than the allocator's
+     * `allocation_block_size` routes the block through the shared pool, rather
+     * than the allocator's own free list, on both allocation and deallocation.
+     */
+    auto const allocators_share =
+            suite.test("allocators-share-driver-block", [](auto check) {
+                planet::vk::headless vulkan;
+                auto const mti = any_memory_type(vulkan);
+                auto &pool = vulkan.device.block_pool;
+
+                planet::vk::device_memory_allocator_configuration config;
+                config.allocation_block_size = 1u << 20; // 1 MiB
+                config.split = false;
+                // Larger than the block size, so it flows through the pool
+                // rather than the allocator's local free list.
+                constexpr std::size_t oversized = 2u << 20;
+                constexpr std::size_t alignment = 1u << 10;
+
+                auto const before = pool.driver_blocks_allocated();
+                {
+                    planet::vk::device_memory_allocator first{
+                            "share-first", vulkan.device, config};
+                    auto memory = first.allocate(oversized, mti, alignment);
+                    check(pool.driver_blocks_allocated()) == before + 1u;
+                    // `memory` is released and `first` torn down at scope exit,
+                    // handing the block back to the shared pool.
+                }
+
+                {
+                    planet::vk::device_memory_allocator second{
+                            "share-second", vulkan.device, config};
+                    auto memory = second.allocate(oversized, mti, alignment);
+                    check(pool.driver_blocks_allocated()) == before + 1u;
+                }
+            });
+
+
+    /// ### A destroyed allocator returns its blocks to the pool
+    /**
+     * An allocator draws whole blocks from the shared pool but recycles
+     * normal-sized ones into its own free list, handing them back to the shared
+     * pool only when it is destroyed. After one allocator is destroyed, a
+     * second allocator of the same key reuses the returned block with no new
+     * driver allocation -- if the destroyed allocator had instead dropped the
+     * block to the driver, this second `acquire` would allocate afresh.
+     */
+    auto const teardown_returns_blocks =
+            suite.test("allocator-teardown-returns-blocks", [](auto check) {
+                planet::vk::headless vulkan;
+                auto const mti = any_memory_type(vulkan);
+                auto &pool = vulkan.device.block_pool;
+
+                planet::vk::device_memory_allocator_configuration config;
+                // A block size of its own so the delta below is not perturbed
+                // by the device's other allocators.
+                config.allocation_block_size = 3u << 20;
+                // A small request: the whole block lands in the allocator's
+                // local free list, reaching the shared pool only at teardown.
+                constexpr std::size_t small = 1u << 10;
+                constexpr std::size_t alignment = 1u << 10;
+
+                auto const allocated_before = pool.driver_blocks_allocated();
+                {
+                    planet::vk::device_memory_allocator first{
+                            "teardown-first", vulkan.device, config};
+                    auto memory = first.allocate(small, mti, alignment);
+                    check(pool.driver_blocks_allocated())
+                            == allocated_before + 1u;
+                    // `memory` and then `first` are torn down here; the whole
+                    // block must land back in the pool, not the driver.
+                }
+
+                {
+                    planet::vk::device_memory_allocator second{
+                            "teardown-second", vulkan.device, config};
+                    auto memory = second.allocate(small, mti, alignment);
+                    check(pool.driver_blocks_allocated())
+                            == allocated_before + 1u;
+                }
             });
 
 

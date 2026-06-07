@@ -248,15 +248,15 @@ namespace planet::vk {
 
 
       private:
-        telemetry::counter c_block_allocation_from_driver,
+        telemetry::counter c_block_allocation_from_device_pool,
                 c_block_allocation_from_free_list,
                 c_block_deallocated_added_to_free_list,
-                c_block_deallocation_returned_to_driver,
+                c_block_deallocation_returned_to_device_pool,
                 c_memory_allocation_count, c_memory_deallocation_count;
 
         /// ### Allocation size histograms and live/peak GPU footprint
         telemetry::map<std::size_t, std::size_t> c_allocation_sizes,
-                c_driver_block_sizes;
+                c_device_pool_block_sizes;
         telemetry::counter c_bytes_in_use;
         telemetry::max c_bytes_peak;
     };

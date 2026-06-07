@@ -1,3 +1,4 @@
+#include <planet/functional.hpp>
 #include <planet/vk/device.hpp>
 #include <planet/vk/instance.hpp>
 #include <planet/vk/memory.hpp>
@@ -19,8 +20,9 @@ namespace {
 
     planet::telemetry::map<std::size_t, std::size_t> c_global_allocation_sizes{
             "planet_vk_device_memory_allocator_allocation_sizes"};
-    planet::telemetry::map<std::size_t, std::size_t> c_global_driver_block_sizes{
-            "planet_vk_device_memory_allocator_driver_block_sizes"};
+    planet::telemetry::map<std::size_t, std::size_t>
+            c_global_device_pool_block_sizes{
+                    "planet_vk_device_memory_allocator_device_pool_block_sizes"};
     planet::telemetry::counter c_global_bytes_in_use{
             "planet_vk_device_memory_allocator_bytes_in_use"};
     planet::telemetry::max c_global_bytes_peak{
@@ -129,17 +131,18 @@ planet::vk::device_memory_allocator::device_memory_allocator(
   pools(d.instance.gpu().memory_properties.memoryTypeCount),
   device{d},
   config{c},
-  c_block_allocation_from_driver{name() + "__block_allocation_from_driver"},
+  c_block_allocation_from_device_pool{
+          name() + "__block_allocation_from_device_pool"},
   c_block_allocation_from_free_list{
           name() + "__block_allocation_from_free_list"},
   c_block_deallocated_added_to_free_list{
           name() + "__block_deallocated_added_to_free_list"},
-  c_block_deallocation_returned_to_driver{
-          name() + "__block_deallocation_returned_to_driver"},
+  c_block_deallocation_returned_to_device_pool{
+          name() + "__block_deallocation_returned_to_device_pool"},
   c_memory_allocation_count{name() + "__memory_allocation_count"},
   c_memory_deallocation_count{name() + "__memory_deallocation_count"},
   c_allocation_sizes{name() + "__allocation_sizes"},
-  c_driver_block_sizes{name() + "__driver_block_sizes"},
+  c_device_pool_block_sizes{name() + "__device_pool_block_sizes"},
   c_bytes_in_use{name() + "__bytes_in_use", c_global_bytes_in_use},
   c_bytes_peak{name() + "__bytes_peak"} {
     ++c_allocators_created;
@@ -166,16 +169,16 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
         device_memory_allocation::handle_type handle;
         if (allocating > config.allocation_block_size
             or pool.free_memory.empty()) {
-            ++c_block_allocation_from_driver;
-            c_driver_block_sizes.update(allocating, 1u, bump);
-            c_global_driver_block_sizes.update(allocating, 1u, bump);
+            ++c_block_allocation_from_device_pool;
+            c_device_pool_block_sizes.update(allocating, 1u, bump);
+            c_global_device_pool_block_sizes.update(allocating, 1u, bump);
             c_bytes_in_use += static_cast<std::int64_t>(allocating);
             c_bytes_peak.value(
                     static_cast<std::uint64_t>(c_bytes_in_use.value()));
             c_global_bytes_peak.value(
                     static_cast<std::uint64_t>(c_global_bytes_in_use.value()));
-            handle = device_memory_allocation::allocate(
-                    device, allocating, memory_type_index);
+            handle = device().block_pool.acquire(
+                    device, memory_type_index, allocating);
         } else {
             handle = std::move(pool.free_memory.back());
             pool.free_memory.pop_back();
@@ -213,24 +216,46 @@ void planet::vk::device_memory_allocator::deallocate(
         pool.free_memory.push_back(std::move(h));
         ++c_block_deallocated_added_to_free_list;
     } else {
-        ++c_block_deallocation_returned_to_driver;
+        ++c_block_deallocation_returned_to_device_pool;
         c_bytes_in_use -= static_cast<std::int64_t>(size);
+        device().block_pool.release(std::move(h), memory_type_index, size);
     }
 }
 
 
 void planet::vk::device_memory_allocator::clear_without_check() {
-    for (auto &pool : pools) {
+    planet::by_index(pools, [&](std::size_t const memory_type_index, pool &p) {
         /**
          * Return the block currently being split from to the free list. Its
          * bytes were added to `c_bytes_in_use` when it was pulled from the
-         * driver, so without this the block would neither be accounted for in
-         * the loop below nor freed while the device is still alive.
+         * pool, so without this the block would neither be handed back below
+         * nor freed while the device is still alive.
          */
-        pool.splitting.reset();
+        /**
+         * Funnel the block currently being split from back into the local free
+         * list: `reset` drops the last reference, whose
+         * `~device_memory_allocation` routes the whole block through
+         * `deallocate` into `free_memory` (or, if oversized, straight back to
+         * the pool). The drain below then hands it to the shared pool along
+         * with the rest. This is why the reset must run before the drain.
+         */
+        p.splitting.reset();
+        /**
+         * Hand every whole block in the local free list back to the shared
+         * device pool rather than dropping it. Dropping would free the block to
+         * the driver behind the pool's back -- leaving the pool's driver-byte
+         * accounting overcounted and the block lost for reuse by the next
+         * allocator. Every pooled block is exactly `allocation_block_size`.
+         */
+        for (auto &&handle : p.free_memory) {
+            device().block_pool.release(
+                    std::move(handle),
+                    static_cast<std::uint32_t>(memory_type_index),
+                    config.allocation_block_size);
+        }
         c_bytes_in_use -= static_cast<std::int64_t>(
-                pool.free_memory.size() * config.allocation_block_size);
-    }
+                p.free_memory.size() * config.allocation_block_size);
+    });
     pools.clear();
 }
 

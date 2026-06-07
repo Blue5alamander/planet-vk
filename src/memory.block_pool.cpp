@@ -7,8 +7,11 @@ namespace {
 
 
 planet::vk::device_memory_block_pool::device_memory_block_pool(
-        std::string_view const n, id::suffix const s)
+        std::string_view const n,
+        std::size_t const driver_block_size,
+        id::suffix const s)
 : id{"planet_vk_device_memory_block_pool__" + std::string{n}, s},
+  driver_block_size{driver_block_size},
   c_driver_blocks_allocated{name() + "__driver_blocks_allocated"},
   c_driver_blocks_freed{name() + "__driver_blocks_freed"},
   c_driver_bytes_in_use{name() + "__driver_bytes_in_use"},
@@ -30,8 +33,13 @@ planet::vk::device_memory_allocation::handle_type
                 vk::device &device,
                 std::uint32_t const memory_type_index,
                 std::size_t const block_size) {
-    auto &list = list_for(memory_type_index, block_size);
-    {
+    /**
+     * Oversized blocks are never pooled, so skip the free-list lookup and go
+     * straight to the driver. Everything below the threshold checks its free
+     * list first.
+     */
+    if (block_size <= driver_block_size) {
+        auto &list = list_for(memory_type_index, block_size);
         std::scoped_lock _{list.mtx};
         if (not list.blocks.empty()) {
             auto handle = std::move(list.blocks.back());
@@ -54,6 +62,18 @@ void planet::vk::device_memory_block_pool::release(
         device_memory_allocation::handle_type handle,
         std::uint32_t const memory_type_index,
         std::size_t const block_size) {
+    if (block_size > driver_block_size) {
+        /**
+         * An oversized block is never retained: free it straight back to the
+         * driver and account for it here, mirroring the acquire bypass.
+         * (Poolable blocks stay in their free list and are only counted out at
+         * `clear`.) `handle` is freed by its destructor as it leaves this
+         * scope.
+         */
+        ++c_driver_blocks_freed;
+        c_driver_bytes_in_use -= static_cast<std::int64_t>(block_size);
+        return;
+    }
     auto &list = list_for(memory_type_index, block_size);
     std::scoped_lock _{list.mtx};
     list.blocks.push_back(std::move(handle));

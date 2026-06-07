@@ -44,12 +44,28 @@ namespace planet::vk {
             std::vector<device_memory_allocation::handle_type> blocks;
         };
 
+        /// ### Blocks larger than this are never pooled
+        /**
+         * An `acquire` whose `size` exceeds this threshold goes straight to the
+         * driver, and the matching `release` frees it straight back -- such a
+         * one-off block (e.g. a swap-chain attachment, which can be far larger
+         * than a driver block) is never retained in a free list keyed by its
+         * exact size, where it could otherwise live forever. Blocks `<=` this
+         * threshold are pooled and retained for reuse.
+         */
+        std::size_t const driver_block_size;
+
         /// ### Free lists keyed by `(memory_type_index, block_size)`
         /**
          * `map_mtx` guards the map structure; each `free_list::mtx` guards its
-         * own block vector. The two are never held nested in `acquire`/`release`
-         * (the map lock is dropped before a list lock is taken), so the only
-         * nested order is `clear`'s `map_mtx` then `free_list::mtx`.
+         * own block vector. The two are never held nested in
+         * `acquire`/`release` (the map lock is dropped before a list lock is
+         * taken), so the only nested order is `clear`'s `map_mtx` then
+         * `free_list::mtx`.
+         *
+         * TODO This doesn't really need a mutex and a map. We know how many
+         * memory indexes there are so we should be able to put all of this in a
+         * single vector whose size is established at construction time.
          */
         std::mutex map_mtx;
         std::map<std::pair<std::uint32_t, std::size_t>, free_list> free_lists;
@@ -62,9 +78,13 @@ namespace planet::vk {
         /**
          * The `name` is combined with the pool's type to name the telemetry
          * counters, exactly as `device_memory_allocator` names its own.
+         * `driver_block_size` is the largest block the pool will retain; larger
+         * requests bypass the free lists entirely (see `driver_block_size`).
          */
         explicit device_memory_block_pool(
-                std::string_view name, id::suffix = id::suffix::suppress);
+                std::string_view name,
+                std::size_t driver_block_size = 64u << 20,
+                id::suffix = id::suffix::suppress);
 
 
         /// ### Acquire a whole block of the requested type and size
