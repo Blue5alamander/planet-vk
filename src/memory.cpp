@@ -163,7 +163,13 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
     auto const bytes = felspar::memory::block_size(bytes_requested, alignment);
     auto &pool = pools[memory_type_index];
     std::scoped_lock _{pool.mtx};
-    if (pool.splitting.size() < bytes) {
+    /**
+     * The current splitting block must have room for `bytes` *after* its offset
+     * is realigned to `alignment` -- otherwise carve from a fresh block. A
+     * bare `size() < bytes` check would miss the alignment padding and let
+     * `split` throw on a request a fresh block could satisfy.
+     */
+    if (not pool.splitting.can_split(bytes, alignment)) {
         pool.splitting.reset();
         auto const allocating = std::max(bytes, config.allocation_block_size);
         device_memory_allocation::handle_type handle;
@@ -295,14 +301,22 @@ planet::vk::device_memory::mapping planet::vk::device_memory::map_memory(
 }
 
 
+bool planet::vk::device_memory::can_split(
+        std::size_t const bytes, std::size_t const alignment) const noexcept {
+    auto const aligned_offset =
+            felspar::memory::aligned_offset(offset, alignment);
+    return bytes + aligned_offset - offset <= byte_count;
+}
+
+
 planet::vk::device_memory planet::vk::device_memory::split(
         std::size_t const bytes, std::size_t const alignment) {
-    auto aligned_offset = felspar::memory::aligned_offset(offset, alignment);
-    auto const growth = bytes + aligned_offset - offset;
-    if (growth > byte_count) {
+    if (not can_split(bytes, alignment)) {
         throw felspar::stdexcept::logic_error{
                 "The split is larger than the memory block"};
     }
+    auto aligned_offset = felspar::memory::aligned_offset(offset, alignment);
+    auto const growth = bytes + aligned_offset - offset;
     device_memory first{
             device_memory_allocation::increment(allocation), aligned_offset,
             bytes};

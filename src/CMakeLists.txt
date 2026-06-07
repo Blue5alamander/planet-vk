@@ -42,6 +42,7 @@ endif()
 add_test_run(check planet-vk TESTS
         init.tests.cpp
         memory.block_pool.tests.cpp
+        memory.tests.cpp
     )
 
 

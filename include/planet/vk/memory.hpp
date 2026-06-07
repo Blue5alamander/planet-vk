@@ -128,6 +128,16 @@ namespace planet::vk {
          */
         device_memory split(std::size_t bytes, std::size_t alignment);
 
+        /// ### Whether a `split` of `bytes` at `alignment` would fit
+        /**
+         * `split` realigns the current offset up to `alignment`, so it needs
+         * `bytes` plus that alignment padding -- which can exceed `size()`. The
+         * allocator uses this to decide whether to carve the request from this
+         * block or pull a fresh one, instead of letting `split` throw on a
+         * request that a fresh block could satisfy.
+         */
+        bool can_split(std::size_t bytes, std::size_t alignment) const noexcept;
+
 
         /// ### Free the held memory
         void reset() {
