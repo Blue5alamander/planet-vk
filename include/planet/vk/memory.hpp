@@ -40,6 +40,7 @@ namespace planet::vk {
     class device_memory_allocation final {
         friend class device_memory;
         friend class device_memory_allocator;
+        friend class device_memory_block_pool;
 
         static void deallocate(
                 VkDevice, VkDeviceMemory, VkAllocationCallbacks const *);
