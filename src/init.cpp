@@ -485,6 +485,35 @@ VkFormatProperties planet::vk::physical_device::format_properties(
 }
 
 
+std::string planet::vk::physical_device::memory_type_name(
+        std::uint32_t const memory_type_index) const {
+    if (memory_type_index >= memory_properties.memoryTypeCount) {
+        planet::log::critical(
+                "memory_type_index out of range", memory_type_index, "count",
+                memory_properties.memoryTypeCount);
+    }
+    auto const &type = memory_properties.memoryTypes[memory_type_index];
+    auto const flags = type.propertyFlags;
+    std::string description;
+    auto const add = [&](VkMemoryPropertyFlagBits const bit,
+                         char const *const n) {
+        if (flags bitand bit) {
+            if (not description.empty()) { description += '|'; }
+            description += n;
+        }
+    };
+    add(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, "DEVICE_LOCAL");
+    add(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, "HOST_VISIBLE");
+    add(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "HOST_COHERENT");
+    add(VK_MEMORY_PROPERTY_HOST_CACHED_BIT, "HOST_CACHED");
+    add(VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT, "LAZILY_ALLOCATED");
+    add(VK_MEMORY_PROPERTY_PROTECTED_BIT, "PROTECTED");
+    if (description.empty()) { description = "none"; }
+    return std::to_string(memory_type_index) + ':' + description + "@heap"
+            + std::to_string(type.heapIndex);
+}
+
+
 /// ## `planet::vk::queue`
 
 
