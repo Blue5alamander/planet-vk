@@ -54,7 +54,8 @@ namespace planet::vk {
 
 
         /**
-         * The debug messenger is automatically used if there are validation layers present
+         * The debug messenger is automatically used if there are validation
+         * layers present
          */
         vk::debug_messenger debug_messenger;
 

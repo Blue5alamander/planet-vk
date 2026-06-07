@@ -6,6 +6,7 @@ add_library(planet-vk
         commands.cpp
         descriptors.cpp
         frame_buffer.cpp
+        headless.cpp
         image.cpp
         init.cpp
         memory.cpp
@@ -30,11 +31,16 @@ else()
             Vulkan::Vulkan
         )
 endif()
+
 install(TARGETS planet-vk LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 if (PLANET_VK_VALIDATION)
     target_compile_definitions(planet-vk PRIVATE
         PLANET_VK_VALIDATION=1)
 endif()
+
+add_test_run(check planet-vk TESTS
+        init.tests.cpp
+    )
 
 
 add_library(planet-vk-sdl
