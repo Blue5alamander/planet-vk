@@ -11,6 +11,26 @@
 namespace planet::vk {
 
 
+    /// ## Transfer source usage for the swap chain images
+    /**
+     * Whether the swap chain images were created with
+     * `VK_IMAGE_USAGE_TRANSFER_SRC_BIT` so their contents can be copied out
+     * (for example to save a screenshot). Pass `requested` at construction to
+     * ask for it; after creation the value resolves to `available` or
+     * `not_available` depending on what the surface supports.
+     */
+    enum class transfer_source {
+        /// Transfer-source usage was not asked for
+        not_requested,
+        /// Transfer-source usage was asked for (not yet resolved)
+        requested,
+        /// Requested and supported -- the images carry the usage bit
+        available,
+        /// Requested but the surface does not support it
+        not_available,
+    };
+
+
     /// ## A swap chain
     class swap_chain final {
         using handle_type =
@@ -24,8 +44,20 @@ namespace planet::vk {
 
       public:
         /// ### Creation
+        /**
+         * Pass `transfer_source::requested` to ask for the images to be created
+         * with `VK_IMAGE_USAGE_TRANSFER_SRC_BIT` so their contents can be
+         * copied out (for example to save a screenshot). The request is only
+         * honoured when the surface supports it -- check `transfer` to see
+         * whether it actually happened.
+         */
         template<typename Ex>
-        swap_chain(vk::device &d, Ex const ex) : device{d} {
+        swap_chain(
+                vk::device &d,
+                Ex const ex,
+                vk::transfer_source const request =
+                        transfer_source::not_requested)
+        : device{d}, transfer{request} {
             create(ex);
         }
 
@@ -60,6 +92,16 @@ namespace planet::vk {
                 calculate_extents(vk::device const &, affine::extents2d);
         /// #### The extents the current swap chain has been created for
         VkExtent2D extents;
+
+
+        /// ### Whether the images can be used as a transfer source
+        /**
+         * Resolves to `transfer_source::available` when transfer-source usage
+         * was requested at construction *and* the surface supports it, meaning
+         * the images were created with `VK_IMAGE_USAGE_TRANSFER_SRC_BIT` and
+         * their contents can be copied out.
+         */
+        transfer_source transfer;
 
 
         /// ### The swap chain images, and their views

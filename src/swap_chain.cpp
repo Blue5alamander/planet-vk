@@ -37,6 +37,16 @@ std::uint32_t planet::vk::swap_chain::create(VkExtent2D const wsize) {
     info.imageExtent = extents = wsize;
     info.imageArrayLayers = 1;
     info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (transfer != transfer_source::not_requested) {
+        if (surface.capabilities.supportedUsageFlags
+            bitand VK_IMAGE_USAGE_TRANSFER_SRC_BIT) {
+            info.imageUsage =
+                    info.imageUsage bitor VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+            transfer = transfer_source::available;
+        } else {
+            transfer = transfer_source::not_available;
+        }
+    }
 
     std::array queues{
             surface.graphics_queue_family_index(),

@@ -1,5 +1,6 @@
 #include <planet/log.hpp>
 #include <planet/vk/headless.hpp>
+#include <planet/vk/swap_chain.hpp>
 
 #include <felspar/test.hpp>
 
@@ -28,6 +29,19 @@ namespace {
         check(vulkan.device.get() != VK_NULL_HANDLE) == true;
         check(vulkan.device.graphics_queue != VK_NULL_HANDLE) == true;
         check(vulkan.device.present_queue != VK_NULL_HANDLE) == true;
+
+        /**
+         * The headless surface should advertise
+         * `VK_IMAGE_USAGE_TRANSFER_SRC_BIT`, so a swap chain that requests it
+         * gets `transfer_source::available` and its images can be copied out
+         * (the basis for screenshot/readback support).
+         */
+        planet::vk::swap_chain swap_chain{
+                vulkan.device, planet::affine::extents2d{1920, 1080},
+                planet::vk::transfer_source::requested};
+
+        check(swap_chain.transfer == planet::vk::transfer_source::available)
+                == true;
     });
 
 
