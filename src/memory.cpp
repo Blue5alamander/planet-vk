@@ -23,10 +23,12 @@ namespace {
     planet::telemetry::map<std::size_t, std::size_t>
             c_global_device_pool_block_sizes{
                     "planet_vk_device_memory_allocator_device_pool__block_sizes"};
-    planet::telemetry::counter c_global_bytes_in_use{
-            "planet_vk_device_memory_allocator__bytes_in_use"};
-    planet::telemetry::max c_global_bytes_peak{
-            "planet_vk_device_memory_allocator__bytes_peak"};
+    planet::telemetry::counter c_global_bytes_held{
+            "planet_vk_device_memory_allocator__bytes_held"};
+    planet::telemetry::counter c_global_free_blocks{
+            "planet_vk_device_memory_allocator__free_blocks"};
+    planet::telemetry::max c_global_bytes_held_peak{
+            "planet_vk_device_memory_allocator__bytes_held_peak"};
 
     auto const bump = [](auto &n) { ++n; };
 }
@@ -143,8 +145,9 @@ planet::vk::device_memory_allocator::device_memory_allocator(
   c_memory_deallocation_count{name() + "__memory_deallocation_count"},
   c_allocation_sizes{name() + "__allocation_sizes"},
   c_device_pool_block_sizes{name() + "__device_pool_block_sizes"},
-  c_bytes_in_use{name() + "__bytes_in_use", c_global_bytes_in_use},
-  c_bytes_peak{name() + "__bytes_peak"} {
+  c_bytes_held{name() + "__bytes_held", c_global_bytes_held},
+  c_free_blocks{name() + "__free_blocks", c_global_free_blocks},
+  c_bytes_held_peak{name() + "__bytes_held_peak"} {
     ++c_allocators_created;
 }
 
@@ -178,16 +181,17 @@ planet::vk::device_memory planet::vk::device_memory_allocator::allocate(
             ++c_block_allocation_from_device_pool;
             c_device_pool_block_sizes.update(allocating, 1u, bump);
             c_global_device_pool_block_sizes.update(allocating, 1u, bump);
-            c_bytes_in_use += static_cast<std::int64_t>(allocating);
-            c_bytes_peak.value(
-                    static_cast<std::uint64_t>(c_bytes_in_use.value()));
-            c_global_bytes_peak.value(
-                    static_cast<std::uint64_t>(c_global_bytes_in_use.value()));
+            c_bytes_held += static_cast<std::int64_t>(allocating);
+            c_bytes_held_peak.value(
+                    static_cast<std::uint64_t>(c_bytes_held.value()));
+            c_global_bytes_held_peak.value(
+                    static_cast<std::uint64_t>(c_global_bytes_held.value()));
             handle = device().block_pool.acquire(
                     device, memory_type_index, allocating);
         } else {
             handle = std::move(pool.free_memory.back());
             pool.free_memory.pop_back();
+            --c_free_blocks;
             ++c_block_allocation_from_free_list;
         }
         pool.splitting = {
@@ -220,10 +224,11 @@ void planet::vk::device_memory_allocator::deallocate(
         auto &pool = pools[memory_type_index];
         std::scoped_lock _{pool.mtx};
         pool.free_memory.push_back(std::move(h));
+        ++c_free_blocks;
         ++c_block_deallocated_added_to_free_list;
     } else {
         ++c_block_deallocation_returned_to_device_pool;
-        c_bytes_in_use -= static_cast<std::int64_t>(size);
+        c_bytes_held -= static_cast<std::int64_t>(size);
         device().block_pool.release(std::move(h), memory_type_index, size);
     }
 }
@@ -259,8 +264,9 @@ void planet::vk::device_memory_allocator::clear_without_check() {
                     static_cast<std::uint32_t>(memory_type_index),
                     config.allocation_block_size);
         }
-        c_bytes_in_use -= static_cast<std::int64_t>(
+        c_bytes_held -= static_cast<std::int64_t>(
                 p.free_memory.size() * config.allocation_block_size);
+        c_free_blocks -= static_cast<std::int64_t>(p.free_memory.size());
     });
     pools.clear();
 }

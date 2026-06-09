@@ -264,11 +264,21 @@ namespace planet::vk {
                 c_block_deallocation_returned_to_device_pool,
                 c_memory_allocation_count, c_memory_deallocation_count;
 
-        /// ### Allocation size histograms and live/peak GPU footprint
+        /// ### Allocation size histograms
         telemetry::map<std::size_t, std::size_t> c_allocation_sizes,
                 c_device_pool_block_sizes;
-        telemetry::counter c_bytes_in_use;
-        telemetry::max c_bytes_peak;
+
+        /// ### Bytes held from the pool, its peak, and the idle-block count
+        /**
+         * Whole blocks are only returned to the shared pool when the allocator
+         * is destroyed (or, for oversized blocks, freed early), so `c_bytes_held`
+         * trends upwards rather than tracking live use. `c_free_blocks` is the
+         * live count of whole blocks sitting idle in this allocator's local free
+         * list -- the part of `c_bytes_held` not currently carved into
+         * sub-allocations.
+         */
+        telemetry::counter c_bytes_held, c_free_blocks;
+        telemetry::max c_bytes_held_peak;
     };
 
 
