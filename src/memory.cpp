@@ -8,25 +8,25 @@
 
 namespace {
     planet::telemetry::counter c_allocators_created{
-            "planet_vk_device_memory_allocator_created"};
+            "planet_vk_device_memory_allocator__created"};
     planet::telemetry::counter c_allocators_destroyed{
-            "planet_vk_device_memory_allocator_destroyed"};
+            "planet_vk_device_memory_allocator__destroyed"};
     planet::telemetry::counter c_allocations{
-            "planet_vk_device_memory_allocator_memory_allocations"};
+            "planet_vk_device_memory_allocator_memory__allocations"};
     planet::telemetry::counter c_deallocations{
-            "planet_vk_device_memory_allocator_memory_deallocations"};
+            "planet_vk_device_memory_allocator_memory__deallocations"};
     planet::telemetry::counter c_total_allocated{
-            "planet_vk_device_memory_allocator_memory_total_allocated"};
+            "planet_vk_device_memory_allocator_memory__total_allocated"};
 
     planet::telemetry::map<std::size_t, std::size_t> c_global_allocation_sizes{
-            "planet_vk_device_memory_allocator_allocation_sizes"};
+            "planet_vk_device_memory_allocator_allocation__sizes"};
     planet::telemetry::map<std::size_t, std::size_t>
             c_global_device_pool_block_sizes{
-                    "planet_vk_device_memory_allocator_device_pool_block_sizes"};
+                    "planet_vk_device_memory_allocator_device_pool__block_sizes"};
     planet::telemetry::counter c_global_bytes_in_use{
-            "planet_vk_device_memory_allocator_bytes_in_use"};
+            "planet_vk_device_memory_allocator__bytes_in_use"};
     planet::telemetry::max c_global_bytes_peak{
-            "planet_vk_device_memory_allocator_bytes_peak"};
+            "planet_vk_device_memory_allocator__bytes_peak"};
 
     auto const bump = [](auto &n) { ++n; };
 }
