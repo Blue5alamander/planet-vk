@@ -258,27 +258,79 @@ namespace planet::vk {
 
 
       private:
-        telemetry::counter c_block_allocation_from_device_pool,
-                c_block_allocation_from_free_list,
-                c_block_deallocated_added_to_free_list,
-                c_block_deallocation_returned_to_device_pool,
-                c_memory_allocation_count, c_memory_deallocation_count;
+        /// ### Telemetry
 
-        /// ### Allocation size histograms
-        telemetry::map<std::size_t, std::size_t> c_allocation_sizes,
-                c_device_pool_block_sizes;
+        /// #### Whole blocks drawn fresh from the shared pool (free-list miss)
+        telemetry::counter c_block_allocation_from_device_pool{
+                name() + "__block_allocation_from_device_pool"};
+        /**
+         * Bumped when `allocate` can satisfy a request from neither the
+         * splitting block nor the local free list and pulls a fresh whole block
+         * from `device_memory_block_pool`.
+         */
+
+        /// #### Whole blocks reused from this allocator's local free list (hit)
+        telemetry::counter c_block_allocation_from_free_list{
+                name() + "__block_allocation_from_free_list"};
+
+        /// #### Whole blocks parked in the local free list on deallocation
+        telemetry::counter c_block_deallocated_added_to_free_list{
+                name() + "__block_deallocated_added_to_free_list"};
+        /**
+         * A freed block of size `<= allocation_block_size` is kept in the local
+         * free list -- counted live by `c_free_blocks` -- rather than returned
+         * to the shared pool.
+         */
+
+        /// #### Oversized blocks returned straight to the shared pool
+        telemetry::counter c_block_deallocation_returned_to_device_pool{
+                name() + "__block_deallocation_returned_to_device_pool"};
+        /**
+         * A freed block larger than `allocation_block_size` bypasses the local
+         * free list and goes back to `device_memory_block_pool` immediately.
+         */
+
+        /// #### Ownership references taken on `device_memory_allocation` blocks
+        telemetry::counter c_memory_allocation_count{
+                name() + "__memory_allocation_count"};
+        /**
+         * Bumped by the `device_memory_allocation` constructor and by
+         * `increment` (which `split` uses), so it counts reference acquisitions
+         * on the underlying block, not allocations of memory.
+         *
+         * TODO Misleading name. `c_memory_allocation_count` minus
+         * `c_memory_deallocation_count` is the number of live `device_memory`
+         * handles, not a count of `allocate` calls. Rename to something like
+         * `c_block_refs_taken`/`c_block_refs_released`.
+         */
+
+        /// #### Ownership references released on `device_memory_allocation` blocks
+        telemetry::counter c_memory_deallocation_count{
+                name() + "__memory_deallocation_count"};
+        /**
+         * TODO Counterpart to `c_memory_allocation_count`: counts reference
+         * releases via `decrement`, not deallocations. Rename alongside it.
+         */
+
+        /// #### Per-allocator histogram of requested allocation sizes
+        telemetry::map<std::size_t, std::size_t> c_allocation_sizes{
+                name() + "__allocation_sizes"};
+
+        /// #### Per-allocator histogram of whole-block sizes pulled from the pool
+        telemetry::map<std::size_t, std::size_t> c_device_pool_block_sizes{
+                name() + "__device_pool_block_sizes"};
 
         /// ### Bytes held from the pool, its peak, and the idle-block count
+        telemetry::counter c_bytes_held, c_free_blocks;
+        telemetry::max c_bytes_held_peak{name() + "__bytes_held_peak"};
         /**
          * Whole blocks are only returned to the shared pool when the allocator
-         * is destroyed (or, for oversized blocks, freed early), so `c_bytes_held`
-         * trends upwards rather than tracking live use. `c_free_blocks` is the
-         * live count of whole blocks sitting idle in this allocator's local free
-         * list -- the part of `c_bytes_held` not currently carved into
-         * sub-allocations.
+         * is destroyed (or, for oversized blocks, freed early), so
+         * `c_bytes_held` trends upwards rather than tracking live use.
+         * `c_free_blocks` is the live count of whole blocks sitting idle in
+         * this allocator's local free list -- the part of `c_bytes_held` not
+         * currently carved into sub-allocations.
          */
-        telemetry::counter c_bytes_held, c_free_blocks;
-        telemetry::max c_bytes_held_peak;
     };
 
 

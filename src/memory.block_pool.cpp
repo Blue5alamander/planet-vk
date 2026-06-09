@@ -11,12 +11,7 @@ planet::vk::device_memory_block_pool::device_memory_block_pool(
         std::size_t const driver_block_size,
         id::suffix const s)
 : id{"planet_vk_device_memory_block_pool__" + std::string{n}, s},
-  driver_block_size{driver_block_size},
-  c_driver_blocks_allocated{name() + "__driver_blocks_allocated"},
-  c_driver_blocks_freed{name() + "__driver_blocks_freed"},
-  c_driver_bytes_in_use{name() + "__driver_bytes_in_use"},
-  c_driver_bytes_peak{name() + "__driver_bytes_peak"},
-  c_driver_block_sizes{name() + "__driver_block_sizes"} {}
+  driver_block_size{driver_block_size} {}
 
 
 planet::vk::device_memory_block_pool::free_list &
@@ -33,6 +28,7 @@ planet::vk::device_memory_allocation::handle_type
                 vk::device &device,
                 std::uint32_t const memory_type_index,
                 std::size_t const block_size) {
+    c_acquired_block_sizes.update(block_size, 1u, bump);
     /**
      * Oversized blocks are never pooled, so skip the free-list lookup and go
      * straight to the driver. Everything below the threshold checks its free
@@ -52,7 +48,7 @@ planet::vk::device_memory_allocation::handle_type
     ++c_driver_blocks_allocated;
     c_driver_block_sizes.update(block_size, 1u, bump);
     c_driver_bytes_in_use += static_cast<std::int64_t>(block_size);
-    c_driver_bytes_peak.value(
+    c_driver_bytes_in_use_peak.value(
             static_cast<std::uint64_t>(c_driver_bytes_in_use.value()));
     return handle;
 }

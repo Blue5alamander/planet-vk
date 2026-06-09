@@ -7,29 +7,93 @@
 
 
 namespace {
+    /// ### Telemetry
+
+    /// #### Allocator instances ever constructed
     planet::telemetry::counter c_allocators_created{
             "planet_vk_device_memory_allocator__created"};
+
+    /// #### Allocator instances ever destroyed
     planet::telemetry::counter c_allocators_destroyed{
             "planet_vk_device_memory_allocator__destroyed"};
+    /** `created - destroyed` is the number of allocators currently live. */
+
+    /// #### Raw `vkAllocateMemory` calls through `device_memory_allocation`
     planet::telemetry::counter c_allocations{
             "planet_vk_device_memory_allocator_memory__allocations"};
+    /**
+     * Bumped by `device_memory_allocation::allocate`, now reached only via
+     * `device_memory_block_pool::acquire`, so it counts driver-level
+     * allocations -- not calls to `device_memory_allocator::allocate`.
+     *
+     * TODO Misleading: the `..._allocator_memory__` scope attributes driver
+     * allocations to the allocator, and this duplicates the pool's
+     * `..._block_pool__..._driver_blocks_allocated`. Fold into the pool's
+     * counter or rename to make the driver-call meaning explicit.
+     */
+
+    /// #### Raw `vkFreeMemory` calls through `device_memory_allocation`
     planet::telemetry::counter c_deallocations{
             "planet_vk_device_memory_allocator_memory__deallocations"};
+    /**
+     * TODO As with `c_allocations`: counts driver frees and duplicates the
+     * pool's `..._driver_blocks_freed`, while reading like a count of
+     * `device_memory_allocator` deallocations.
+     */
+
+    /// #### Cumulative bytes ever handed to `vkAllocateMemory`
     planet::telemetry::counter c_total_allocated{
             "planet_vk_device_memory_allocator_memory__total_allocated"};
+    /**
+     * Monotonic lifetime total of every driver allocation's size; never
+     * decremented, so it is not a live figure.
+     *
+     * TODO Like `c_allocations`, this is driver-side accounting living on the
+     * allocator scope, overlapping the pool's driver-byte counters. Consider
+     * moving it onto `device_memory_block_pool`.
+     */
 
+    /// #### Histogram of requested allocation sizes across all allocators
     planet::telemetry::map<std::size_t, std::size_t> c_global_allocation_sizes{
             "planet_vk_device_memory_allocator_allocation__sizes"};
+    /**
+     * Keyed by the `bytes` asked of `device_memory_allocator::allocate` (before
+     * block-size rounding); the value is the count of requests of that size.
+     */
+
+    /// #### Histogram of whole-block sizes pulled from the shared pool
     planet::telemetry::map<std::size_t, std::size_t>
             c_global_device_pool_block_sizes{
                     "planet_vk_device_memory_allocator_device_pool__block_sizes"};
+    /**
+     * Keyed by the block size acquired when an allocator misses its free list
+     * and draws a fresh block from `device_memory_block_pool`.
+     */
+
+    /// #### Device-wide sum of every allocator's `c_bytes_held`
     planet::telemetry::counter c_global_bytes_held{
             "planet_vk_device_memory_allocator__bytes_held"};
+    /**
+     * Parent of each allocator's `c_bytes_held`: the total bytes checked out of
+     * the shared pool across all live allocators. Trends upwards for the same
+     * reason -- see `device_memory_allocator`.
+     */
+
+    /// #### Device-wide sum of every allocator's `c_free_blocks`
     planet::telemetry::counter c_global_free_blocks{
             "planet_vk_device_memory_allocator__free_blocks"};
+    /** Whole blocks idling in allocator-local free lists, device-wide. */
+
+    /// #### Peak of `c_global_bytes_held`
     planet::telemetry::max c_global_bytes_held_peak{
             "planet_vk_device_memory_allocator__bytes_held_peak"};
+    /**
+     * Driven from the global held total rather than the max of per-allocator
+     * peaks, so it is the high-water mark of summed held bytes.
+     */
 
+
+    /// ### Function used to bump a telemetry counter
     auto const bump = [](auto &n) { ++n; };
 }
 
@@ -133,21 +197,10 @@ planet::vk::device_memory_allocator::device_memory_allocator(
   pools(d.instance.gpu().memory_properties.memoryTypeCount),
   device{d},
   config{c},
-  c_block_allocation_from_device_pool{
-          name() + "__block_allocation_from_device_pool"},
-  c_block_allocation_from_free_list{
-          name() + "__block_allocation_from_free_list"},
-  c_block_deallocated_added_to_free_list{
-          name() + "__block_deallocated_added_to_free_list"},
-  c_block_deallocation_returned_to_device_pool{
-          name() + "__block_deallocation_returned_to_device_pool"},
-  c_memory_allocation_count{name() + "__memory_allocation_count"},
-  c_memory_deallocation_count{name() + "__memory_deallocation_count"},
-  c_allocation_sizes{name() + "__allocation_sizes"},
-  c_device_pool_block_sizes{name() + "__device_pool_block_sizes"},
+  // The remaining counters are constructed via NSDMI in the header; these two
+  // stay here because their `c_global_*` parents are file-local to this `.cpp`.
   c_bytes_held{name() + "__bytes_held", c_global_bytes_held},
-  c_free_blocks{name() + "__free_blocks", c_global_free_blocks},
-  c_bytes_held_peak{name() + "__bytes_held_peak"} {
+  c_free_blocks{name() + "__free_blocks", c_global_free_blocks} {
     ++c_allocators_created;
 }
 

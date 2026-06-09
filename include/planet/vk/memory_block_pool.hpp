@@ -116,7 +116,8 @@ namespace planet::vk {
             return c_driver_bytes_in_use.value();
         }
         std::int64_t driver_bytes_peak() const noexcept {
-            return static_cast<std::int64_t>(c_driver_bytes_peak.value());
+            return static_cast<std::int64_t>(
+                    c_driver_bytes_in_use_peak.value());
         }
         std::size_t driver_blocks_allocated() const noexcept {
             return static_cast<std::size_t>(c_driver_blocks_allocated.value());
@@ -127,11 +128,59 @@ namespace planet::vk {
 
 
       private:
-        /// ### Driver-byte and driver-block telemetry owned by the pool
-        telemetry::counter c_driver_blocks_allocated, c_driver_blocks_freed,
-                c_driver_bytes_in_use;
-        telemetry::max c_driver_bytes_peak;
-        telemetry::map<std::size_t, std::size_t> c_driver_block_sizes;
+        /// ### Telemetry
+
+        /// #### Fresh driver allocations performed by the pool
+        telemetry::counter c_driver_blocks_allocated{
+                name() + "__driver_blocks_allocated"};
+        /**
+         * Bumped by `acquire` whenever a free list misses and the pool calls
+         * `vkAllocateMemory`. This is the authoritative driver-allocation count.
+         */
+
+        /// #### Driver blocks freed back to the driver
+        telemetry::counter c_driver_blocks_freed{
+                name() + "__driver_blocks_freed"};
+        /**
+         * Bumped when an oversized block is released, and on `clear` when every
+         * pooled block's handle is dropped and `vkFreeMemory` runs.
+         */
+
+        /// #### Bytes currently held from the driver
+        telemetry::counter c_driver_bytes_in_use{
+                name() + "__driver_bytes_in_use"};
+        telemetry::max c_driver_bytes_in_use_peak{
+                name() + "__driver_bytes_peak"};
+        /**
+         * A block counts from the moment it is allocated from the driver until
+         * `clear` frees it -- whether checked out to an allocator, idling in an
+         * allocator's free list, or sitting in one of the pool's own free
+         * lists. Unlike the allocator's `c_bytes_held`, this is the true
+         * device-wide driver footprint.
+         */
+
+        /// #### Histogram of block sizes delivered by `acquire`
+        telemetry::map<std::size_t, std::size_t> c_acquired_block_sizes{
+                name() + "__acquired_block_sizes"};
+        /**
+         * Updated on every `acquire` -- free-list hit, driver miss, or
+         * oversized bypass -- so it records the demand the pool serves.
+         * `c_acquired_block_sizes` minus `c_driver_block_sizes` is the demand
+         * met by free-list reuse.
+         *
+         * TODO This mirrors the allocator-side
+         * `c_global_device_pool_block_sizes` (the allocator is `acquire`'s only
+         * caller and records the same size just before calling in), so one of
+         * the two is redundant -- decide which object should own it.
+         */
+
+        /// #### Histogram of block sizes freshly allocated from the driver
+        telemetry::map<std::size_t, std::size_t> c_driver_block_sizes{
+                name() + "__driver_block_sizes"};
+        /**
+         * The subset of `c_acquired_block_sizes` that missed the free list and
+         * reached `vkAllocateMemory`.
+         */
     };
 
 
