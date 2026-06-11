@@ -4,6 +4,8 @@
 #include <planet/vk/forward.hpp>
 #include <planet/vk/helpers.hpp>
 
+#include <optional>
+
 
 namespace planet::vk {
 

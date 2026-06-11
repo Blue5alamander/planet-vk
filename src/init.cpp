@@ -160,7 +160,7 @@ void planet::vk::detail::throw_result_error(
 
 planet::vk::device::device(
         vk::instance const &i, vk::extensions const &extensions)
-: instance{i} {
+: instance{i}, block_pool{i} {
     felspar::memory::small_vector<VkDeviceQueueCreateInfo, 3> queue_create_infos;
     auto const graphics_family = instance.surface.graphics_queue_family_index();
     auto const presentation_family =

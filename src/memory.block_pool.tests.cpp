@@ -35,15 +35,17 @@ namespace {
 
     /// ### A released block is recycled rather than re-allocated
     /**
-     * The first `acquire` of a `(memory_type_index, block_size)` on an empty
-     * pool performs one driver allocation. Once that block is `release`d, the
-     * next `acquire` of the same key reuses it without touching the driver.
+     * The first `acquire` for a memory type on an empty pool performs one
+     * driver allocation. Once that block is `release`d, the next `acquire` of
+     * the same size and memory type reuses it without touching the driver.
      */
     auto const recycles = suite.test("recycles-released-block", [](auto check) {
         planet::vk::headless vulkan;
         auto const mti = any_memory_type(vulkan);
 
-        planet::vk::device_memory_block_pool pool{"recycles"};
+        planet::vk::device_memory_block_pool pool{
+                vulkan.instance, block_64mib,
+                planet::telemetry::id::suffix::add};
         check(pool.driver_blocks_allocated()) == 0u;
 
         auto block = pool.acquire(vulkan.device, mti, block_64mib);
@@ -61,51 +63,58 @@ namespace {
     });
 
 
-    /// ### Blocks are kept separate by memory type and size
+    /// ### Each memory type has its own free list; off-size requests bypass
     /**
-     * Free lists are keyed by `(memory_type_index, block_size)`. A released
-     * block only satisfies an `acquire` of the identical key; a request that
-     * differs in either size or memory type allocates a fresh block from the
-     * driver, while the pooled block stays available for its own key.
+     * The pool serves a single block size (`driver_block_size`, here the
+     * default 64 MiB) and keeps one free list per memory type. A request whose
+     * size differs from `driver_block_size` is never pooled -- it goes straight
+     * to the driver -- and a request for a different memory type draws from
+     * that type's own list, so neither reuses a block pooled under `mti`.
      */
-    auto const keyed = suite.test("keyed-by-type-and-size", [](auto check) {
-        planet::vk::headless vulkan;
-        auto const mti = any_memory_type(vulkan);
+    auto const per_type =
+            suite.test("separate-free-list-per-memory-type", [](auto check) {
+                planet::vk::headless vulkan;
+                auto const mti = any_memory_type(vulkan);
 
-        planet::vk::device_memory_block_pool pool{"keyed"};
+                planet::vk::device_memory_block_pool pool{
+                        vulkan.instance, block_64mib,
+                        planet::telemetry::id::suffix::add};
 
-        // Differ by block_size: release a 64 MiB block, acquire a 32 MiB one.
-        auto big = pool.acquire(vulkan.device, mti, block_64mib);
-        check(pool.driver_blocks_allocated()) == 1u;
-        pool.release(std::move(big), mti, block_64mib);
+                // Off-size request: release a 64 MiB block, then acquire a
+                // 32 MiB one. 32 MiB != driver_block_size, so it bypasses the
+                // pool and allocates fresh rather than reusing the pooled block.
+                auto big = pool.acquire(vulkan.device, mti, block_64mib);
+                check(pool.driver_blocks_allocated()) == 1u;
+                pool.release(std::move(big), mti, block_64mib);
 
-        auto small = pool.acquire(vulkan.device, mti, block_32mib);
-        check(pool.driver_blocks_allocated())
-                == 2u; // different size -> not reused
-        pool.release(std::move(small), mti, block_32mib);
+                auto small = pool.acquire(vulkan.device, mti, block_32mib);
+                check(pool.driver_blocks_allocated())
+                        == 2u; // off-size -> bypasses the pool
+                pool.release(std::move(small), mti, block_32mib);
 
-        // Differ by memory_type_index when the GPU exposes more than one type.
-        // A 64 MiB block released under `mti` is still pooled, so an acquire of
-        // the same size under a different type must hit the driver, while a
-        // later acquire under `mti` reuses the pooled block.
-        auto const &gpump = vulkan.instance.gpu().memory_properties;
-        if (gpump.memoryTypeCount > 1u) {
-            auto const other = mti == 0u ? 1u : 0u;
-            auto const before = pool.driver_blocks_allocated();
+                // Differ by memory_type_index when the GPU exposes more than
+                // one type. The 64 MiB block released under `mti` sits in
+                // `mti`'s free list, so an acquire of the same size under a
+                // different type must hit the driver, while a later acquire
+                // under `mti` reuses the pooled block.
+                auto const &gpump = vulkan.instance.gpu().memory_properties;
+                if (gpump.memoryTypeCount > 1u) {
+                    auto const other = mti == 0u ? 1u : 0u;
+                    auto const before = pool.driver_blocks_allocated();
 
-            auto b = pool.acquire(vulkan.device, other, block_64mib);
-            check(pool.driver_blocks_allocated())
-                    == before + 1u; // different type -> not reused
-            pool.release(std::move(b), other, block_64mib);
+                    auto b = pool.acquire(vulkan.device, other, block_64mib);
+                    check(pool.driver_blocks_allocated())
+                            == before + 1u; // different type -> not reused
+                    pool.release(std::move(b), other, block_64mib);
 
-            auto a = pool.acquire(vulkan.device, mti, block_64mib);
-            check(pool.driver_blocks_allocated())
-                    == before + 1u; // same key -> pooled block reused
-            pool.release(std::move(a), mti, block_64mib);
-        }
+                    auto a = pool.acquire(vulkan.device, mti, block_64mib);
+                    check(pool.driver_blocks_allocated())
+                            == before + 1u; // same type -> pooled block reused
+                    pool.release(std::move(a), mti, block_64mib);
+                }
 
-        pool.clear();
-    });
+                pool.clear();
+            });
 
 
     /// ### Blocks larger than the threshold are never pooled
@@ -124,7 +133,8 @@ namespace {
                 // A small threshold keeps the test's driver allocations tiny.
                 constexpr std::size_t threshold = 1u << 20;
                 planet::vk::device_memory_block_pool pool{
-                        "oversized", threshold};
+                        vulkan.instance, threshold,
+                        planet::telemetry::id::suffix::add};
 
                 constexpr std::size_t big = 2u << 20; // > threshold
 
@@ -160,7 +170,8 @@ namespace {
 
                 constexpr std::size_t threshold = 1u << 20;
                 planet::vk::device_memory_block_pool pool{
-                        "poolable", threshold};
+                        vulkan.instance, threshold,
+                        planet::telemetry::id::suffix::add};
 
                 // Exactly at the threshold: poolable.
                 auto block = pool.acquire(vulkan.device, mti, threshold);
@@ -188,7 +199,9 @@ namespace {
         planet::vk::headless vulkan;
         auto const mti = any_memory_type(vulkan);
 
-        planet::vk::device_memory_block_pool pool{"clears"};
+        planet::vk::device_memory_block_pool pool{
+                vulkan.instance, block_64mib,
+                planet::telemetry::id::suffix::add};
 
         // Hold three blocks at once so each `acquire` hits the driver rather
         // than reusing a just-released block.
@@ -210,7 +223,7 @@ namespace {
 
     /// ### Concurrent `acquire`/`release` is race-free
     /**
-     * Many threads churn blocks of one key through the pool without
+     * Many threads churn blocks of one memory type through the pool without
      * double-freeing or racing (TSan-clean). Once every thread has returned its
      * block, `clear` frees exactly the blocks that were allocated.
      */
@@ -219,7 +232,9 @@ namespace {
                 planet::vk::headless vulkan;
                 auto const mti = any_memory_type(vulkan);
 
-                planet::vk::device_memory_block_pool pool{"concurrent"};
+                planet::vk::device_memory_block_pool pool{
+                        vulkan.instance, block_64mib,
+                        planet::telemetry::id::suffix::add};
 
                 constexpr std::size_t thread_count = 4u;
                 constexpr std::size_t iterations = 32u;
@@ -246,12 +261,12 @@ namespace {
     /// ## Pool hosted on the device
 
 
-    /// ### Consumers of one key share the device-hosted pool
+    /// ### Consumers of one memory type share the device-hosted pool
     /**
-     * The pool lives on `vk::device`, so any consumer of the same
-     * `(memory_type_index, block_size)` draws from one shared free list. A
-     * block one consumer acquires and releases is reused by the next consumer
-     * of the same key, so the driver-allocation count does not move.
+     * The pool lives on `vk::device`, so any consumer of the same memory type
+     * draws from one shared free list. A block one consumer acquires and
+     * releases is reused by the next consumer of the same memory type, so the
+     * driver-allocation count does not move.
      */
     auto const device_hosted =
             suite.test("device-hosted-shared-pool", [](auto check) {
@@ -298,11 +313,12 @@ namespace {
 
     /// ### Two allocators share one driver block
     /**
-     * A block one `device_memory_allocator` draws from the shared device pool
-     * and releases is reused by a different, later allocator with no new
-     * `vkAllocateMemory`. Requesting more than the allocator's
-     * `allocation_block_size` routes the block through the shared pool, rather
-     * than the allocator's own free list, on both allocation and deallocation.
+     * A whole block one `device_memory_allocator` draws from the shared device
+     * pool and hands back at teardown is reused by a different, later allocator
+     * with no new `vkAllocateMemory`. The allocator's `allocation_block_size`
+     * matches the shared pool's `driver_block_size` (the only size the pool
+     * retains), so the block returned when `first` is torn down is pooled and
+     * available to `second`.
      */
     auto const allocators_share =
             suite.test("allocators-share-driver-block", [](auto check) {
@@ -311,27 +327,27 @@ namespace {
                 auto &pool = vulkan.device.block_pool;
 
                 planet::vk::device_memory_allocator_configuration config;
-                config.allocation_block_size = 1u << 20; // 1 MiB
+                // Match the device pool's block size so drained blocks are
+                // pooled rather than bypassing back to the driver.
+                config.allocation_block_size = block_64mib;
                 config.split = false;
-                // Larger than the block size, so it flows through the pool
-                // rather than the allocator's local free list.
-                constexpr std::size_t oversized = 2u << 20;
+                constexpr std::size_t request = 2u << 20;
                 constexpr std::size_t alignment = 1u << 10;
 
                 auto const before = pool.driver_blocks_allocated();
                 {
                     planet::vk::device_memory_allocator first{
                             "share-first", vulkan.device, config};
-                    auto memory = first.allocate(oversized, mti, alignment);
+                    auto memory = first.allocate(request, mti, alignment);
                     check(pool.driver_blocks_allocated()) == before + 1u;
                     // `memory` is released and `first` torn down at scope exit,
-                    // handing the block back to the shared pool.
+                    // handing the whole block back to the shared pool.
                 }
 
                 {
                     planet::vk::device_memory_allocator second{
                             "share-second", vulkan.device, config};
-                    auto memory = second.allocate(oversized, mti, alignment);
+                    auto memory = second.allocate(request, mti, alignment);
                     check(pool.driver_blocks_allocated()) == before + 1u;
                 }
             });
@@ -342,9 +358,9 @@ namespace {
      * An allocator draws whole blocks from the shared pool but recycles
      * normal-sized ones into its own free list, handing them back to the shared
      * pool only when it is destroyed. After one allocator is destroyed, a
-     * second allocator of the same key reuses the returned block with no new
-     * driver allocation -- if the destroyed allocator had instead dropped the
-     * block to the driver, this second `acquire` would allocate afresh.
+     * second allocator of the same memory type reuses the returned block with no
+     * new driver allocation -- if the destroyed allocator had instead dropped
+     * the block to the driver, this second `acquire` would allocate afresh.
      */
     auto const teardown_returns_blocks =
             suite.test("allocator-teardown-returns-blocks", [](auto check) {
@@ -353,9 +369,11 @@ namespace {
                 auto &pool = vulkan.device.block_pool;
 
                 planet::vk::device_memory_allocator_configuration config;
-                // A block size of its own so the delta below is not perturbed
-                // by the device's other allocators.
-                config.allocation_block_size = 3u << 20;
+                // Match the device pool's block size: only blocks of exactly
+                // this size are retained, so a drained block is pooled rather
+                // than freed back to the driver. The pool starts empty on this
+                // fresh device, so the first allocation hits the driver.
+                config.allocation_block_size = block_64mib;
                 // A small request: the whole block lands in the allocator's
                 // local free list, reaching the shared pool only at teardown.
                 constexpr std::size_t small = 1u << 10;

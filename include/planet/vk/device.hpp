@@ -64,9 +64,10 @@ namespace planet::vk {
          * destroyed **after** them. The allocators hand their blocks back to
          * this pool, so it must outlive them. `~device` `clear`s it explicitly
          * while the device is still alive so the held driver memory is freed
-         * before `vkDestroyDevice`.
+         * before `vkDestroyDevice`. Constructed (in `device::device`) from the
+         * instance so it can size its per-memory-type free lists.
          */
-        device_memory_block_pool block_pool{"device"};
+        device_memory_block_pool block_pool;
 
         /// #### Allocate start-up memory
         /**

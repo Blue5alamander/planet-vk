@@ -8,10 +8,7 @@
 #include <planet/vk/memory.hpp>
 
 #include <cstdint>
-#include <map>
 #include <mutex>
-#include <string_view>
-#include <utility>
 #include <vector>
 
 
@@ -20,77 +17,78 @@ namespace planet::vk {
 
     /// ## Shared pool of whole driver memory blocks
     /**
-     * A device-wide, thread-safe free list of whole driver allocations, keyed
-     * by `(memory_type_index, block_size)`. Allocators draw a recycled block of
-     * the right type and size from here instead of pinning their own, and freed
-     * blocks survive allocator teardown -- so a short-lived allocator no longer
-     * hands its blocks back to the driver only for the next allocator to call
+     * A device-wide, thread-safe free list of whole driver allocations, one
+     * free list per memory type. The pool serves a single block size (its
+     * `driver_block_size`): allocators draw a recycled block of the right
+     * memory type from here instead of pinning their own, and freed blocks
+     * survive allocator teardown -- so a short-lived allocator no longer hands
+     * its blocks back to the driver only for the next allocator to call
      * `vkAllocateMemory` again.
      *
      * This pool owns the driver-byte accounting: a block counts as in use from
      * the moment it is allocated from the driver until `clear` frees it,
      * whether it is currently checked out to an allocator or sitting in a free
-     * list. The telemetry counters are named from the pool's `name`.
+     * list.
      */
     class device_memory_block_pool final : private telemetry::id {
-        /// ### A free list of identically keyed whole blocks
+        /// ### A free list of whole blocks for one memory type
         /**
-         * Each free list owns its own `std::mutex`, so the lists live in
-         * node-stable storage (`std::map`) that never relocates a node once
-         * inserted.
+         * Each free list owns its own `std::mutex`. The lists live in a
+         * `std::vector` sized to the memory-type count at construction and
+         * never resized, so a list's address -- and therefore its mutex -- is
+         * stable for the pool's lifetime.
          */
         struct free_list final {
             std::mutex mtx;
             std::vector<device_memory_allocation::handle_type> blocks;
         };
 
-        /// ### Blocks larger than this are never pooled
+        /// ### The one block size the pool retains
         /**
-         * An `acquire` whose `size` exceeds this threshold goes straight to the
-         * driver, and the matching `release` frees it straight back -- such a
-         * one-off block (e.g. a swap-chain attachment, which can be far larger
-         * than a driver block) is never retained in a free list keyed by its
-         * exact size, where it could otherwise live forever. Blocks `<=` this
-         * threshold are pooled and retained for reuse.
+         * Only blocks of exactly this size are pooled. An `acquire` or
+         * `release` for any other size -- larger (e.g. a swap-chain attachment,
+         * which can be far larger than a driver block) or smaller -- goes
+         * straight to the driver and is never retained, so the per-type free
+         * lists only ever hold interchangeable, identically sized blocks.
          */
         std::size_t const driver_block_size;
 
-        /// ### Free lists keyed by `(memory_type_index, block_size)`
+        /// ### Free lists indexed by `memory_type_index`
         /**
-         * `map_mtx` guards the map structure; each `free_list::mtx` guards its
-         * own block vector. The two are never held nested in
-         * `acquire`/`release` (the map lock is dropped before a list lock is
-         * taken), so the only nested order is `clear`'s `map_mtx` then
-         * `free_list::mtx`.
-         *
-         * TODO This doesn't really need a mutex and a map. We know how many
-         * memory indexes there are so we should be able to put all of this in a
-         * single vector whose size is established at construction time.
+         * Sized to the GPU's memory-type count at construction and never
+         * resized. Indexing into it needs no lock; each `free_list::mtx` guards
+         * only its own block vector.
          */
-        std::mutex map_mtx;
-        std::map<std::pair<std::uint32_t, std::size_t>, free_list> free_lists;
+        std::vector<free_list> free_lists;
 
-        free_list &list_for(std::uint32_t, std::size_t);
+        free_list &list_for(std::uint32_t);
 
 
       public:
-        /// ### Construct a named pool
+        /// ### Construct a pool
         /**
-         * The `name` is combined with the pool's type to name the telemetry
-         * counters, exactly as `device_memory_allocator` names its own.
-         * `driver_block_size` is the largest block the pool will retain; larger
-         * requests bypass the free lists entirely (see `driver_block_size`).
+         * The instance supplies the GPU's memory-type count, which fixes the
+         * number of free lists for the pool's lifetime. `driver_block_size` is
+         * the one size the pool retains; any other size bypasses the free lists
+         * entirely (see `driver_block_size`).
+         *
+         * The telemetry counters are named from the pool's type. The device
+         * hosts a single pool and takes the default `suffix::suppress` for a
+         * clean, stable name; anywhere several pools coexist (e.g. tests) pass
+         * `suffix::add` so each gets a unique machine-generated suffix and the
+         * counter names do not clash.
          */
         explicit device_memory_block_pool(
-                std::string_view name,
+                vk::instance const &,
                 std::size_t driver_block_size = 64u << 20,
                 id::suffix = id::suffix::suppress);
 
 
         /// ### Acquire a whole block of the requested type and size
         /**
-         * Pops a pooled block of the matching `(memory_type_index, block_size)`
-         * or, when none is free, allocates a fresh one from the driver.
+         * Pops a pooled block for `memory_type_index` when `block_size` matches
+         * the pool's `driver_block_size` and one is free; otherwise allocates a
+         * fresh one from the driver.
          */
         device_memory_allocation::handle_type
                 acquire(vk::device &,
