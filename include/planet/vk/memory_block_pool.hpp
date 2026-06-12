@@ -43,6 +43,7 @@ namespace planet::vk {
             std::vector<device_memory_allocation::handle_type> blocks;
         };
 
+
         /// ### The one block size the pool retains
         /**
          * Only blocks of exactly this size are pooled. An `acquire` or
@@ -53,6 +54,7 @@ namespace planet::vk {
          */
         std::size_t const driver_block_size;
 
+
         /// ### Free lists indexed by `memory_type_index`
         /**
          * Sized to the GPU's memory-type count at construction and never
@@ -60,12 +62,15 @@ namespace planet::vk {
          * only its own block vector.
          */
         std::vector<free_list> free_lists;
-
         free_list &list_for(std::uint32_t);
 
 
       public:
         /// ### Construct a pool
+        explicit device_memory_block_pool(
+                vk::instance const &,
+                std::size_t driver_block_size = 64u << 20,
+                id::suffix = id::suffix::suppress);
         /**
          * The instance supplies the GPU's memory-type count, which fixes the
          * number of free lists for the pool's lifetime. `driver_block_size` is
@@ -78,22 +83,19 @@ namespace planet::vk {
          * `suffix::add` so each gets a unique machine-generated suffix and the
          * counter names do not clash.
          */
-        explicit device_memory_block_pool(
-                vk::instance const &,
-                std::size_t driver_block_size = 64u << 20,
-                id::suffix = id::suffix::suppress);
 
 
         /// ### Acquire a whole block of the requested type and size
+        device_memory_allocation::handle_type
+                acquire(vk::device &,
+                        std::uint32_t memory_type_index,
+                        std::size_t block_size);
         /**
          * Pops a pooled block for `memory_type_index` when `block_size` matches
          * the pool's `driver_block_size` and one is free; otherwise allocates a
          * fresh one from the driver.
          */
-        device_memory_allocation::handle_type
-                acquire(vk::device &,
-                        std::uint32_t memory_type_index,
-                        std::size_t block_size);
+
 
         /// ### Return a whole block to its free list for later reuse
         void
@@ -102,11 +104,11 @@ namespace planet::vk {
                         std::size_t block_size);
 
         /// ### Free every pooled block back to the driver
+        void clear();
         /**
          * Drops all held handles -- their `device_handle` destructors call
          * `vkFreeMemory` -- and zeroes the driver-byte gauge.
          */
-        void clear();
 
 
         /// ### Driver-byte and driver-block observability
