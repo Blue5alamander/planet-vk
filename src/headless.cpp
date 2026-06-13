@@ -1,6 +1,7 @@
 #include <planet/vk/headless.hpp>
 
-#include <felspar/exceptions/runtime_error.hpp>
+
+/// ## `planet::vk::headless`
 
 
 namespace {
@@ -22,12 +23,7 @@ namespace {
         /// The extension entry point has to be fetched at runtime
         auto const create = reinterpret_cast<PFN_vkCreateHeadlessSurfaceEXT>(
                 vkGetInstanceProcAddr(handle, "vkCreateHeadlessSurfaceEXT"));
-        if (not create) {
-            throw felspar::stdexcept::runtime_error{
-                    "vkCreateHeadlessSurfaceEXT is not available -- the "
-                    "VK_EXT_headless_surface extension is not supported by this "
-                    "Vulkan implementation"};
-        }
+        if (not create) { throw planet::vk::headless_not_available{}; }
         VkHeadlessSurfaceCreateInfoEXT const info{
                 .sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT,
                 .pNext = nullptr,
@@ -47,3 +43,21 @@ planet::vk::headless::headless()
       auto info = vk::instance::info(extensions, app_info);
       return vk::instance{extensions, info, make_headless_surface};
   }()} {}
+
+
+std::unique_ptr<planet::vk::headless>
+        planet::vk::headless::make_if_available() {
+    try {
+        return std::make_unique<headless>();
+    } catch (headless_not_available const &) { return nullptr; }
+}
+
+
+/// ## `planet::vk::headless_not_available`
+
+
+planet::vk::headless_not_available::headless_not_available(
+        std::source_location const loc)
+: felspar::stdexcept::runtime_error{
+          "vkCreateHeadlessSurfaceEXT is not available -- the VK_EXT_headless_surface extension is not supported by this Vulkan implementation",
+          loc} {}

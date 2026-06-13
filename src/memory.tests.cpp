@@ -35,7 +35,10 @@ namespace {
      * second does not force a fresh driver allocation.
      */
     auto const carves = suite.test("carves-single-block", [](auto check) {
-        planet::vk::headless vulkan;
+        /// Skip rather than fail where `VK_EXT_headless_surface` is unavailable
+        auto const vk = planet::vk::headless::make_if_available();
+        if (not vk) { return; }
+        auto &vulkan = *vk;
         auto const mti = any_memory_type(vulkan);
         auto const before = vulkan.device.block_pool.driver_blocks_allocated();
 
@@ -76,7 +79,10 @@ namespace {
      */
     auto const realigns =
             suite.test("larger-alignment-pulls-fresh-block", [](auto check) {
-                planet::vk::headless vulkan;
+                /// Skip rather than fail without `VK_EXT_headless_surface`
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+                auto &vulkan = *vk;
                 auto const mti = any_memory_type(vulkan);
 
                 planet::vk::device_memory_allocator_configuration config;

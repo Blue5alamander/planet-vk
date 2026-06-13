@@ -40,7 +40,10 @@ namespace {
      * the same size and memory type reuses it without touching the driver.
      */
     auto const recycles = suite.test("recycles-released-block", [](auto check) {
-        planet::vk::headless vulkan;
+        /// Skip rather than fail where `VK_EXT_headless_surface` is unavailable
+        auto const vk = planet::vk::headless::make_if_available();
+        if (not vk) { return; }
+        auto &vulkan = *vk;
         auto const mti = any_memory_type(vulkan);
 
         planet::vk::device_memory_block_pool pool{
@@ -73,7 +76,10 @@ namespace {
      */
     auto const per_type =
             suite.test("separate-free-list-per-memory-type", [](auto check) {
-                planet::vk::headless vulkan;
+                /// Skip rather than fail without `VK_EXT_headless_surface`
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+                auto &vulkan = *vk;
                 auto const mti = any_memory_type(vulkan);
 
                 planet::vk::device_memory_block_pool pool{
@@ -127,7 +133,10 @@ namespace {
      */
     auto const oversized_bypasses =
             suite.test("oversized-block-bypasses-pool", [](auto check) {
-                planet::vk::headless vulkan;
+                /// Skip rather than fail without `VK_EXT_headless_surface`
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+                auto &vulkan = *vk;
                 auto const mti = any_memory_type(vulkan);
 
                 // A small threshold keeps the test's driver allocations tiny.
@@ -165,7 +174,10 @@ namespace {
      */
     auto const threshold_pooled =
             suite.test("block-at-threshold-is-pooled", [](auto check) {
-                planet::vk::headless vulkan;
+                /// Skip rather than fail without `VK_EXT_headless_surface`
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+                auto &vulkan = *vk;
                 auto const mti = any_memory_type(vulkan);
 
                 constexpr std::size_t threshold = 1u << 20;
@@ -196,7 +208,10 @@ namespace {
      * in-use byte count returns to zero.
      */
     auto const clears = suite.test("clear-frees-all", [](auto check) {
-        planet::vk::headless vulkan;
+        /// Skip rather than fail where `VK_EXT_headless_surface` is unavailable
+        auto const vk = planet::vk::headless::make_if_available();
+        if (not vk) { return; }
+        auto &vulkan = *vk;
         auto const mti = any_memory_type(vulkan);
 
         planet::vk::device_memory_block_pool pool{
@@ -229,7 +244,10 @@ namespace {
      */
     auto const concurrent =
             suite.test("concurrent-acquire-release", [](auto check) {
-                planet::vk::headless vulkan;
+                /// Skip rather than fail without `VK_EXT_headless_surface`
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+                auto &vulkan = *vk;
                 auto const mti = any_memory_type(vulkan);
 
                 planet::vk::device_memory_block_pool pool{
@@ -270,7 +288,10 @@ namespace {
      */
     auto const device_hosted =
             suite.test("device-hosted-shared-pool", [](auto check) {
-                planet::vk::headless vulkan;
+                /// Skip rather than fail without `VK_EXT_headless_surface`
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+                auto &vulkan = *vk;
                 auto const mti = any_memory_type(vulkan);
 
                 auto &pool = vulkan.device.block_pool;
@@ -296,7 +317,10 @@ namespace {
      */
     auto const teardown =
             suite.test("device-teardown-frees-pool", [](auto check) {
-                planet::vk::headless vulkan;
+                /// Skip rather than fail without `VK_EXT_headless_surface`
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+                auto &vulkan = *vk;
                 auto const mti = any_memory_type(vulkan);
 
                 auto &pool = vulkan.device.block_pool;
@@ -322,7 +346,10 @@ namespace {
      */
     auto const allocators_share =
             suite.test("allocators-share-driver-block", [](auto check) {
-                planet::vk::headless vulkan;
+                /// Skip rather than fail without `VK_EXT_headless_surface`
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+                auto &vulkan = *vk;
                 auto const mti = any_memory_type(vulkan);
                 auto &pool = vulkan.device.block_pool;
 
@@ -364,7 +391,10 @@ namespace {
      */
     auto const teardown_returns_blocks =
             suite.test("allocator-teardown-returns-blocks", [](auto check) {
-                planet::vk::headless vulkan;
+                /// Skip rather than fail without `VK_EXT_headless_surface`
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+                auto &vulkan = *vk;
                 auto const mti = any_memory_type(vulkan);
                 auto &pool = vulkan.device.block_pool;
 

@@ -24,7 +24,10 @@ namespace {
      * software rasteriser; some proprietary drivers omit it).
      */
     auto const headless = suite.test("headless-device", [](auto check) {
-        planet::vk::headless vulkan;
+        /// Skip rather than fail where `VK_EXT_headless_surface` is unavailable
+        auto const vk = planet::vk::headless::make_if_available();
+        if (not vk) { return; }
+        auto &vulkan = *vk;
 
         check(vulkan.device.get() != VK_NULL_HANDLE) == true;
         check(vulkan.device.graphics_queue != VK_NULL_HANDLE) == true;
