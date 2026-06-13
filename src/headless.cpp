@@ -1,4 +1,8 @@
 #include <planet/vk/headless.hpp>
+#include <planet/vk/helpers.hpp>
+
+#include <algorithm>
+#include <string_view>
 
 
 /// ## `planet::vk::headless`
@@ -7,8 +11,34 @@
 namespace {
 
 
+    /// Does the Vulkan loader advertise the named instance extension?
+    bool instance_extension_available(std::string_view const name) {
+        auto const available = planet::vk::fetch_vector<
+                vkEnumerateInstanceExtensionProperties, VkExtensionProperties>(
+                nullptr);
+        return std::find_if(
+                       available.begin(), available.end(),
+                       [name](VkExtensionProperties const &ext) {
+                           return name == ext.extensionName;
+                       })
+                != available.end();
+    }
+
+
     /// Build the instance extensions needed for a headless surface
     planet::vk::extensions headless_extensions() {
+        /**
+         * `vkCreateInstance` fails with `VK_ERROR_EXTENSION_NOT_PRESENT` -- a
+         * generic Vulkan error -- if we enable an extension the loader doesn't
+         * advertise, so check for `VK_EXT_headless_surface` up front and throw
+         * the dedicated exception. The runtime proc-address check below would
+         * never be reached on a driver that omits the extension because
+         * instance creation throws first.
+         */
+        if (not instance_extension_available(
+                    VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME)) {
+            throw planet::vk::headless_not_available{};
+        }
         planet::vk::extensions exts;
         /// `VK_EXT_headless_surface` depends on the base `VK_KHR_surface`
         exts.vulkan_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
