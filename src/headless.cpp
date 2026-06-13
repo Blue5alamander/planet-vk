@@ -45,8 +45,7 @@ planet::vk::headless::headless()
   }()} {}
 
 
-std::unique_ptr<planet::vk::headless>
-        planet::vk::headless::make_if_available() {
+std::unique_ptr<planet::vk::headless> planet::vk::headless::make_if_available() {
     try {
         return std::make_unique<headless>();
     } catch (headless_not_available const &) { return nullptr; }

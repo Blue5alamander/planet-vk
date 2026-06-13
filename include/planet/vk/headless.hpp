@@ -48,7 +48,7 @@ namespace planet::vk {
      */
     struct headless final {
         /// ### Construction
-      headless();
+        headless();
 
         /// #### Create a headless context, if the platform supports it
         /**
