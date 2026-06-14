@@ -8,7 +8,9 @@
 #include <planet/vk/memory.hpp>
 
 #include <cstdint>
+#include <deque>
 #include <mutex>
+#include <string>
 #include <vector>
 
 
@@ -25,7 +27,7 @@ namespace planet::vk {
      * its blocks back to the driver only for the next allocator to call
      * `vkAllocateMemory` again.
      *
-     * This pool owns the driver-byte accounting: a block counts as in use from
+     * This pool owns the driver-block accounting: a block counts as in use from
      * the moment it is allocated from the driver until `clear` frees it,
      * whether it is currently checked out to an allocator or sitting in a free
      * list.
@@ -33,14 +35,43 @@ namespace planet::vk {
     class device_memory_block_pool final : private telemetry::id {
         /// ### A free list of whole blocks for one memory type
         /**
-         * Each free list owns its own `std::mutex`. The lists live in a
-         * `std::vector` sized to the memory-type count at construction and
-         * never resized, so a list's address -- and therefore its mutex -- is
-         * stable for the pool's lifetime.
+         * Each free list owns its own `std::mutex`, its own block vector, and
+         * its own per-queue driver counters. The lists live in a `std::deque`
+         * built to the memory-type count at construction and never grown past
+         * it, so a list's address -- and therefore its mutex and counters -- is
+         * stable for the pool's lifetime. A `std::deque` rather than a
+         * `std::vector` because the counters are neither copyable nor movable,
+         * so each list must be constructed in place.
+         *
+         * Each per-queue counter takes the matching pool-wide counter as its
+         * `parent`, so every per-type change also rolls up into the device-wide
+         * total. The pool-wide counter therefore stays the authoritative
+         * aggregate the public getters read, while the per-queue counters give
+         * the same numbers broken down by memory type in the telemetry dump.
          */
         struct free_list final {
+            free_list(
+                    std::string const &pool_name,
+                    std::string const &memory_type_name,
+                    telemetry::counter &blocks_allocated,
+                    telemetry::counter &blocks_freed,
+                    telemetry::counter &blocks_in_use);
+
+
             std::mutex mtx;
             std::vector<device_memory_allocation::handle_type> blocks;
+
+
+            /// #### Per-queue driver block accounting
+            /**
+             * The peak is **not** parented: a `max` would present each queue's
+             * own value to the pool-wide peak, but the pool's peak must track
+             * the peak of the device-wide *total*, so the two peaks are each
+             * set explicitly from their own in-use counter.
+             */
+            telemetry::counter c_driver_blocks_allocated, c_driver_blocks_freed,
+                    c_driver_blocks_in_use;
+            telemetry::max c_driver_blocks_in_use_peak;
         };
 
 
@@ -53,16 +84,6 @@ namespace planet::vk {
          * lists only ever hold interchangeable, identically sized blocks.
          */
         std::size_t const driver_block_size;
-
-
-        /// ### Free lists indexed by `memory_type_index`
-        /**
-         * Sized to the GPU's memory-type count at construction and never
-         * resized. Indexing into it needs no lock; each `free_list::mtx` guards
-         * only its own block vector.
-         */
-        std::vector<free_list> free_lists;
-        free_list &list_for(std::uint32_t);
 
 
       public:
@@ -107,17 +128,17 @@ namespace planet::vk {
         void clear();
         /**
          * Drops all held handles -- their `device_handle` destructors call
-         * `vkFreeMemory` -- and zeroes the driver-byte gauge.
+         * `vkFreeMemory` -- and zeroes the driver-block gauge.
          */
 
 
-        /// ### Driver-byte and driver-block observability
-        std::int64_t driver_bytes_in_use() const noexcept {
-            return c_driver_bytes_in_use.value();
+        /// ### Driver-block observability
+        std::size_t driver_blocks_in_use() const noexcept {
+            return static_cast<std::size_t>(c_driver_blocks_in_use.value());
         }
-        std::int64_t driver_bytes_peak() const noexcept {
-            return static_cast<std::int64_t>(
-                    c_driver_bytes_in_use_peak.value());
+        std::size_t driver_blocks_peak() const noexcept {
+            return static_cast<std::size_t>(
+                    c_driver_blocks_in_use_peak.value());
         }
         std::size_t driver_blocks_allocated() const noexcept {
             return static_cast<std::size_t>(c_driver_blocks_allocated.value());
@@ -146,26 +167,28 @@ namespace planet::vk {
          * pooled block's handle is dropped and `vkFreeMemory` runs.
          */
 
-        /// #### Bytes currently held from the driver
-        telemetry::counter c_driver_bytes_in_use{
-                name() + "__driver_bytes_in_use"};
-        telemetry::max c_driver_bytes_in_use_peak{
-                name() + "__driver_bytes_peak"};
+        /// #### Whole blocks currently held from the driver
+        telemetry::counter c_driver_blocks_in_use{
+                name() + "__driver_blocks_in_use"};
+        telemetry::max c_driver_blocks_in_use_peak{
+                name() + "__driver_blocks_peak"};
         /**
-         * A block counts from the moment it is allocated from the driver until
+         * Counts a block from the moment it is allocated from the driver until
          * `clear` frees it -- whether checked out to an allocator, idling in an
          * allocator's free list, or sitting in one of the pool's own free
-         * lists. Unlike the allocator's `c_bytes_held`, this is the true
-         * device-wide driver footprint.
+         * lists. This is the true count of whole driver allocations the device
+         * is holding (equivalently `c_driver_blocks_allocated` minus
+         * `c_driver_blocks_freed`), with `c_driver_blocks_in_use_peak` its
+         * high-water mark.
          */
 
-        /// #### Histogram of block sizes delivered by `acquire`
-        telemetry::map<std::size_t, std::size_t> c_acquired_block_sizes{
-                name() + "__acquired_block_sizes"};
+        /// #### Histogram of block sizes requested from `acquire`
+        telemetry::map<std::size_t, std::size_t> c_requested_block_sizes{
+                name() + "__requested_block_sizes"};
         /**
          * Updated on every `acquire` -- free-list hit, driver miss, or
          * oversized bypass -- so it records the demand the pool serves.
-         * `c_acquired_block_sizes` minus `c_driver_block_sizes` is the demand
+         * `c_requested_block_sizes` minus `c_driver_block_sizes` is the demand
          * met by free-list reuse.
          *
          * TODO This mirrors the allocator-side
@@ -178,9 +201,25 @@ namespace planet::vk {
         telemetry::map<std::size_t, std::size_t> c_driver_block_sizes{
                 name() + "__driver_block_sizes"};
         /**
-         * The subset of `c_acquired_block_sizes` that missed the free list and
+         * The subset of `c_requested_block_sizes` that missed the free list and
          * reached `vkAllocateMemory`.
          */
+
+
+        /// ### Free lists indexed by `memory_type_index`
+        /**
+         * One free list per memory type, built to the GPU's memory-type count
+         * at construction (in the constructor body, once the pool-wide counters
+         * above exist) and never grown past it. Indexing into it needs no lock;
+         * each `free_list::mtx` guards only its own block vector.
+         *
+         * Declared **after** the pool-wide counters so that -- because members
+         * destruct in reverse declaration order -- each free list, and the
+         * per-queue counters that name those pool-wide counters as their
+         * `parent`, is destroyed **before** the parents it points at.
+         */
+        std::deque<free_list> free_lists;
+        free_list &list_for(std::uint32_t);
     };
 
 

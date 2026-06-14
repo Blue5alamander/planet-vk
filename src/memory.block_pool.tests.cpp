@@ -127,7 +127,7 @@ namespace {
     /**
      * A block larger than `driver_block_size` is allocated straight from the
      * driver and freed straight back on `release`, never entering a free list:
-     * `driver_bytes_in_use` rises on `acquire` and falls again on `release`. A
+     * the in-use block count rises on `acquire` and falls again on `release`. A
      * second `acquire` of the same size therefore allocates afresh rather than
      * finding a retained block.
      */
@@ -149,12 +149,11 @@ namespace {
 
                 auto block = pool.acquire(vulkan.device, mti, big);
                 check(pool.driver_blocks_allocated()) == 1u;
-                check(pool.driver_bytes_in_use())
-                        == static_cast<std::int64_t>(big);
+                check(pool.driver_blocks_in_use()) == 1u;
 
                 pool.release(std::move(block), mti, big);
                 check(pool.driver_blocks_freed()) == 1u;
-                check(pool.driver_bytes_in_use()) == 0;
+                check(pool.driver_blocks_in_use()) == 0u;
 
                 // Nothing was pooled, so the next acquire hits the driver again.
                 auto again = pool.acquire(vulkan.device, mti, big);
@@ -232,7 +231,7 @@ namespace {
 
         pool.clear();
         check(pool.driver_blocks_freed()) == 3u;
-        check(pool.driver_bytes_in_use()) == 0;
+        check(pool.driver_blocks_in_use()) == 0u;
     });
 
 
@@ -272,7 +271,7 @@ namespace {
                 pool.clear();
                 check(pool.driver_blocks_freed())
                         == pool.driver_blocks_allocated();
-                check(pool.driver_bytes_in_use()) == 0;
+                check(pool.driver_blocks_in_use()) == 0u;
             });
 
 
