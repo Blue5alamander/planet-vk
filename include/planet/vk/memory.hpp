@@ -16,20 +16,55 @@
 namespace planet::vk {
 
 
+    /// ## GPU memory allocation strategy
+    /**
+     * Rather than try to be clever about memory allocation strategies, this
+     * model is quite stupid, and relies on the `device_memory_allocator` being
+     * appropriately used.
+     *
+     * Each one is a simple slab allocator. That is, it gets a chunk of memory
+     * and then splits it up as requests for memory sizes come in. It records
+     * only how many memory requests have been made for the chunk. When all
+     * memory has been returned the entire chunk is recycled and used for the
+     * next memory requests.
+     *
+     * This strategy is very fast, but it has a problem. Keeping a single memory
+     * block alive will keep the entire chunk from being recycled. Because of
+     * this it is **very important** that the memory lifetimes for everything
+     * that come from the same allocator are about the same, so that allocations
+     * made at the same time are also freed at about the same time.
+     *
+     * By doing this the allocators can recycle their held memory efficiently,
+     * which in turn means that less GPU memory will be needed overall.
+     *
+     * Memory allocated by the allocators in this file is backed by the
+     * `device_memory_block_pool` that exists on the Vulkan device. This is a
+     * thread safe pool of memory allocations that means that short lived
+     * allocators don't thrash the Vulkan memory APIs.
+     */
+
+
     /// ## Memory allocation configuration
     struct device_memory_allocator_configuration {
-        /// ### Minimum GPU device memory alignment
-        std::size_t minimum_alignment = 1 << 10;
         /// ### GPU memory allocation block size
         std::size_t allocation_block_size = 64 << 20;
+        /**
+         * Memory requests larger than this can be allocated, but they will
+         * always go to the `device_memory_block_pool` pool and will never be
+         * recycled by the local allocator.
+         */
+
         /// ### Whether this allocator should split memory allocations
         bool split = true;
+        /**
+         * This turns off the slab memory allocations in this allocator so it
+         * always returns blocks of the `allocation_block_size` for all memory
+         * requests.
+         */
+
         /// ### Memory mapping flags for all memory allocated here
         VkMemoryMapFlags memory_map_flags = {};
     };
-    /// ### Default "safe" configuration for an allocator
-    static constexpr device_memory_allocator_configuration
-            thread_safe_device_memory_allocator = {};
 
 
     /// ## Allocated GPU memory
@@ -116,9 +151,10 @@ namespace planet::vk {
         ~device_memory() { reset(); }
 
         device_memory(device_memory &&);
-        device_memory(device_memory const &);
+        device_memory(device_memory const &) = delete;
         device_memory &operator=(device_memory &&);
-        device_memory &operator=(device_memory const &);
+        device_memory &operator=(device_memory const &) = delete;
+
 
         /// ### Split the memory
         /**
@@ -127,6 +163,7 @@ namespace planet::vk {
          * of GPU memory.
          */
         device_memory split(std::size_t bytes, std::size_t alignment);
+
 
         /// ### Whether a `split` of `bytes` at `alignment` would fit
         /**
@@ -179,6 +216,10 @@ namespace planet::vk {
          * This is internally reference counted and the entire memory area is
          * mapped on first mapping. This allows the same Vulkan allocation to be
          * mapped multiple times at the same time.
+         *
+         * As a consequence of needing to map the entire underlying block, the
+         * `size` passed in is effectively ignored. It should correspond to the
+         * memory area wanted anyway.
          */
         class mapping;
         friend class device_memory::mapping;
@@ -221,8 +262,7 @@ namespace planet::vk {
         device_memory_allocator(
                 std::string_view name,
                 vk::device &,
-                device_memory_allocator_configuration const & =
-                        thread_safe_device_memory_allocator,
+                device_memory_allocator_configuration const & = {},
                 id::suffix = id::suffix::suppress);
         ~device_memory_allocator();
 
@@ -249,9 +289,6 @@ namespace planet::vk {
 
         /// ### Clear all memory held by the allocator
         /**
-         * This allows the allocator to be cleared with a check that any
-         * outstanding allocations have been properly returned.
-         *
          * This will be done automatically by the destructor.
          */
         void clear_without_check();
