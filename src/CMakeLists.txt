@@ -1,4 +1,4 @@
-if(NOT ${BUILD_VULKAN_LOADER})
+if(NOT ${BUILD_VULKAN_LOADER} AND NOT TARGET Vulkan::Vulkan)
     find_package(Vulkan REQUIRED)
 endif()
 
