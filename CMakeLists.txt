@@ -26,24 +26,23 @@ endif()
 
 macro(vk_shader target input)
     if(${ARGC} GREATER 2)
-        add_custom_command(OUTPUT ${input}.${ARGV2}.spirv
+        set(spirv_file ${input}.${ARGV2}.spirv)
+        add_custom_command(OUTPUT ${spirv_file}
             COMMAND glslc
                     -D${ARGV2}=main
                     ${CMAKE_CURRENT_SOURCE_DIR}/${input}
-                    -o ${input}.${ARGV2}.spirv
+                    -o ${spirv_file}
             MAIN_DEPENDENCY ${input})
-        add_custom_target(${target}-${input}.${ARGV2}.spirv
-                DEPENDS ${input}.${ARGV2}.spirv)
-        add_dependencies(${target} ${target}-${input}.${ARGV2}.spirv)
     else()
-        add_custom_command(OUTPUT ${input}.spirv
+        set(spirv_file ${input}.spirv)
+        add_custom_command(OUTPUT ${spirv_file}
             COMMAND glslc
                     ${CMAKE_CURRENT_SOURCE_DIR}/${input}
-                    -o ${input}.spirv
+                    -o ${spirv_file}
             MAIN_DEPENDENCY ${input})
-        add_custom_target(${target}-${input}.spirv DEPENDS ${input}.spirv)
-        add_dependencies(${target} ${target}-${input}.spirv)
     endif()
+    add_custom_target(${target}-${spirv_file} DEPENDS ${spirv_file})
+    add_dependencies(${target} ${target}-${spirv_file})
 endmacro()
 
 
