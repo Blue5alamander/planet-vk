@@ -102,4 +102,4 @@ install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/textured.glow.frag.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/texture.screen.vert.spirv
         ${CMAKE_CURRENT_BINARY_DIR}/texture.world.vert.spirv
-    DESTINATION share/planet-vk-engine)
+    DESTINATION share/planet-vk-engine COMPONENT share)
