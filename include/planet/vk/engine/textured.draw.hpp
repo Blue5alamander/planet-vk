@@ -71,7 +71,9 @@ namespace planet::vk::engine {
             ubo.textures_in_frame.value(descriptors.size());
             if (descriptors.size() > ubo.max_per_frame) {
                 planet::log::critical(
-                        "We will run out of texture slots for this frame");
+                        "We will run out of texture slots for this frame. Textures requested",
+                        descriptors.size(), "maximum per frame",
+                        ubo.max_per_frame);
             }
             return true;
         }
