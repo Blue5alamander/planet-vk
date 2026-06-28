@@ -1,16 +1,13 @@
 #pragma once
 
 
+#include <planet/sdl/forward.hpp>
 #include <planet/sdl/renderer.hpp>
+#include <planet/ui/constrained.hpp>
 
 #include <SDL.h>
 
 #include <cstdint>
-
-
-namespace planet::sdl {
-    class init;
-}
 
 
 namespace planet::vk::sdl {
@@ -19,7 +16,7 @@ namespace planet::vk::sdl {
     /// ## Vulkan Window
     class window final {
         planet::sdl::handle<SDL_Window, SDL_DestroyWindow> pw;
-        affine::extents2d size;
+        affine::extents2d desktop_size, window_size;
 
 
       public:
@@ -29,6 +26,7 @@ namespace planet::vk::sdl {
                std::size_t height);
         window(planet::sdl::init &, const char *name, std::uint32_t flags = {});
 
+
         SDL_Window *get() const noexcept { return pw.get(); }
 
 
@@ -36,19 +34,35 @@ namespace planet::vk::sdl {
         affine::extents2d const &refresh_window_dimensions();
 
 
-        /// ### Cached inner window size
-        affine::extents2d const &extents() const noexcept { return size; }
-        affine::rectangle2d rectangle() const noexcept {
-            return {{0, 0}, size};
+        /// ### Desktop size of the display this window is on
+        affine::extents2d const &display_extents() const noexcept {
+            return desktop_size;
         }
-        std::size_t uzwidth() const noexcept { return size.uzwidth(); }
-        std::size_t uzheight() const noexcept { return size.uzheight(); }
-        float width() const noexcept { return size.width; }
-        float height() const noexcept { return size.height; }
+        /**
+         * The full resolution of the monitor the window occupied as of the last
+         * `refresh_window_dimensions()`, independent of whether the window is
+         * full-screen or smaller. Use this in preference to `extents()` when a
+         * size must stay constant as the window is resized — for example font
+         * sizes that should render at a fixed physical size in either mode.
+         */
+
+
+        /// ### Cached inner window size
+        affine::extents2d const &extents() const noexcept {
+            return window_size;
+        }
+        affine::rectangle2d rectangle() const noexcept {
+            return {{0, 0}, window_size};
+        }
+        std::size_t uzwidth() const noexcept { return window_size.uzwidth(); }
+        std::size_t uzheight() const noexcept { return window_size.uzheight(); }
+        float width() const noexcept { return window_size.width; }
+        float height() const noexcept { return window_size.height; }
 
         using constrained_type = ui::constrained2d<float>;
         constrained_type constraints() const noexcept {
-            return {{size.width, 0, size.width}, {size.height, 0, size.height}};
+            return {{window_size.width, 0, window_size.width},
+                    {window_size.height, 0, window_size.height}};
         }
     };
 

@@ -52,7 +52,13 @@ planet::vk::sdl::window::window(
           width,
           height,
           SDL_WINDOW_VULKAN)},
-  size{float(width), float(height)} {}
+  desktop_size{},
+  window_size{float(width), float(height)} {
+    if (not pw.get()) {
+        throw felspar::stdexcept::runtime_error{"SDL_CreateWindow failed"};
+    }
+    refresh_window_dimensions();
+}
 
 
 planet::vk::sdl::window::window(
@@ -64,12 +70,13 @@ planet::vk::sdl::window::window(
           640,
           480,
           flags | SDL_WINDOW_VULKAN)},
-  size{640, 480} {
+  desktop_size{},
+  window_size{640, 480} {
     if (not pw.get()) {
         throw felspar::stdexcept::runtime_error{"SDL_CreateWindow failed"};
     }
     refresh_window_dimensions();
-    planet::log::info("Window created", size);
+    planet::log::info("Window created", window_size);
 }
 
 
@@ -77,7 +84,14 @@ auto planet::vk::sdl::window::refresh_window_dimensions()
         -> affine::extents2d const & {
     int ww{}, wh{};
     SDL_Vulkan_GetDrawableSize(pw.get(), &ww, &wh);
-    return size = {float(ww), float(wh)};
+    window_size = {float(ww), float(wh)};
+
+    int const found = SDL_GetWindowDisplayIndex(pw.get());
+    SDL_DisplayMode mode{};
+    SDL_GetDesktopDisplayMode(found < 0 ? 0 : found, &mode);
+    desktop_size = {float(mode.w), float(mode.h)};
+
+    return window_size;
 }
 
 
