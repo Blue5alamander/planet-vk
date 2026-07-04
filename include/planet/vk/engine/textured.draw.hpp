@@ -2,6 +2,8 @@
 
 
 #include <planet/telemetry/minmax.hpp>
+#include <planet/vk/commands.hpp>
+#include <planet/vk/engine/forward.hpp>
 #include <planet/vk/ubo/textures.hpp>
 #include <planet/vk/vertex/coloured_textured.hpp>
 

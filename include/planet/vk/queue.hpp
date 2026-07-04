@@ -3,6 +3,10 @@
 
 #include <planet/vk/forward.hpp>
 
+#include <vulkan/vulkan.h>
+
+#include <cstdint>
+
 
 namespace planet::vk {
 

@@ -2,6 +2,8 @@
 
 
 #include <planet/vk/helpers.hpp>
+#include <planet/vk/owned_handle.hpp>
+#include <planet/vk/view.hpp>
 
 
 namespace planet::vk {
