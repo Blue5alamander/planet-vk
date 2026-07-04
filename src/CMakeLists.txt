@@ -34,6 +34,50 @@ else()
 endif()
 
 install(TARGETS planet-vk LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+
+target_sources(planet-vk PUBLIC
+  FILE_SET HEADERS
+  BASE_DIRS ../include/
+  FILES
+        ../include/planet/vk/buffer.hpp
+        ../include/planet/vk/colour.hpp
+        ../include/planet/vk/commands.hpp
+        ../include/planet/vk/debug_messenger.hpp
+        ../include/planet/vk/descriptors.hpp
+        ../include/planet/vk/device.hpp
+        ../include/planet/vk/extensions.hpp
+        ../include/planet/vk/forward.hpp
+        ../include/planet/vk/frame_buffer.hpp
+        ../include/planet/vk/headless.hpp
+        ../include/planet/vk/helpers.hpp
+        ../include/planet/vk.hpp
+        ../include/planet/vk/image.hpp
+        ../include/planet/vk/instance.hpp
+        ../include/planet/vk/memory_block_pool.hpp
+        ../include/planet/vk/memory.hpp
+        ../include/planet/vk/owned_handle.hpp
+        ../include/planet/vk/physical_device.hpp
+        ../include/planet/vk/pipeline.hpp
+        ../include/planet/vk/queue.hpp
+        ../include/planet/vk/render_pass.hpp
+        ../include/planet/vk/shader_module.hpp
+        ../include/planet/vk/surface.hpp
+        ../include/planet/vk/swap_chain.hpp
+        ../include/planet/vk/synchronisation.hpp
+        ../include/planet/vk/texture.hpp
+        ../include/planet/vk/ubo/coherent.hpp
+        ../include/planet/vk/ubo/coordinate_space.hpp
+        ../include/planet/vk/ubo/textures.hpp
+        ../include/planet/vk/vertex/bindings.hpp
+        ../include/planet/vk/vertex/coloured.hpp
+        ../include/planet/vk/vertex/coloured_textured.hpp
+        ../include/planet/vk/vertex.hpp
+        ../include/planet/vk/vertex/normal.hpp
+        ../include/planet/vk/vertex/normal_textured.hpp
+        ../include/planet/vk/view.hpp
+    )
+set_property(TARGET planet-vk PROPERTY VERIFY_INTERFACE_HEADER_SETS ON)
+add_dependencies(check planet-vk_verify_interface_header_sets)
 if (PLANET_VK_VALIDATION)
     target_compile_definitions(planet-vk PRIVATE
         PLANET_VK_VALIDATION=1)
@@ -52,6 +96,17 @@ add_library(planet-vk-sdl
 target_link_libraries(planet-vk-sdl planet-vk)
 install(TARGETS planet-vk-sdl LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 
+target_sources(planet-vk-sdl PUBLIC
+  FILE_SET HEADERS
+  BASE_DIRS ../include/
+  FILES
+        ../include/planet/vk-sdl.hpp
+        ../include/planet/vk/sdl/texture.hpp
+        ../include/planet/vk/sdl/window.hpp
+    )
+set_property(TARGET planet-vk-sdl PROPERTY VERIFY_INTERFACE_HEADER_SETS ON)
+add_dependencies(check planet-vk-sdl_verify_interface_header_sets)
+
 
 add_library(planet-vk-engine
         app.engine.cpp
@@ -65,6 +120,32 @@ add_library(planet-vk-engine
     )
 target_link_libraries(planet-vk-engine planet-vk-sdl)
 install(TARGETS planet-vk-engine LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+
+target_sources(planet-vk-engine PUBLIC
+  FILE_SET HEADERS
+  BASE_DIRS ../include/
+  FILES
+        ../include/planet/vk/engine/app.hpp
+        ../include/planet/vk/engine/autodelete.hpp
+        ../include/planet/vk/engine/blank.hpp
+        ../include/planet/vk/engine/colour_attachment.hpp
+        ../include/planet/vk/engine/depth_buffer.hpp
+        ../include/planet/vk/engine/forward.hpp
+        ../include/planet/vk/engine.hpp
+        ../include/planet/vk/engine/memory/pooled-vector-map.hpp
+        ../include/planet/vk/engine/pipeline/mesh.hpp
+        ../include/planet/vk/engine/pipeline/sprite.hpp
+        ../include/planet/vk/engine/pipeline/textured_quad.hpp
+        ../include/planet/vk/engine/postprocess/glow.hpp
+        ../include/planet/vk/engine/renderer.hpp
+        ../include/planet/vk/engine/render_parameters.hpp
+        ../include/planet/vk/engine/textured.draw.hpp
+        ../include/planet/vk/engine/ui/autoupdater.hpp
+        ../include/planet/vk/engine/ui.hpp
+        ../include/planet/vk/engine/ui/tx.hpp
+    )
+set_property(TARGET planet-vk-engine PROPERTY VERIFY_INTERFACE_HEADER_SETS ON)
+add_dependencies(check planet-vk-engine_verify_interface_header_sets)
 
 add_test_run(check planet-vk-engine TESTS
         pooled-vector-map.tests.cpp
