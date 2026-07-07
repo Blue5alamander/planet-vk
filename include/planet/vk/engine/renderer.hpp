@@ -45,6 +45,7 @@ namespace planet::vk::engine {
          */
         device_memory_allocator per_frame_memory{
                 "renderer_per_frame", app.device};
+
         /// #### Per-swap chain
         /**
          * Certain events will cause the swap chain to be re-configured. These
@@ -157,6 +158,21 @@ namespace planet::vk::engine {
                 affine::matrix3d const &,
                 affine::matrix3d const &,
                 affine::point3d const &);
+
+        /// #### Recompute the window derived transforms
+        /**
+         * Rebuilds `screen_space` and `logical_vulkan_space` (and the matching
+         * entries in the coordinates UBO) from the window's current drawable
+         * size. This **must** be called whenever that size changes: both when
+         * the swap chain is recreated and, on platforms where the surface size
+         * isn't yet known when the renderer is constructed (Android), once the
+         * surface first reports a usable size.
+         *
+         * A zero dimension here bakes a divide-by-zero (`Inf`/`NaN`) projection
+         * that collapses every drawn primitive off-screen, so callers must
+         * ensure the window reports a non-degenerate size first.
+         */
+        void reset_screen_coordinates() noexcept;
 
         /// #### Access the world and perspective transformations
         affine::matrix3d const &world_coordinates() const noexcept {

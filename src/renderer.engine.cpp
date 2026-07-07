@@ -114,17 +114,23 @@ planet::vk::engine::renderer::renderer(engine::app &a)
       });
       return v;
   }()},
-  screen_space{
-          affine::transform2d{}
-                  .scale(2.0f / app.window.width(), -2.0f / app.window.height())
-                  .translate({-1.0f, 1.0f})},
-  logical_vulkan_space{
-          affine::transform2d::aspect_correction(app.window.extents())},
-  coordinates{
-          app.device.startup_memory,
-          {.screen{screen_space.into()},
-           .perspective{logical_vulkan_space.into()}}} {
+  screen_space{},
+  logical_vulkan_space{},
+  coordinates{app.device.startup_memory, {}} {
+    reset_screen_coordinates();
     swap_chain.create_frame_buffers(postprocess.present_render_pass);
+}
+
+
+void planet::vk::engine::renderer::reset_screen_coordinates() noexcept {
+    screen_space = affine::transform2d{}
+                           .scale(2.0f / app.window.width(),
+                                  -2.0f / app.window.height())
+                           .translate({-1.0f, 1.0f});
+    logical_vulkan_space =
+            affine::transform2d::aspect_correction(app.window.extents());
+    coordinates.current.screen = screen_space.into();
+    coordinates.current.perspective = logical_vulkan_space.into();
 }
 planet::vk::engine::renderer::~renderer() {
     /**
@@ -201,6 +207,13 @@ void planet::vk::engine::renderer::recreate_swap_chain(
     ++c_recreate_swapchain;
     auto const images =
             swap_chain.recreate(app.window.refresh_window_dimensions());
+    /**
+     * The drawable size may have changed (resize, rotation, or a surface that
+     * only became ready after construction), so rebuild the window derived
+     * projection to match. Without this the coordinates UBO keeps the transform
+     * baked at construction and content renders into the wrong space.
+     */
+    reset_screen_coordinates();
     colour_attachments.recreate_swap_chain(
             {.allocator = per_swap_chain_memory,
              .extents = swap_chain.extents,
