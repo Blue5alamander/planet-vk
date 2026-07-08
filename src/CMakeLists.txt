@@ -113,6 +113,7 @@ add_library(planet-vk-engine
         attachments.engine.cpp
         blank.engine.cpp
         glow.postprocess.cpp
+        lines.pipeline.cpp
         mesh.pipeline.cpp
         renderer.engine.cpp
         sprite.pipeline.cpp
@@ -133,6 +134,7 @@ target_sources(planet-vk-engine PUBLIC
         ../include/planet/vk/engine/forward.hpp
         ../include/planet/vk/engine.hpp
         ../include/planet/vk/engine/memory/pooled-vector-map.hpp
+        ../include/planet/vk/engine/pipeline/lines.hpp
         ../include/planet/vk/engine/pipeline/mesh.hpp
         ../include/planet/vk/engine/pipeline/sprite.hpp
         ../include/planet/vk/engine/pipeline/textured_quad.hpp

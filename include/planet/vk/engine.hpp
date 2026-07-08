@@ -9,6 +9,7 @@
 #include <planet/vk/engine/forward.hpp>
 #include <planet/vk/engine/render_parameters.hpp>
 #include <planet/vk/engine/renderer.hpp>
+#include <planet/vk/engine/pipeline/lines.hpp>
 #include <planet/vk/engine/pipeline/mesh.hpp>
 #include <planet/vk/engine/pipeline/sprite.hpp>
 #include <planet/vk/engine/pipeline/textured_quad.hpp>

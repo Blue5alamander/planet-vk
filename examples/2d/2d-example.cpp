@@ -9,6 +9,12 @@ namespace {
                 {.renderer = renderer,
                  .vertex_shader{"planet-vk-engine/mesh.world.vert.spirv"}}};
 
+        planet::vk::engine::pipeline::lines lines{{.renderer = renderer}};
+        /// Draw the lines slightly in front of the (z == 0) triangles. The
+        /// depth test is `GREATER_OR_EQUAL` cleared to zero, so a positive z
+        /// wins.
+        lines.this_frame.z_layer = 0.5f;
+
         constexpr std::array vertices{
                 planet::vertex::coloured{
                         {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
@@ -40,7 +46,22 @@ namespace {
             mesh.this_frame.draw(vertices, indices);
             mesh.this_frame.draw(vertices, indices, {0.75f, 0.75f, 0.0f});
 
-            renderer.full_screen([&]() { renderer.render(mesh); });
+            /// A coloured line list alongside the triangles: a single segment
+            /// and a closed loop, both reusing the mesh shaders.
+            lines.this_frame.segment(
+                    {-0.9f, 0.85f}, {0.9f, 0.85f}, planet::colour::white);
+            constexpr std::array<planet::affine::point2d, 4> loop{{
+                    {-0.2f, -0.55f},
+                    {0.2f, -0.55f},
+                    {0.2f, -0.85f},
+                    {-0.2f, -0.85f},
+            }};
+            lines.this_frame.closed_loop(loop, {1.0f, 0.5f, 0.0f});
+
+            renderer.full_screen([&]() {
+                renderer.render(mesh);
+                renderer.render(lines);
+            });
 
             renderer.submit_and_present();
         }

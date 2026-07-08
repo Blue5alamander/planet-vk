@@ -25,6 +25,7 @@ namespace planet::vk::engine {
     namespace pipeline {
 
 
+        class lines;
         class mesh;
         class postprocess;
         class sprite;
