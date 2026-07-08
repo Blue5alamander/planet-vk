@@ -61,3 +61,17 @@ int main(int const argc, char const *argv[]) {
     planet::sdl::init sdl{warden, v};
     return planet::vk::engine::app{argc, argv, sdl, v}.run(render_loop);
 }
+
+
+/// ## Leak sanitiser suppressions
+/**
+ * The Mesa Vulkan driver allocates one-time global and per-thread state during
+ * instance creation (behind `pthread_once`) that it never frees before the
+ * process exits. That isn't a leak in our code, but LSan can't tell, so
+ * suppress allocations made on the driver's one-time-initialisation paths. Our
+ * own RAII wrappers are still leak-checked.
+ */
+extern "C" char const *__lsan_default_suppressions() {
+    return "leak:libvulkan\n"
+           "leak:__pthread_once_slow\n";
+}
