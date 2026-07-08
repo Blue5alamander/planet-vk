@@ -362,12 +362,16 @@ namespace planet::vk::engine {
         std::uint32_t colour_attachments = 2;
 
         VkExtent2D extents = renderer.swap_chain.extents;
+
         view<vk::render_pass> render_pass = renderer.scene_render_pass;
+        std::size_t sub_pass = 0;
 
         bool write_to_depth_buffer = true;
+
+        VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
         VkSampleCountFlagBits multisampling = app.instance.gpu().msaa_samples;
         engine::blend_mode blend_mode = blend_mode::multiply;
-        std::size_t sub_pass = 0;
 
         vk::pipeline_layout pipeline_layout;
     };
