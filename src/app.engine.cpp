@@ -15,7 +15,18 @@ planet::vk::engine::app::app(
         planet::version const &version)
 : asset_manager{argv[0]},
   sdl{s},
-  window{sdl, version.application_id.c_str(), SDL_WINDOW_FULLSCREEN_DESKTOP},
+  /**
+   * SDL3 dropped `SDL_WINDOW_FULLSCREEN_DESKTOP`: a plain
+   * `SDL_WINDOW_FULLSCREEN` window whose fullscreen mode is left unset (the
+   * default, `NULL`) is the borderless-fullscreen-desktop equivalent.
+   */
+  window{sdl, version.application_id.c_str(),
+#if PLANET_SDL3
+         SDL_WINDOW_FULLSCREEN
+#else
+         SDL_WINDOW_FULLSCREEN_DESKTOP
+#endif
+  },
   instance{[&]() {
       auto app_info = planet::vk::application_info();
       app_info.pApplicationName = version.application_id.c_str();
@@ -32,7 +43,8 @@ planet::vk::engine::app::app(
                   }
                   return surface_handle;
               }};
-  }()} {}
+  }()} {
+}
 
 
 int planet::vk::engine::app::run(
