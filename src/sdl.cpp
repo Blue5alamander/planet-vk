@@ -27,6 +27,21 @@ using namespace std::literals;
 
 
 planet::vk::extensions::extensions(vk::sdl::window &w) : extensions{} {
+#if PLANET_SDL3
+    /**
+     * SDL3 collapses the SDL2 two-call query (count, then names) into a single
+     * call returning an SDL-owned array of extension name pointers — NULL on
+     * failure — and drops the window argument. Append those pointers to
+     * `vulkan_extensions`; they remain owned by SDL for the life of the
+     * subsystem.
+     */
+    (void)w;
+    Uint32 count{};
+    char const *const *const names = SDL_Vulkan_GetInstanceExtensions(&count);
+    if (not names) { throw felspar::stdexcept::runtime_error{SDL_GetError()}; }
+    vulkan_extensions.insert(
+            vulkan_extensions.end(), names, names + count);
+#else
     unsigned int count;
     if (not SDL_Vulkan_GetInstanceExtensions(w.get(), &count, nullptr)) {
         throw felspar::stdexcept::runtime_error{SDL_GetError()};
@@ -38,6 +53,7 @@ planet::vk::extensions::extensions(vk::sdl::window &w) : extensions{} {
                 vulkan_extensions.data() + existing_extension_count)) {
         throw felspar::stdexcept::runtime_error{SDL_GetError()};
     }
+#endif
 }
 
 

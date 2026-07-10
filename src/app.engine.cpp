@@ -36,8 +36,19 @@ planet::vk::engine::app::app(
       return planet::vk::instance{
               extensions, info, [&](VkInstance instance_handle) {
                   VkSurfaceKHR surface_handle = VK_NULL_HANDLE;
+                  /**
+                   * Under SDL3 `SDL_Vulkan_CreateSurface` takes an extra
+                   * `VkAllocationCallbacks*` (NULL selects Vulkan's default
+                   * allocator) before the surface handle. Both SDL2 and SDL3
+                   * return a falsy-on-failure bool, so the shared `not` check
+                   * still holds.
+                   */
                   if (not SDL_Vulkan_CreateSurface(
-                              window.get(), instance_handle, &surface_handle)) {
+                              window.get(), instance_handle,
+#if PLANET_SDL3
+                              nullptr,
+#endif
+                              &surface_handle)) {
                       throw felspar::stdexcept::runtime_error{
                               "SDL_Vulkan_CreateSurface failed"};
                   }
