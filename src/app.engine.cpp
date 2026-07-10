@@ -1,7 +1,11 @@
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/renderer.hpp>
 
+#if PLANET_SDL3
+#include <SDL3/SDL_vulkan.h>
+#else
 #include <SDL_vulkan.h>
+#endif
 
 
 planet::vk::engine::app::app(

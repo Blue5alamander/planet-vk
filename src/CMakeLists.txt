@@ -120,6 +120,14 @@ add_library(planet-vk-engine
         textured_quad.pipeline.cpp
     )
 target_link_libraries(planet-vk-engine planet-vk-sdl)
+if(PLANET_SDL3)
+    # The <SDL_vulkan.h> includes in sdl.cpp / app.engine.cpp branch on this to
+    # pick <SDL3/SDL_vulkan.h>. It is also propagated transitively from
+    # planet-sdl (PUBLIC, via planet-vk); restated here to keep the SDL3 branch
+    # self-contained at the planet-vk layer.
+    target_compile_definitions(planet-vk-sdl PRIVATE PLANET_SDL3)
+    target_compile_definitions(planet-vk-engine PRIVATE PLANET_SDL3)
+endif()
 install(TARGETS planet-vk-engine LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
 
 target_sources(planet-vk-engine PUBLIC

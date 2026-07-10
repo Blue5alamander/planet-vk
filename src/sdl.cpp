@@ -11,7 +11,11 @@
 #include <felspar/exceptions/logic_error.hpp>
 #include <felspar/exceptions/runtime_error.hpp>
 
+#if PLANET_SDL3
+#include <SDL3/SDL_vulkan.h>
+#else
 #include <SDL_vulkan.h>
+#endif
 
 #include <cstring>
 
