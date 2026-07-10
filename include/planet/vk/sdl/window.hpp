@@ -4,12 +4,8 @@
 #include <planet/affine2d.hpp>
 #include <planet/sdl/forward.hpp>
 #include <planet/sdl/handle.hpp>
+#include <planet/sdl/sdl.hpp>
 #include <planet/ui/constrained.hpp>
-
-#include <SDL.h>
-#undef main
-
-#include <cstdint>
 
 
 namespace planet::vk::sdl {

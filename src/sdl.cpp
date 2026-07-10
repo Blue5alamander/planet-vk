@@ -117,7 +117,16 @@ planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
         command_pool &cp,
         planet::sdl::surface const &surface,
         create_parameters const cp_args) {
+    /**
+     * On SDL2 `SDL_Surface::format` is a pointer to an `SDL_PixelFormat`
+     * struct whose `.format` member holds the enum; on SDL3 the format is
+     * flattened to the `SDL_PixelFormat` enum directly on the surface.
+     */
+#if PLANET_SDL3
+    if (surface.get()->format != SDL_PIXELFORMAT_ARGB8888) {
+#else
     if (surface.get()->format->format != SDL_PIXELFORMAT_ARGB8888) {
+#endif
         throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
     }
 
@@ -168,7 +177,16 @@ planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
         command_pool &cp,
         planet::sdl::surface const &surface,
         create_parameters const cp_args) {
+    /**
+     * On SDL2 `SDL_Surface::format` is a pointer to an `SDL_PixelFormat`
+     * struct whose `.format` member holds the enum; on SDL3 the format is
+     * flattened to the `SDL_PixelFormat` enum directly on the surface.
+     */
+#if PLANET_SDL3
+    if (surface.get()->format != SDL_PIXELFORMAT_ARGB8888) {
+#else
     if (surface.get()->format->format != SDL_PIXELFORMAT_ARGB8888) {
+#endif
         throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
     }
 
