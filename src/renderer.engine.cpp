@@ -205,6 +205,15 @@ void planet::vk::engine::renderer::recreate_swap_chain(
      * frame buffers.
      */
     ++c_recreate_swapchain;
+    /**
+     * Re-query the surface capabilities before rebuilding. `calculate_extents`
+     * uses `capabilities.currentExtent`, which is only otherwise written once
+     * during device initialisation. Without refreshing here the swap chain is
+     * always rebuilt at the startup extent, so a surface that reports a
+     * different size hands back `VK_SUBOPTIMAL_KHR` on every present and the
+     * recreation loop never converges.
+     */
+    app.instance.refresh_surface();
     auto const images =
             swap_chain.recreate(app.window.refresh_window_dimensions());
     /**

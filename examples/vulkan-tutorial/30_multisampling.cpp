@@ -456,7 +456,7 @@ class HelloTriangleApplication {
     }
 
     void createSwapChain() {
-        instance.surface.refresh_characteristics(instance.gpu());
+        instance.refresh_surface();
         VkExtent2D extent = chooseSwapExtent();
         swapChain.recreate(extent);
     }

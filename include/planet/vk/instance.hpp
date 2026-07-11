@@ -2,6 +2,7 @@
 
 
 #include <planet/vk/debug_messenger.hpp>
+#include <planet/vk/forward.hpp>
 #include <planet/vk/surface.hpp>
 #include <planet/vk/physical_device.hpp>
 
@@ -13,16 +14,13 @@
 namespace planet::vk {
 
 
-    struct extensions;
-
-
-    /// Return a filled in structure that can be used to create the instance
+    /// ## Return a filled in structure that can be used to create the instance
     VkApplicationInfo application_info();
 
 
-    /// The Vulkan instance
+    /// ## The Vulkan instance
     class instance final {
-        struct instance_handle {
+        struct instance_handle final {
             VkInstance h;
             ~instance_handle();
         } handle;
@@ -43,9 +41,35 @@ namespace planet::vk {
         instance &operator=(instance const &) = delete;
         instance &operator=(instance &&i) = delete;
 
+
         VkInstance get() const noexcept { return handle.h; }
 
         vk::surface surface;
+        std::span<physical_device const> physical_devices() const {
+            return pdevices;
+        }
+
+
+        /// ### The GPU that is currently chosen for use
+        physical_device const &gpu() const noexcept { return *gpu_in_use; }
+        physical_device const &use_gpu(physical_device const &d) noexcept {
+            surface.refresh_characteristics(d);
+            gpu_in_use = &d;
+            return *gpu_in_use;
+        }
+
+
+        /// ### Re-query the surface against the in-use GPU
+        /**
+         * Refresh the cached surface characteristics (capabilities, formats and
+         * present modes) for the currently chosen GPU. Call this before
+         * recreating the swap chain so its extent and other surface derived
+         * values reflect the surface as it is now rather than as it was at
+         * device initialisation.
+         */
+        void refresh_surface() noexcept {
+            surface.refresh_characteristics(gpu());
+        }
 
 
         /// ### Find a matching memory index
@@ -53,22 +77,12 @@ namespace planet::vk {
                 VkMemoryRequirements, VkMemoryPropertyFlags) const;
 
 
+        /// ### Debug messanger
         /**
          * The debug messenger is automatically used if there are validation
          * layers present
          */
         vk::debug_messenger debug_messenger;
-
-        std::span<physical_device const> physical_devices() const {
-            return pdevices;
-        }
-        /// The GPU that is currently chosen for use
-        physical_device const &gpu() const noexcept { return *gpu_in_use; }
-        physical_device const &use_gpu(physical_device const &d) noexcept {
-            surface.refresh_characteristics(d);
-            gpu_in_use = &d;
-            return *gpu_in_use;
-        }
     };
 
 
