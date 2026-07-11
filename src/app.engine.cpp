@@ -1,11 +1,7 @@
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/renderer.hpp>
 
-#if PLANET_SDL3
 #include <SDL3/SDL_vulkan.h>
-#else
-#include <SDL_vulkan.h>
-#endif
 
 
 planet::vk::engine::app::app(
@@ -20,13 +16,7 @@ planet::vk::engine::app::app(
    * `SDL_WINDOW_FULLSCREEN` window whose fullscreen mode is left unset (the
    * default, `NULL`) is the borderless-fullscreen-desktop equivalent.
    */
-  window{sdl, version.application_id.c_str(),
-#if PLANET_SDL3
-         SDL_WINDOW_FULLSCREEN
-#else
-         SDL_WINDOW_FULLSCREEN_DESKTOP
-#endif
-  },
+  window{sdl, version.application_id.c_str(), SDL_WINDOW_FULLSCREEN},
   instance{[&]() {
       auto app_info = planet::vk::application_info();
       app_info.pApplicationName = version.application_id.c_str();
@@ -37,25 +27,20 @@ planet::vk::engine::app::app(
               extensions, info, [&](VkInstance instance_handle) {
                   VkSurfaceKHR surface_handle = VK_NULL_HANDLE;
                   /**
-                   * Under SDL3 `SDL_Vulkan_CreateSurface` takes an extra
+                   * SDL3's `SDL_Vulkan_CreateSurface` takes an extra
                    * `VkAllocationCallbacks*` (NULL selects Vulkan's default
-                   * allocator) before the surface handle. Both SDL2 and SDL3
-                   * return a falsy-on-failure bool, so the shared `not` check
-                   * still holds.
+                   * allocator) before the surface handle, and returns a
+                   * falsy-on-failure bool.
                    */
                   if (not SDL_Vulkan_CreateSurface(
-                              window.get(), instance_handle,
-#if PLANET_SDL3
-                              nullptr,
-#endif
+                              window.get(), instance_handle, nullptr,
                               &surface_handle)) {
                       throw felspar::stdexcept::runtime_error{
                               "SDL_Vulkan_CreateSurface failed"};
                   }
                   return surface_handle;
               }};
-  }()} {
-}
+  }()} {}
 
 
 int planet::vk::engine::app::run(

@@ -6,11 +6,7 @@
 #include <string>
 #include <algorithm>
 #include <array>
-#if PLANET_SDL3
 #include <SDL3/SDL_vulkan.h>
-#else
-#include <SDL_vulkan.h>
-#endif
 
 constexpr int win_width = 1280;
 constexpr int win_height = 720;
@@ -51,11 +47,7 @@ int main(int, const char **argv) {
                     // `VkAllocationCallbacks *` (NULL for Vulkan's default
                     // allocator) before the surface handle.
                     if (not SDL_Vulkan_CreateSurface(
-                                window.get(), h,
-#if PLANET_SDL3
-                                nullptr,
-#endif
-                                &vk_surface)) {
+                                window.get(), h, nullptr, &vk_surface)) {
                         throw felspar::stdexcept::runtime_error{
                                 "SDL_Vulkan_CreateSurface failed"};
                     }
@@ -253,9 +245,6 @@ int main(int, const char **argv) {
     while (not done) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
-#if PLANET_SDL3
-            // SDL3 renamed the event enums and flattened the key event, and
-            // split `SDL_WINDOWEVENT` into top-level `SDL_EVENT_WINDOW_*`.
             if (event.type == SDL_EVENT_QUIT) { done = true; }
             if (event.type == SDL_EVENT_KEY_DOWN
                 && event.key.key == SDLK_ESCAPE) {
@@ -265,18 +254,6 @@ int main(int, const char **argv) {
                 && event.window.windowID == SDL_GetWindowID(window.get())) {
                 done = true;
             }
-#else
-            if (event.type == SDL_QUIT) { done = true; }
-            if (event.type == SDL_KEYDOWN
-                && event.key.keysym.sym == SDLK_ESCAPE) {
-                done = true;
-            }
-            if (event.type == SDL_WINDOWEVENT
-                && event.window.event == SDL_WINDOWEVENT_CLOSE
-                && event.window.windowID == SDL_GetWindowID(window.get())) {
-                done = true;
-            }
-#endif
         }
 
         // Get an image from the swap chain

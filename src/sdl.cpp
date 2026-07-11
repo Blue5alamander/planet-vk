@@ -11,11 +11,7 @@
 #include <felspar/exceptions/logic_error.hpp>
 #include <felspar/exceptions/runtime_error.hpp>
 
-#if PLANET_SDL3
 #include <SDL3/SDL_vulkan.h>
-#else
-#include <SDL_vulkan.h>
-#endif
 
 #include <cstring>
 
@@ -27,7 +23,6 @@ using namespace std::literals;
 
 
 planet::vk::extensions::extensions(vk::sdl::window &w) : extensions{} {
-#if PLANET_SDL3
     /**
      * SDL3 collapses the SDL2 two-call query (count, then names) into a single
      * call returning an SDL-owned array of extension name pointers — NULL on
@@ -40,19 +35,6 @@ planet::vk::extensions::extensions(vk::sdl::window &w) : extensions{} {
     char const *const *const names = SDL_Vulkan_GetInstanceExtensions(&count);
     if (not names) { throw felspar::stdexcept::runtime_error{SDL_GetError()}; }
     vulkan_extensions.insert(vulkan_extensions.end(), names, names + count);
-#else
-    unsigned int count;
-    if (not SDL_Vulkan_GetInstanceExtensions(w.get(), &count, nullptr)) {
-        throw felspar::stdexcept::runtime_error{SDL_GetError()};
-    }
-    auto const existing_extension_count = vulkan_extensions.size();
-    vulkan_extensions.resize(existing_extension_count + count);
-    if (not SDL_Vulkan_GetInstanceExtensions(
-                w.get(), &count,
-                vulkan_extensions.data() + existing_extension_count)) {
-        throw felspar::stdexcept::runtime_error{SDL_GetError()};
-    }
-#endif
 }
 
 
@@ -64,19 +46,7 @@ planet::vk::sdl::window::window(
         const char *const name,
         std::size_t const width,
         std::size_t const height)
-: pw{
-#if PLANET_SDL3
-          SDL_CreateWindow(name, width, height, SDL_WINDOW_VULKAN)
-#else
-          SDL_CreateWindow(
-                  name,
-                  SDL_WINDOWPOS_UNDEFINED,
-                  SDL_WINDOWPOS_UNDEFINED,
-                  width,
-                  height,
-                  SDL_WINDOW_VULKAN)
-#endif
-  },
+: pw{SDL_CreateWindow(name, width, height, SDL_WINDOW_VULKAN)},
   desktop_size{},
   window_size{float(width), float(height)} {
     if (not pw.get()) {
@@ -88,37 +58,22 @@ planet::vk::sdl::window::window(
 
 planet::vk::sdl::window::window(
         planet::sdl::init &, const char *const name, std::uint32_t flags)
-: pw{
-#if PLANET_SDL3
-          SDL_CreateWindow(name, 640, 480, flags | SDL_WINDOW_VULKAN)
-#else
-          SDL_CreateWindow(
-                  name,
-                  SDL_WINDOWPOS_CENTERED,
-                  SDL_WINDOWPOS_CENTERED,
-                  640,
-                  480,
-                  flags | SDL_WINDOW_VULKAN)
-#endif
-  },
+: pw{SDL_CreateWindow(name, 640, 480, flags | SDL_WINDOW_VULKAN)},
   desktop_size{},
   window_size{640, 480} {
     if (not pw.get()) {
         throw felspar::stdexcept::runtime_error{"SDL_CreateWindow failed"};
     }
-#if PLANET_SDL3
     /**
      * SDL3's `SDL_CreateWindow` no longer takes an initial position. Re-apply
-     * the SDL2 `SDL_WINDOWPOS_CENTERED` behaviour with `SDL_SetWindowPosition`,
-     * but only when the window is not full-screen — a full-screen window covers
-     * the whole display regardless, so centring it is a no-op that the SDL2
-     * constructor likewise never needed.
+     * the centred behaviour with `SDL_SetWindowPosition`, but only when the
+     * window is not full-screen — a full-screen window covers the whole display
+     * regardless, so centring it is a no-op.
      */
     if (not(flags bitand SDL_WINDOW_FULLSCREEN)) {
         SDL_SetWindowPosition(
                 pw.get(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     }
-#endif
     refresh_window_dimensions();
     planet::log::info("Window created", window_size);
 }
@@ -127,37 +82,23 @@ planet::vk::sdl::window::window(
 auto planet::vk::sdl::window::refresh_window_dimensions()
         -> affine::extents2d const & {
     int ww{}, wh{};
-#if PLANET_SDL3
     SDL_GetWindowSizeInPixels(pw.get(), &ww, &wh);
-#else
-    SDL_Vulkan_GetDrawableSize(pw.get(), &ww, &wh);
-#endif
     window_size = {float(ww), float(wh)};
 
-#if PLANET_SDL3
     /**
      * SDL3 replaces the index-based `SDL_GetWindowDisplayIndex` /
      * `SDL_GetDesktopDisplayMode(index, &mode)` pair with ID-based calls:
      * `SDL_GetDisplayForWindow` returns an `SDL_DisplayID` (0 on failure) and
      * `SDL_GetDesktopDisplayMode` returns a pointer to the internally-owned
      * mode rather than filling a caller-provided struct. Because the `0`
-     * failure marker is not a valid display ID under SDL3 (unlike index `0`,
-     * the primary, under SDL2), fall back to the primary display. The returned
-     * pointer may still be `NULL` on failure, so guard the dereference — the
-     * SDL2 call filled a caller-provided struct that was always valid
-     * (zero-initialised), and a `NULL` here must degrade to the same `{0, 0}`
-     * rather than crash.
+     * failure marker is not a valid display ID, fall back to the primary
+     * display. The returned pointer may still be `NULL` on failure, so guard
+     * the dereference.
      */
     SDL_DisplayID const found = SDL_GetDisplayForWindow(pw.get());
     SDL_DisplayMode const *const mode = SDL_GetDesktopDisplayMode(
             found == 0 ? SDL_GetPrimaryDisplay() : found);
     desktop_size = {mode ? float(mode->w) : 0.0f, mode ? float(mode->h) : 0.0f};
-#else
-    int const found = SDL_GetWindowDisplayIndex(pw.get());
-    SDL_DisplayMode mode{};
-    SDL_GetDesktopDisplayMode(found < 0 ? 0 : found, &mode);
-    desktop_size = {float(mode.w), float(mode.h)};
-#endif
 
     return window_size;
 }
@@ -181,16 +122,7 @@ planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
         command_pool &cp,
         planet::sdl::surface const &surface,
         create_parameters const cp_args) {
-    /**
-     * On SDL2 `SDL_Surface::format` is a pointer to an `SDL_PixelFormat`
-     * struct whose `.format` member holds the enum; on SDL3 the format is
-     * flattened to the `SDL_PixelFormat` enum directly on the surface.
-     */
-#if PLANET_SDL3
     if (surface.get()->format != SDL_PIXELFORMAT_ARGB8888) {
-#else
-    if (surface.get()->format->format != SDL_PIXELFORMAT_ARGB8888) {
-#endif
         throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
     }
 
@@ -241,16 +173,7 @@ planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
         command_pool &cp,
         planet::sdl::surface const &surface,
         create_parameters const cp_args) {
-    /**
-     * On SDL2 `SDL_Surface::format` is a pointer to an `SDL_PixelFormat`
-     * struct whose `.format` member holds the enum; on SDL3 the format is
-     * flattened to the `SDL_PixelFormat` enum directly on the surface.
-     */
-#if PLANET_SDL3
     if (surface.get()->format != SDL_PIXELFORMAT_ARGB8888) {
-#else
-    if (surface.get()->format->format != SDL_PIXELFORMAT_ARGB8888) {
-#endif
         throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
     }
 
