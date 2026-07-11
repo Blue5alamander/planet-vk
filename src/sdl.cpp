@@ -39,8 +39,7 @@ planet::vk::extensions::extensions(vk::sdl::window &w) : extensions{} {
     Uint32 count{};
     char const *const *const names = SDL_Vulkan_GetInstanceExtensions(&count);
     if (not names) { throw felspar::stdexcept::runtime_error{SDL_GetError()}; }
-    vulkan_extensions.insert(
-            vulkan_extensions.end(), names, names + count);
+    vulkan_extensions.insert(vulkan_extensions.end(), names, names + count);
 #else
     unsigned int count;
     if (not SDL_Vulkan_GetInstanceExtensions(w.get(), &count, nullptr)) {
