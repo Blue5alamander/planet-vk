@@ -215,15 +215,10 @@ planet::vk::device::device(
     info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     info.queueCreateInfoCount = queue_create_infos.size();
     info.pQueueCreateInfos = queue_create_infos.data();
-    info.enabledLayerCount = extensions.validation_layers.size();
-    info.ppEnabledLayerNames = extensions.validation_layers.data();
     info.enabledExtensionCount = device_extensions.size();
     info.ppEnabledExtensionNames = device_extensions.data();
     info.pEnabledFeatures = &device_features;
-    planet::log::info(
-            "Creating device with validation layers:",
-            extensions.validation_layers,
-            "and device extensions:", device_extensions);
+    planet::log::info("Creating device with extensions:", device_extensions);
     planet::vk::worked(
             vkCreateDevice(instance.gpu().get(), &info, nullptr, &handle));
 
