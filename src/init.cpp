@@ -326,6 +326,18 @@ VkInstanceCreateInfo planet::vk::instance::info(
     VkInstanceCreateInfo i = {};
     i.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     i.pApplicationInfo = &app_info;
+#if defined(__APPLE__)
+    /**
+     * MoltenVK is a portability (non-conformant) ICD, which the Khronos loader
+     * hides by default. Enable the `VK_KHR_portability_enumeration` instance
+     * extension and set the matching create flag so
+     * `vkEnumeratePhysicalDevices` reports the Metal-backed device; the two
+     * must be used together or `vkCreateInstance` finds no GPU and fails.
+     */
+    exts.vulkan_extensions.push_back(
+            VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    i.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
     i.enabledExtensionCount = exts.vulkan_extensions.size();
     i.ppEnabledExtensionNames = exts.vulkan_extensions.data();
     i.enabledLayerCount = exts.validation_layers.size();

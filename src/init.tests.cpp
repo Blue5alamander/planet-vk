@@ -1,8 +1,13 @@
 #include <planet/log.hpp>
+#include <planet/vk/extensions.hpp>
 #include <planet/vk/headless.hpp>
+#include <planet/vk/instance.hpp>
 #include <planet/vk/swap_chain.hpp>
 
 #include <felspar/test.hpp>
+
+#include <algorithm>
+#include <string_view>
 
 
 namespace {
@@ -46,6 +51,44 @@ namespace {
         check(swap_chain.transfer == planet::vk::transfer_source::available)
                 == true;
     });
+
+
+    /// ### Portability enumeration is opted into only on macOS
+    /**
+     * MoltenVK is a portability (non-conformant) ICD, which the Khronos loader
+     * hides unless the application enables the `VK_KHR_portability_enumeration`
+     * instance extension *and* sets the matching
+     * `VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR` create flag. Without
+     * both, `vkCreateInstance` enumerates no physical device and fails on
+     * macOS. On every other platform the flag and extension must stay absent,
+     * so `instance::info` gates them behind `__APPLE__`.
+     */
+    auto const portability =
+            suite.test("instance-info-portability", [](auto check) {
+                planet::vk::extensions exts;
+                auto const app_info = planet::vk::application_info();
+                auto const info = planet::vk::instance::info(exts, app_info);
+
+                bool const has_portability_extension = std::any_of(
+                        exts.vulkan_extensions.begin(),
+                        exts.vulkan_extensions.end(),
+                        [](char const *const name) {
+                            return std::string_view{name}
+                            == VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+                        });
+                bool const has_portability_flag =
+                        (info.flags
+                         bitand VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR)
+                        != 0;
+
+#if defined(__APPLE__)
+                check(has_portability_extension) == true;
+                check(has_portability_flag) == true;
+#else
+                check(has_portability_extension) == false;
+                check(has_portability_flag) == false;
+#endif
+            });
 
 
 }
