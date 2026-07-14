@@ -41,12 +41,27 @@ planet::vk::extensions::extensions(vk::sdl::window &w) : extensions{} {
 /// ## `planet::vk::sdl::window`
 
 
+/**
+ * `SDL_WINDOW_HIGH_PIXEL_DENSITY` asks SDL for a drawable at the display's true
+ * pixel size rather than its logical point size. On a HiDPI/Retina display --
+ * e.g. a 4K panel driven in a "looks like 1080p" scaled mode -- this makes the
+ * swapchain render at full native resolution instead of being drawn at the
+ * point size and upscaled (fuzzily) by the compositor.
+ * `refresh_window_dimensions` already reports the pixel size via
+ * `SDL_GetWindowSizeInPixels`, so the swapchain sizing follows automatically.
+ * Mouse events stay in logical points, so `planet::sdl::event_loop` scales them
+ * by the window's pixel density to match.
+ */
 planet::vk::sdl::window::window(
         planet::sdl::init &,
         const char *const name,
         std::size_t const width,
         std::size_t const height)
-: pw{SDL_CreateWindow(name, width, height, SDL_WINDOW_VULKAN)},
+: pw{SDL_CreateWindow(
+          name,
+          width,
+          height,
+          SDL_WINDOW_VULKAN bitor SDL_WINDOW_HIGH_PIXEL_DENSITY)},
   desktop_size{},
   window_size{float(width), float(height)} {
     if (not pw.get()) {
@@ -58,7 +73,12 @@ planet::vk::sdl::window::window(
 
 planet::vk::sdl::window::window(
         planet::sdl::init &, const char *const name, std::uint32_t flags)
-: pw{SDL_CreateWindow(name, 640, 480, flags | SDL_WINDOW_VULKAN)},
+// High-DPI drawable, as in the (width, height) constructor above.
+: pw{SDL_CreateWindow(
+          name,
+          640,
+          480,
+          flags bitor SDL_WINDOW_VULKAN bitor SDL_WINDOW_HIGH_PIXEL_DENSITY)},
   desktop_size{},
   window_size{640, 480} {
     if (not pw.get()) {
