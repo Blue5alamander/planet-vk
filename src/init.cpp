@@ -200,19 +200,30 @@ planet::vk::device::device(
     device_features.samplerAnisotropy = VK_TRUE;
     device_features.sampleRateShading = VK_TRUE;
 
+    /**
+     * MoltenVK advertises `VK_KHR_portability_subset` and the spec *requires*
+     * it be enabled when present; `required_device_extensions` appends it only
+     * for such a device, so conformant Linux/Windows drivers are unaffected.
+     * None of the features we enable above are gated by the portability subset,
+     * so a bare `VkPhysicalDeviceFeatures` (no `VkPhysicalDeviceFeatures2`
+     * `pNext` chain) is sufficient.
+     */
+    auto const device_extensions = required_device_extensions(
+            instance.gpu().extensions, extensions.device_extensions);
+
     VkDeviceCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     info.queueCreateInfoCount = queue_create_infos.size();
     info.pQueueCreateInfos = queue_create_infos.data();
     info.enabledLayerCount = extensions.validation_layers.size();
     info.ppEnabledLayerNames = extensions.validation_layers.data();
-    info.enabledExtensionCount = extensions.device_extensions.size();
-    info.ppEnabledExtensionNames = extensions.device_extensions.data();
+    info.enabledExtensionCount = device_extensions.size();
+    info.ppEnabledExtensionNames = device_extensions.data();
     info.pEnabledFeatures = &device_features;
     planet::log::info(
             "Creating device with validation layers:",
             extensions.validation_layers,
-            "and device extensions:", extensions.device_extensions);
+            "and device extensions:", device_extensions);
     planet::vk::worked(
             vkCreateDevice(instance.gpu().get(), &info, nullptr, &handle));
 
@@ -487,6 +498,27 @@ planet::vk::physical_device::physical_device(VkPhysicalDevice h, VkSurfaceKHR)
     extensions = planet::vk::fetch_vector<
             vkEnumerateDeviceExtensionProperties, VkExtensionProperties>(
             handle, nullptr);
+}
+
+
+std::vector<char const *> planet::vk::required_device_extensions(
+        std::span<VkExtensionProperties const> const available,
+        std::vector<char const *> requested) {
+    bool const has_portability_subset =
+            std::any_of(available.begin(), available.end(), [](auto const &ex) {
+                return std::string_view{ex.extensionName}
+                == portability_subset_extension_name;
+            });
+    if (has_portability_subset) {
+        /**
+         * The Vulkan spec requires enabling `VK_KHR_portability_subset` at
+         * device creation whenever the physical device advertises it. Only
+         * portability ICDs such as MoltenVK report it, so this is a no-op on
+         * conformant Linux/Windows drivers.
+         */
+        requested.push_back(portability_subset_extension_name);
+    }
+    return requested;
 }
 
 

@@ -5,7 +5,9 @@
 #include <planet/vk/helpers.hpp>
 
 #include <cstdint>
+#include <span>
 #include <string>
+#include <vector>
 
 
 namespace planet::vk {
@@ -44,6 +46,34 @@ namespace planet::vk {
          */
         std::string memory_type_name(std::uint32_t memory_type_index) const;
     };
+
+
+    /// ## The `VK_KHR_portability_subset` device extension name
+    /**
+     * `VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME` is only defined when
+     * `VK_ENABLE_BETA_EXTENSIONS` is set (it lives in `vulkan_beta.h`, which
+     * would also pull in every other provisional extension), so the one name we
+     * need is spelled out here instead.
+     */
+    inline constexpr char const *portability_subset_extension_name =
+            "VK_KHR_portability_subset";
+
+
+    /// ## Device extensions to enable, given what the device advertises
+    /**
+     * Returns `requested` plus any extension that the Vulkan spec *requires* be
+     * enabled at device creation when the physical device advertises it. In
+     * particular `VK_KHR_portability_subset` must be enabled whenever it is
+     * present -- portability ICDs such as MoltenVK (macOS) report it, whereas
+     * conformant Linux/Windows drivers never do, so `requested` is returned
+     * unchanged there.
+     *
+     * `available` is the device's advertised extensions (see
+     * `physical_device::extensions`).
+     */
+    std::vector<char const *> required_device_extensions(
+            std::span<VkExtensionProperties const> available,
+            std::vector<char const *> requested);
 
 
 }

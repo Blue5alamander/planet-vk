@@ -2,12 +2,15 @@
 #include <planet/vk/extensions.hpp>
 #include <planet/vk/headless.hpp>
 #include <planet/vk/instance.hpp>
+#include <planet/vk/physical_device.hpp>
 #include <planet/vk/swap_chain.hpp>
 
 #include <felspar/test.hpp>
 
 #include <algorithm>
+#include <span>
 #include <string_view>
+#include <vector>
 
 
 namespace {
@@ -16,6 +19,24 @@ namespace {
     auto const suite = felspar::testsuite("vulkan::device", []() {
         planet::log::active = planet::log::level::error;
     });
+
+
+    /// Is `VK_KHR_portability_subset` named in a list of enabled extensions?
+    bool requests_portability_subset(std::span<char const *const> const list) {
+        return std::any_of(
+                list.begin(), list.end(), [](char const *const name) {
+                    return std::string_view{name}
+                    == planet::vk::portability_subset_extension_name;
+                });
+    }
+    /// Does a device's advertised-extension list contain the portability subset?
+    bool advertises_portability_subset(
+            std::span<VkExtensionProperties const> const list) {
+        return std::any_of(list.begin(), list.end(), [](auto const &ex) {
+            return std::string_view{ex.extensionName}
+            == planet::vk::portability_subset_extension_name;
+        });
+    }
 
 
     /// ### Create a logical device with no window or display
@@ -88,6 +109,72 @@ namespace {
                 check(has_portability_extension) == false;
                 check(has_portability_flag) == false;
 #endif
+            });
+
+
+    /// ### `VK_KHR_portability_subset` is requested exactly when advertised
+    /**
+     * A portability ICD such as MoltenVK advertises the
+     * `VK_KHR_portability_subset` device extension, and the Vulkan spec
+     * *requires* it be enabled at device creation when present. Conformant
+     * drivers (Linux `radv`/`llvmpipe`, Windows) never advertise it, so it must
+     * not be requested there. `required_device_extensions` decides this from
+     * what the device reports rather than from a platform macro, so both
+     * outcomes can be exercised on any host.
+     */
+    auto const portability_subset =
+            suite.test("device-extensions-portability", [](auto check) {
+                auto const make_ext = [](std::string_view const name) {
+                    VkExtensionProperties e{};
+                    name.copy(e.extensionName, sizeof(e.extensionName) - 1u);
+                    return e;
+                };
+
+                std::vector<char const *> const base{
+                        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+                /// A device that does not advertise it -> not requested
+                std::vector<VkExtensionProperties> const without{
+                        make_ext(VK_KHR_SWAPCHAIN_EXTENSION_NAME)};
+                auto const conformant =
+                        planet::vk::required_device_extensions(without, base);
+                check(requests_portability_subset(conformant)) == false;
+                check(conformant.size()) == base.size();
+
+                /// A device that advertises it -> appended, base preserved
+                std::vector<VkExtensionProperties> const with{
+                        make_ext(VK_KHR_SWAPCHAIN_EXTENSION_NAME),
+                        make_ext(planet::vk::portability_subset_extension_name)};
+                auto const portable =
+                        planet::vk::required_device_extensions(with, base);
+                check(requests_portability_subset(portable)) == true;
+                check(portable.size()) == base.size() + 1u;
+                check(requests_portability_subset(base)) == false;
+            });
+
+
+    /// ### The chosen device requests portability-subset iff it advertises it
+    /**
+     * Ties `required_device_extensions` to the real device the headless context
+     * selected: on Linux `radv`/`llvmpipe` it is absent (so not requested); on
+     * MoltenVK it is present (so requested). Either way the two must agree,
+     * which is the invariant logical-device creation relies on.
+     *
+     * Skips where `VK_EXT_headless_surface` is unavailable, like the other
+     * device tests.
+     */
+    auto const portability_subset_device =
+            suite.test("device-extensions-portability-device", [](auto check) {
+                auto const vk = planet::vk::headless::make_if_available();
+                if (not vk) { return; }
+
+                auto const enabled = planet::vk::required_device_extensions(
+                        vk->instance.gpu().extensions,
+                        vk->extensions.device_extensions);
+
+                check(requests_portability_subset(enabled))
+                        == advertises_portability_subset(
+                                vk->instance.gpu().extensions);
             });
 
 
