@@ -69,28 +69,76 @@ planet::vk::sdl::window::window(
 }
 
 
-planet::vk::sdl::window::window(
-        planet::sdl::init &, const char *const name, std::uint32_t flags)
+namespace {
+    /// #### SDL window flags for a `window_mode`
+    /**
+     * `full_screen_windowed` uses a plain `SDL_WINDOW_FULLSCREEN` window whose
+     * fullscreen mode is left unset (`NULL`) — the SDL3 borderless
+     * fullscreen-desktop equivalent. `full_screen_borderless` is a borderless
+     * window (not SDL-fullscreen) that is separately sized to the desktop.
+     */
+    std::uint32_t flags_for(planet::sdl::window_mode const mode) noexcept {
+        switch (mode) {
+        case planet::sdl::window_mode::windowed: return 0u;
+        case planet::sdl::window_mode::full_screen_windowed:
+            return SDL_WINDOW_FULLSCREEN;
+        case planet::sdl::window_mode::full_screen_borderless:
+            return SDL_WINDOW_BORDERLESS;
+        }
+        return 0u;
+    }
+}
+
+
+planet::vk::sdl::window::window(planet::sdl::init &sdl, const char *const name)
 // High-DPI drawable, as in the (width, height) constructor above.
 : pw{SDL_CreateWindow(
           name,
-          640,
-          480,
-          flags bitor SDL_WINDOW_VULKAN bitor SDL_WINDOW_HIGH_PIXEL_DENSITY)},
+          static_cast<int>(sdl.config.window_extents.uzwidth()),
+          static_cast<int>(sdl.config.window_extents.uzheight()),
+          flags_for(sdl.config.window_display_mode) bitor SDL_WINDOW_VULKAN
+                  bitor SDL_WINDOW_HIGH_PIXEL_DENSITY)},
   desktop_size{},
-  window_size{640, 480} {
+  window_size{sdl.config.window_extents} {
     if (not pw.get()) {
         throw felspar::stdexcept::runtime_error{"SDL_CreateWindow failed"};
     }
-    /**
-     * SDL3's `SDL_CreateWindow` no longer takes an initial position. Re-apply
-     * the centred behaviour with `SDL_SetWindowPosition`, but only when the
-     * window is not full-screen — a full-screen window covers the whole display
-     * regardless, so centring it is a no-op.
-     */
-    if (not(flags bitand SDL_WINDOW_FULLSCREEN)) {
-        SDL_SetWindowPosition(
-                pw.get(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    switch (sdl.config.window_display_mode) {
+    case planet::sdl::window_mode::windowed:
+        /**
+         * SDL3's `SDL_CreateWindow` no longer takes an initial position, so
+         * apply the saved position, or centre the window when none is saved.
+         */
+        if (sdl.config.window_position) {
+            SDL_SetWindowPosition(
+                    pw.get(), static_cast<int>(sdl.config.window_position->x()),
+                    static_cast<int>(sdl.config.window_position->y()));
+        } else {
+            SDL_SetWindowPosition(
+                    pw.get(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+        }
+        break;
+    case planet::sdl::window_mode::full_screen_borderless: {
+        /**
+         * A borderless window is not SDL-fullscreen, so size and position it to
+         * cover the whole desktop of the display it opened on.
+         */
+        SDL_DisplayID const found = SDL_GetDisplayForWindow(pw.get());
+        SDL_DisplayID const display =
+                found == 0 ? SDL_GetPrimaryDisplay() : found;
+        SDL_Rect bounds{};
+        if (SDL_GetDisplayBounds(display, &bounds)) {
+            SDL_SetWindowPosition(pw.get(), bounds.x, bounds.y);
+            SDL_SetWindowSize(pw.get(), bounds.w, bounds.h);
+        }
+        break;
+    }
+    case planet::sdl::window_mode::full_screen_windowed:
+        /**
+         * `SDL_WINDOW_FULLSCREEN` with the fullscreen mode left `NULL` already
+         * covers the whole display, so there is nothing more to do.
+         */
+        break;
     }
     refresh_window_dimensions();
     planet::log::info("Window created", window_size);

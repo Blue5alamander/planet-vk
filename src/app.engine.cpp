@@ -66,11 +66,10 @@ planet::vk::engine::app::app(
 : asset_manager{configure_bundle(argv[0])},
   sdl{s},
   /**
-   * SDL3 dropped `SDL_WINDOW_FULLSCREEN_DESKTOP`: a plain
-   * `SDL_WINDOW_FULLSCREEN` window whose fullscreen mode is left unset (the
-   * default, `NULL`) is the borderless-fullscreen-desktop equivalent.
+   * The window takes its mode (windowed / full-screen) and its geometry from
+   * `sdl.config`, which is populated before the window member is constructed.
    */
-  window{sdl, version.application_id.c_str(), SDL_WINDOW_FULLSCREEN},
+  window{sdl, version.application_id.c_str()},
   instance{[&]() {
       auto app_info = planet::vk::application_info();
       app_info.pApplicationName = version.application_id.c_str();

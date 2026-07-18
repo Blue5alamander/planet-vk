@@ -23,7 +23,13 @@ namespace planet::vk::sdl {
                const char *name,
                std::size_t width,
                std::size_t height);
-        window(planet::sdl::init &, const char *name, std::uint32_t flags = {});
+        /// Use when there is no saved configuration
+
+        window(planet::sdl::init &, const char *name);
+        /**
+         * Create the window honouring the `window_mode` and geometry in
+         * `init`'s `configuration`.
+         */
 
 
         SDL_Window *get() const noexcept { return pw.get(); }
