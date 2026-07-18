@@ -13,8 +13,6 @@
 
 #include <SDL3/SDL_vulkan.h>
 
-#include <cstring>
-
 
 using namespace std::literals;
 
@@ -143,7 +141,9 @@ planet::vk::texture planet::vk::sdl::create_texture_without_mip_levels(
         planet::sdl::surface const &surface,
         create_parameters const cp_args) {
     if (surface.get()->format != SDL_PIXELFORMAT_ARGB8888) {
-        throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
+        throw felspar::stdexcept::logic_error{
+                "Unexpected pixel format: "
+                + std::string{SDL_GetPixelFormatName(surface.get()->format)}};
     }
 
     std::size_t const byte_count = surface.height() * surface.width() * 4;
@@ -194,7 +194,9 @@ planet::vk::texture planet::vk::sdl::create_texture_with_mip_levels(
         planet::sdl::surface const &surface,
         create_parameters const cp_args) {
     if (surface.get()->format != SDL_PIXELFORMAT_ARGB8888) {
-        throw felspar::stdexcept::logic_error{"Unexpected pixel format"};
+        throw felspar::stdexcept::logic_error{
+                "Unexpected pixel format: "
+                + std::string{SDL_GetPixelFormatName(surface.get()->format)}};
     }
 
     std::size_t const byte_count = surface.height() * surface.width() * 4;
