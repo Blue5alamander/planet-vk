@@ -145,6 +145,26 @@ planet::vk::sdl::window::window(planet::sdl::init &sdl, const char *const name)
 }
 
 
+void planet::vk::sdl::window::store_geometry(
+        planet::sdl::configuration &config) const noexcept {
+    /**
+     * Only a windowed window has a position and size worth remembering; the
+     * full-screen modes cover the display, so leave the saved windowed geometry
+     * alone for when the player switches back. Position and size are read in
+     * logical points -- the same units
+     * `SDL_CreateWindow`/`SDL_SetWindowPosition` take -- so they round-trip
+     * through the configuration.
+     */
+    if (config.window_display_mode == planet::sdl::window_mode::windowed) {
+        int x{}, y{}, w{}, h{};
+        SDL_GetWindowPosition(pw.get(), &x, &y);
+        SDL_GetWindowSize(pw.get(), &w, &h);
+        config.window_position = affine::point2d{float(x), float(y)};
+        config.window_extents = affine::extents2d{float(w), float(h)};
+    }
+}
+
+
 auto planet::vk::sdl::window::refresh_window_dimensions()
         -> affine::extents2d const & {
     int ww{}, wh{};
