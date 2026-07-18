@@ -4,6 +4,7 @@
 #include <planet/affine2d.hpp>
 #include <planet/sdl/forward.hpp>
 #include <planet/sdl/handle.hpp>
+#include <planet/sdl/pixel_density.hpp>
 #include <planet/sdl/sdl.hpp>
 #include <planet/ui/constrained.hpp>
 
@@ -42,6 +43,20 @@ namespace planet::vk::sdl {
          * full-screen or smaller. Use this in preference to `extents()` when a
          * size must stay constant as the window is resized — for example font
          * sizes that should render at a fixed physical size in either mode.
+         */
+
+
+        /// ### Display pixel density
+        affine::extents2d pixel_density() const noexcept {
+            return planet::sdl::pixel_density(pw.get());
+        }
+        /**
+         * The number of drawable pixels per logical point on the display the
+         * window is on. This is `> 1` on HiDPI/Retina displays and `1`
+         * otherwise. `display_extents()` is reported in the display's logical
+         * points, so multiply by this when a size must map onto drawable pixels
+         * -- for example font sizes, which would otherwise render at half their
+         * intended physical size on a `2` density Retina display.
          */
 
 
