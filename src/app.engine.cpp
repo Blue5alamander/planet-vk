@@ -1,7 +1,61 @@
 #include <planet/vk/engine/app.hpp>
 #include <planet/vk/engine/renderer.hpp>
 
+#include <planet/platform.hpp>
+
 #include <SDL3/SDL_vulkan.h>
+
+#include <cstdlib>
+#include <filesystem>
+
+
+namespace {
+
+
+    /// ## Configure the process before the Vulkan window is created
+    /**
+     * On macOS a double-clicked `.app` runs with no wrapper script, so nothing
+     * has exported `VK_ICD_FILENAMES` -- and the source-built Khronos loader
+     * does not search macOS's default `icd.d` locations, so it would come up
+     * with no driver and window creation would fail. Derive the bundled
+     * MoltenVK ICD manifest's path from the executable's own location
+     * (`Contents/MacOS/<exe>` to `Contents/Resources/vulkan/icd.d/`, where
+     * make-macos-app puts the manifest and driver -- the manifest is not code,
+     * so it can't live under `Frameworks/`) and set it. `setenv`'s
+     * `overwrite = 0` leaves any existing value alone, so the dev
+     * `run`/`run.sh` wrappers still win. Returns `exe` unchanged so this can
+     * wrap the first member's initialiser and run before the window member.
+     *
+     * Scoped to `platform::macos`, not all of Apple: the
+     * `Contents/MacOS`/`Contents/Frameworks` layout is the macOS bundle
+     * structure, which iOS (a flat bundle, executable and `Frameworks/` at the
+     * root) does not share.
+     */
+    std::filesystem::path configure_bundle(std::filesystem::path exe) {
+        if constexpr (planet::current_platform == planet::platform::macos) {
+            auto const icd = (exe.parent_path() / ".." / "Resources" / "vulkan"
+                              / "icd.d" / "MoltenVK_icd.json")
+                                     .lexically_normal();
+            /**
+             * Only when the bundled manifest is actually present, so a flat
+             * layout or a dev run (where the `run` wrappers export their own
+             * path) is never handed a path that does not exist.
+             */
+            if (std::filesystem::exists(icd)) {
+#ifndef _WIN32
+                /**
+                 * POSIX `::setenv` won't build on Windows so this has to be
+                 * hidden to the Windows compiler.
+                 */
+                ::setenv("VK_ICD_FILENAMES", icd.c_str(), 0);
+#endif
+            }
+        }
+        return exe;
+    }
+
+
+}
 
 
 planet::vk::engine::app::app(
@@ -9,7 +63,7 @@ planet::vk::engine::app::app(
         char const *argv[],
         planet::sdl::init &s,
         planet::version const &version)
-: asset_manager{argv[0]},
+: asset_manager{configure_bundle(argv[0])},
   sdl{s},
   /**
    * SDL3 dropped `SDL_WINDOW_FULLSCREEN_DESKTOP`: a plain
