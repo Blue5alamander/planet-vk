@@ -141,6 +141,24 @@ namespace planet::vk::engine {
         void submit_and_present();
 
 
+        /// #### React to the window having been resized
+        /**
+         * Force the swap chain to be recreated at the window's current size on
+         * the next `submit_and_present`.
+         *
+         * `start` and `submit_and_present` already rebuild the swap chain when
+         * the driver reports the surface `VK_ERROR_OUT_OF_DATE_KHR` or
+         * `VK_SUBOPTIMAL_KHR`, but a resize is not guaranteed to produce either
+         * -- some platforms and compositors keep presenting the old size to a
+         * resized window, and a swap chain that still matches what the surface
+         * reports never goes out of date -- so the window resize event has to
+         * drive the recreation itself. Deferring to the next present has it
+         * happen at the same safe point as the driver-reported path rather than
+         * part way through recording a frame.
+         */
+        void window_resized() noexcept { swap_chain_suboptimal = true; }
+
+
         /// ### View space mapping
 
         /// #### Reset the view matrix for world coordinates
