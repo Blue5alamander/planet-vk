@@ -196,26 +196,43 @@ namespace {
     planet::telemetry::counter c_recreate_swapchain{
             "planet_vk_engine_renderer__recreate_swapchain_count"};
 }
-void planet::vk::engine::renderer::recreate_swap_chain(
+bool planet::vk::engine::renderer::recreate_swap_chain(
         VkResult const result, std::source_location const &loc) {
+    /**
+     * Re-query the surface capabilities and the window's drawable size before
+     * rebuilding. `calculate_extents` uses `capabilities.currentExtent`, which
+     * is only otherwise written once during device initialisation. Without
+     * refreshing here the swap chain is always rebuilt at the startup extent,
+     * so a surface that reports a different size hands back `VK_SUBOPTIMAL_KHR`
+     * on every present and the recreation loop never converges.
+     */
+    app.instance.refresh_surface();
+    auto const extents = app.window.refresh_window_dimensions();
+    /**
+     * A minimised (or not-yet-mapped) window reports a zero-sized drawable. A
+     * swap chain cannot be created at zero, and `reset_screen_coordinates`
+     * would bake a divide-by-zero (`Inf`/`NaN`) projection, so leave the
+     * existing swap chain in place -- it stays valid at its old size while the
+     * window is hidden. A later resize event, or the `VK_SUBOPTIMAL_KHR` the
+     * next visible present reports, drives the rebuild once the window has a
+     * real size again. This is the single point that keeps every caller (both
+     * the acquire/present results and a window resize) from rebuilding at a
+     * degenerate size, including when a resize races a minimise.
+     */
+    if (extents.width < 1.0f or extents.height < 1.0f) {
+        planet::log::debug(
+                "Not recreating the swap chain at a zero drawable size",
+                extents, detail::error(result), loc);
+        return false;
+    }
     /**
      * TODO This re-creates all images and frame buffers, but really we only
      * need to do something with the images **if** the new swap chain
-     * extents are the same as the old ones. In all cases we have to replace the
-     * frame buffers.
+     * extents are not the same as the old ones. In all cases we have to replace
+     * the frame buffers.
      */
     ++c_recreate_swapchain;
-    /**
-     * Re-query the surface capabilities before rebuilding. `calculate_extents`
-     * uses `capabilities.currentExtent`, which is only otherwise written once
-     * during device initialisation. Without refreshing here the swap chain is
-     * always rebuilt at the startup extent, so a surface that reports a
-     * different size hands back `VK_SUBOPTIMAL_KHR` on every present and the
-     * recreation loop never converges.
-     */
-    app.instance.refresh_surface();
-    auto const images =
-            swap_chain.recreate(app.window.refresh_window_dimensions());
+    auto const images = swap_chain.recreate(extents);
     /**
      * The drawable size may have changed (resize, rotation, or a surface that
      * only became ready after construction), so rebuild the window derived
@@ -264,6 +281,7 @@ void planet::vk::engine::renderer::recreate_swap_chain(
     planet::log::info(
             "Swap chain dirty. New image count", images, detail::error(result),
             loc);
+    return true;
 }
 
 
@@ -312,7 +330,16 @@ felspar::coro::task<std::size_t>
             c_acquire_wait.tick();
             co_await app.sdl.io.sleep(wait_time);
         } else if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            recreate_swap_chain(result);
+            /**
+             * A successful rebuild lets the next acquire proceed at once. When
+             * the rebuild is skipped -- a minimised window has no drawable to
+             * build against -- re-acquiring would immediately report out of
+             * date again, so sleep to avoid spinning until the window has a
+             * usable size once more.
+             */
+            if (not recreate_swap_chain(result)) {
+                co_await app.sdl.io.sleep(wait_time);
+            }
         } else if (result == VK_SUBOPTIMAL_KHR) {
             swap_chain_suboptimal = true;
             break;
@@ -442,8 +469,13 @@ void planet::vk::engine::renderer::submit_and_present() {
             vkQueuePresentKHR(app.device.present_queue, &present_info);
     if (presented == VK_ERROR_OUT_OF_DATE_KHR or presented == VK_SUBOPTIMAL_KHR
         or swap_chain_suboptimal) {
-        swap_chain_suboptimal = false;
-        recreate_swap_chain(presented);
+        /**
+         * Keep the request pending until a swap chain sized for the current
+         * surface actually exists. A minimised window has its rebuild skipped,
+         * so leaving the flag set has the next present try again rather than
+         * dropping the request on the floor.
+         */
+        swap_chain_suboptimal = not recreate_swap_chain(presented);
     } else {
         worked(presented);
     }

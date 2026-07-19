@@ -301,7 +301,13 @@ namespace planet::vk::engine {
 
 
         /// ### Re-create the swap chain
-        void recreate_swap_chain(
+        /**
+         * Returns whether a swap chain sized for the current surface now
+         * exists. A minimised window reports a zero-sized drawable that cannot
+         * back a swap chain, so recreation is skipped and `false` returned; the
+         * existing swap chain is left in place for a later attempt.
+         */
+        bool recreate_swap_chain(
                 VkResult,
                 std::source_location const & = std::source_location::current());
         bool swap_chain_suboptimal = false;
