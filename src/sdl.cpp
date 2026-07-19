@@ -79,7 +79,9 @@ namespace {
      */
     std::uint32_t flags_for(planet::sdl::window_mode const mode) noexcept {
         switch (mode) {
-        case planet::sdl::window_mode::windowed: return 0u;
+        case planet::sdl::window_mode::windowed_fixed_size: return 0u;
+        case planet::sdl::window_mode::windowed_resizable:
+            return SDL_WINDOW_RESIZABLE;
         case planet::sdl::window_mode::full_screen_windowed:
             return SDL_WINDOW_FULLSCREEN;
         case planet::sdl::window_mode::full_screen_borderless:
@@ -104,7 +106,8 @@ planet::vk::sdl::window::window(planet::sdl::init &sdl, const char *const name)
         throw felspar::stdexcept::runtime_error{"SDL_CreateWindow failed"};
     }
     switch (sdl.config.window_display_mode) {
-    case planet::sdl::window_mode::windowed:
+    case planet::sdl::window_mode::windowed_fixed_size: [[fallthrough]];
+    case planet::sdl::window_mode::windowed_resizable:
         /**
          * SDL3's `SDL_CreateWindow` no longer takes an initial position, so
          * apply the saved position, or centre the window when none is saved.
@@ -117,6 +120,9 @@ planet::vk::sdl::window::window(planet::sdl::init &sdl, const char *const name)
             SDL_SetWindowPosition(
                     pw.get(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
         }
+        SDL_SetWindowMinimumSize(
+                pw.get(), static_cast<int>(sdl.config.window_minimum.uzwidth()),
+                static_cast<int>(sdl.config.window_minimum.uzheight()));
         break;
     case planet::sdl::window_mode::full_screen_borderless: {
         /**
@@ -155,7 +161,7 @@ void planet::vk::sdl::window::store_geometry(
      * `SDL_CreateWindow`/`SDL_SetWindowPosition` take -- so they round-trip
      * through the configuration.
      */
-    if (config.window_display_mode == planet::sdl::window_mode::windowed) {
+    if (planet::sdl::is_windowed(config.window_display_mode)) {
         int x{}, y{}, w{}, h{};
         SDL_GetWindowPosition(pw.get(), &x, &y);
         SDL_GetWindowSize(pw.get(), &w, &h);

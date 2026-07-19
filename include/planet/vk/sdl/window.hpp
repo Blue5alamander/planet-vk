@@ -42,11 +42,12 @@ namespace planet::vk::sdl {
         /// ### Store the current window geometry into a configuration
         void store_geometry(planet::sdl::configuration &) const noexcept;
         /**
-         * When the window is in `windowed` mode, copy its current position and
-         * size into the configuration's `window_position` / `window_extents` so
-         * they can be persisted and restored next launch. The configuration
-         * position and size is only saved for `window_mode::windowed`, so a
-         * saved windowed geometry survives a session spent full-screen.
+         * When the window is in one of the windowed modes, copy its current
+         * position and size into the configuration's `window_position` /
+         * `window_extents` so they can be persisted and restored next launch.
+         * The configuration position and size is only saved for a windowed
+         * mode, so a saved windowed geometry survives a session spent
+         * full-screen.
          */
 
 
