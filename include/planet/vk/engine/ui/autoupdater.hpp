@@ -118,6 +118,7 @@ namespace planet::vk::engine::ui {
         auto move_to(reflow_parameters const &p, affine::rectangle2d const &r) {
             return graphic->move_to(p, r);
         }
+        auto constraints() const { return graphic->constraints(); }
     };
 
     template<typename V, typename G>
