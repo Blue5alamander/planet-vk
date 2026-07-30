@@ -60,7 +60,7 @@ namespace planet::vk::sdl {
                    device_memory_allocator &image,
                    command_pool &cp,
                    planet::sdl::font const &f,
-                   char const *t,
+                   std::string_view const t,
                    colour const &col = colour::white) {
         return create_texture_without_mip_levels(
                 staging, image, cp, f.render(t, to_sdl_color(col)));
@@ -69,7 +69,7 @@ namespace planet::vk::sdl {
             render(device_memory_allocator &image,
                    command_pool &cp,
                    planet::sdl::font const &f,
-                   char const *t,
+                   std::string_view const t,
                    colour const &col = colour::white) {
         return create_texture_without_mip_levels(
                 image, cp, f.render(t, to_sdl_color(col)));
