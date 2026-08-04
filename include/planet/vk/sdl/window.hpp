@@ -4,6 +4,7 @@
 #include <planet/affine2d.hpp>
 #include <planet/sdl/forward.hpp>
 #include <planet/sdl/handle.hpp>
+#include <planet/sdl/init.hpp>
 #include <planet/sdl/pixel_density.hpp>
 #include <planet/sdl/sdl.hpp>
 #include <planet/ui/constrained.hpp>
@@ -16,6 +17,12 @@ namespace planet::vk::sdl {
     class window final {
         planet::sdl::handle<SDL_Window, SDL_DestroyWindow> pw;
         affine::extents2d desktop_size, window_size;
+
+
+        /// ### Place a windowed window where the configuration asks for
+        void place_windowed(planet::sdl::configuration const &);
+        /// ### Size and position a borderless window over the whole display
+        void cover_display();
 
 
       public:
@@ -37,6 +44,29 @@ namespace planet::vk::sdl {
 
         /// ### Refresh the window dimensions
         affine::extents2d const &refresh_window_dimensions();
+
+
+        /// ### Change the display mode of the live window
+        void change_display_mode(
+                planet::sdl::configuration &, planet::sdl::window_mode);
+        /**
+         * Switches the window between the windowed and full-screen modes and
+         * records the new mode in the configuration, so a game can offer the
+         * choice as a setting that takes effect as it is made rather than on
+         * the next launch.
+         *
+         * The windowed geometry survives the change: the size and position of a
+         * windowed window are stored into the configuration (through
+         * `store_geometry`) before the mode is changed, and are restored on the
+         * way back to a windowed mode. Nothing here writes `window_extents` for
+         * a full-screen window, so a spell in full screen never costs the
+         * player the window size they had.
+         *
+         * The windowing system may apply the change asynchronously, so the
+         * window can still report its old size when this returns. The resize
+         * that follows drives the swap chain rebuild, exactly as a resize the
+         * player makes by dragging the window does.
+         */
 
 
         /// ### Store the current window geometry into a configuration

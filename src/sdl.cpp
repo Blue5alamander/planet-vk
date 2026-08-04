@@ -89,6 +89,64 @@ namespace {
         }
         return 0u;
     }
+
+    /// #### Log a window request the windowing system turned down
+    /**
+     * Every one of these is a request that the window manager is free to refuse
+     * — a refusal leaves the window in its old state, which the player can see,
+     * so it is logged with SDL's reason rather than thrown.
+     */
+    void requested(bool const ok, char const *const call) noexcept {
+        if (not ok) { planet::log::warning(call, "failed", SDL_GetError()); }
+    }
+}
+
+
+void planet::vk::sdl::window::place_windowed(
+        planet::sdl::configuration const &config) {
+    /**
+     * SDL3's `SDL_CreateWindow` no longer takes an initial position, so apply
+     * the saved position, or centre the window when none is saved.
+     */
+    if (config.window_position) {
+        requested(
+                SDL_SetWindowPosition(
+                        pw.get(), static_cast<int>(config.window_position->x()),
+                        static_cast<int>(config.window_position->y())),
+                "SDL_SetWindowPosition");
+    } else {
+        requested(
+                SDL_SetWindowPosition(
+                        pw.get(), SDL_WINDOWPOS_CENTERED,
+                        SDL_WINDOWPOS_CENTERED),
+                "SDL_SetWindowPosition");
+    }
+    requested(
+            SDL_SetWindowMinimumSize(
+                    pw.get(), static_cast<int>(config.window_minimum.uzwidth()),
+                    static_cast<int>(config.window_minimum.uzheight())),
+            "SDL_SetWindowMinimumSize");
+}
+
+
+void planet::vk::sdl::window::cover_display() {
+    /**
+     * A borderless window is not SDL-fullscreen, so size and position it to
+     * cover the whole desktop of the display it is on.
+     */
+    SDL_DisplayID const found = SDL_GetDisplayForWindow(pw.get());
+    SDL_DisplayID const display = found == 0 ? SDL_GetPrimaryDisplay() : found;
+    SDL_Rect bounds{};
+    if (SDL_GetDisplayBounds(display, &bounds)) {
+        requested(
+                SDL_SetWindowPosition(pw.get(), bounds.x, bounds.y),
+                "SDL_SetWindowPosition");
+        requested(
+                SDL_SetWindowSize(pw.get(), bounds.w, bounds.h),
+                "SDL_SetWindowSize");
+    } else {
+        planet::log::warning("SDL_GetDisplayBounds failed", SDL_GetError());
+    }
 }
 
 
@@ -108,37 +166,11 @@ planet::vk::sdl::window::window(planet::sdl::init &sdl, const char *const name)
     switch (sdl.config.window_display_mode) {
     case planet::sdl::window_mode::windowed_fixed_size: [[fallthrough]];
     case planet::sdl::window_mode::windowed_resizable:
-        /**
-         * SDL3's `SDL_CreateWindow` no longer takes an initial position, so
-         * apply the saved position, or centre the window when none is saved.
-         */
-        if (sdl.config.window_position) {
-            SDL_SetWindowPosition(
-                    pw.get(), static_cast<int>(sdl.config.window_position->x()),
-                    static_cast<int>(sdl.config.window_position->y()));
-        } else {
-            SDL_SetWindowPosition(
-                    pw.get(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-        }
-        SDL_SetWindowMinimumSize(
-                pw.get(), static_cast<int>(sdl.config.window_minimum.uzwidth()),
-                static_cast<int>(sdl.config.window_minimum.uzheight()));
+        place_windowed(sdl.config);
         break;
-    case planet::sdl::window_mode::full_screen_borderless: {
-        /**
-         * A borderless window is not SDL-fullscreen, so size and position it to
-         * cover the whole desktop of the display it opened on.
-         */
-        SDL_DisplayID const found = SDL_GetDisplayForWindow(pw.get());
-        SDL_DisplayID const display =
-                found == 0 ? SDL_GetPrimaryDisplay() : found;
-        SDL_Rect bounds{};
-        if (SDL_GetDisplayBounds(display, &bounds)) {
-            SDL_SetWindowPosition(pw.get(), bounds.x, bounds.y);
-            SDL_SetWindowSize(pw.get(), bounds.w, bounds.h);
-        }
+    case planet::sdl::window_mode::full_screen_borderless:
+        cover_display();
         break;
-    }
     case planet::sdl::window_mode::full_screen_windowed:
         /**
          * `SDL_WINDOW_FULLSCREEN` with the fullscreen mode left `NULL` already
@@ -148,6 +180,79 @@ planet::vk::sdl::window::window(planet::sdl::init &sdl, const char *const name)
     }
     refresh_window_dimensions();
     planet::log::info("Window created", window_size);
+}
+
+
+void planet::vk::sdl::window::change_display_mode(
+        planet::sdl::configuration &config,
+        planet::sdl::window_mode const mode) {
+    /**
+     * Take the geometry of the window being left first: `store_geometry` looks
+     * at the mode the configuration still holds, so this records the size and
+     * position of a windowed window before the switch and does nothing when the
+     * window is already full screen. It is the only write to `window_extents`
+     * here, so the size the player chose for their window is what a return to a
+     * windowed mode restores.
+     */
+    store_geometry(config);
+    config.window_display_mode = mode;
+    switch (mode) {
+    case planet::sdl::window_mode::windowed_fixed_size: [[fallthrough]];
+    case planet::sdl::window_mode::windowed_resizable:
+        /**
+         * Both full-screen modes have to be undone: SDL-fullscreen is dropped
+         * and the border put back, either of which the window may have lost.
+         * The size is then re-applied, which `place_windowed` does not do for
+         * the constructor's sake — there the window is created at that size
+         * already.
+         */
+        requested(
+                SDL_SetWindowFullscreen(pw.get(), false),
+                "SDL_SetWindowFullscreen");
+        requested(
+                SDL_SetWindowBordered(pw.get(), true), "SDL_SetWindowBordered");
+        requested(
+                SDL_SetWindowResizable(
+                        pw.get(),
+                        mode == planet::sdl::window_mode::windowed_resizable),
+                "SDL_SetWindowResizable");
+        requested(
+                SDL_SetWindowSize(
+                        pw.get(),
+                        static_cast<int>(config.window_extents.uzwidth()),
+                        static_cast<int>(config.window_extents.uzheight())),
+                "SDL_SetWindowSize");
+        place_windowed(config);
+        break;
+    case planet::sdl::window_mode::full_screen_windowed:
+        /**
+         * A window that was borderless is bordered again before it goes full
+         * screen, so that leaving full screen later does not leave it a
+         * border-less window.
+         */
+        requested(
+                SDL_SetWindowBordered(pw.get(), true), "SDL_SetWindowBordered");
+        requested(
+                SDL_SetWindowFullscreenMode(pw.get(), nullptr),
+                "SDL_SetWindowFullscreenMode");
+        requested(
+                SDL_SetWindowFullscreen(pw.get(), true),
+                "SDL_SetWindowFullscreen");
+        break;
+    case planet::sdl::window_mode::full_screen_borderless:
+        requested(
+                SDL_SetWindowFullscreen(pw.get(), false),
+                "SDL_SetWindowFullscreen");
+        requested(
+                SDL_SetWindowBordered(pw.get(), false),
+                "SDL_SetWindowBordered");
+        cover_display();
+        break;
+    }
+    refresh_window_dimensions();
+    planet::log::info(
+            "Window display mode changed to", planet::sdl::to_string(mode),
+            window_size);
 }
 
 
