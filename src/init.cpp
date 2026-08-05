@@ -415,12 +415,11 @@ planet::vk::instance::instance(
                 has_queue_families, "surface_supports_swap_chain",
                 surface_supports_swap_chain, "extensions", names);
 
-        if (is_suitable and has_discrete_gpu and is_discrete) {
+        if (is_suitable and is_discrete) {
             gpu_in_use = &d;
             break;
         } else if (is_suitable and not gpu_in_use) {
             gpu_in_use = &d;
-            break;
         }
     }
     if (not gpu_in_use and pdevices.size() == 1) {
