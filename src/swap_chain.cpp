@@ -10,6 +10,43 @@
 /// ## `planet::vk::swap_chain`
 
 
+namespace {
+
+
+    /// ### Composite alpha mode the surface will actually accept
+    /**
+     * The frame is drawn fully opaque, so `OPAQUE` is what we want -- but it is
+     * not universally offered. Android surfaces commonly support only
+     * `INHERIT`, where desktop WSI supports `OPAQUE`, and passing a bit the
+     * surface does not advertise is undefined behaviour: the validation layers
+     * reject it while drivers may quietly carry on compositing the layer in
+     * some other way. Pick the first supported mode in preference order rather
+     * than assuming.
+     */
+    VkCompositeAlphaFlagBitsKHR composite_alpha_for(
+            VkSurfaceCapabilitiesKHR const &capabilities) noexcept {
+        static constexpr std::array preference{
+                VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+                VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+                VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
+                VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR};
+        for (auto const bit : preference) {
+            if (capabilities.supportedCompositeAlpha bitand bit) { return bit; }
+        }
+        /**
+         * The spec requires at least one mode, so an empty mask means the
+         * surface capabilities were never filled in.
+         */
+        planet::log::critical(
+                "The surface advertises no supported composite alpha mode",
+                capabilities.supportedCompositeAlpha);
+        return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    }
+
+
+}
+
+
 std::uint32_t planet::vk::swap_chain::create(VkExtent2D const wsize) {
     frame_buffers.clear();
     image_views.clear();
@@ -62,7 +99,7 @@ std::uint32_t planet::vk::swap_chain::create(VkExtent2D const wsize) {
     }
 
     info.preTransform = surface.capabilities.currentTransform;
-    info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    info.compositeAlpha = composite_alpha_for(surface.capabilities);
     info.presentMode = surface.best_present_mode;
     info.clipped = VK_TRUE;
 
