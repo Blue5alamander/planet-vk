@@ -1,6 +1,25 @@
 #include <planet/log.hpp>
+#include <planet/platform.hpp>
 #include <planet/vk/instance.hpp>
 #include <planet/vk/queue.hpp>
+
+
+namespace {
+    /// ### Readable name for a present mode
+    /**
+     * Which mode the surface settled on decides frame pacing, so it belongs in
+     * the log rather than being inferred from the frame rate afterwards.
+     */
+    std::string_view present_mode_name(VkPresentModeKHR const mode) noexcept {
+        switch (mode) {
+        case VK_PRESENT_MODE_IMMEDIATE_KHR: return "immediate";
+        case VK_PRESENT_MODE_MAILBOX_KHR: return "mailbox";
+        case VK_PRESENT_MODE_FIFO_KHR: return "fifo";
+        case VK_PRESENT_MODE_FIFO_RELAXED_KHR: return "fifo-relaxed";
+        default: return "unknown";
+        }
+    }
+}
 
 
 /// ## `planet::vk::surface`
@@ -102,12 +121,31 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
                 }
             }
         }
+        /// ### Present mode
+        /**
+         * `FIFO` is the only mode the specification requires every
+         * implementation to support, and it paces the game to the display.
+         * `MAILBOX` trades memory and wasted frames for lower latency, which is
+         * worth having elsewhere.
+         *
+         * Android stays on `FIFO`. Its `MAILBOX` left the compositor holding a
+         * buffer for minutes at a time -- presents completed and the swap chain
+         * images cycled, but nothing new reached the screen, so the picture sat
+         * whole screens behind the game. Rendering ahead of the panel also
+         * bought nothing there: the phone ran above 80fps against a 60Hz
+         * display and discarded the difference.
+         */
         best_present_mode = VK_PRESENT_MODE_FIFO_KHR;
-        for (auto const &m : present_modes) {
-            if (m == VK_PRESENT_MODE_MAILBOX_KHR) {
-                best_present_mode = m;
-                break;
+        if (current_platform != platform::android) {
+            for (auto const &m : present_modes) {
+                if (m == VK_PRESENT_MODE_MAILBOX_KHR) {
+                    best_present_mode = m;
+                    break;
+                }
             }
         }
+        planet::log::info(
+                "Surface present mode", present_mode_name(best_present_mode),
+                "chosen from", present_modes.size(), "supported");
     }
 }
