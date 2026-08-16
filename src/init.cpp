@@ -328,6 +328,14 @@ VkInstanceCreateInfo planet::vk::instance::info(
         extensions &exts, VkApplicationInfo const &app_info) {
     if (not exts.validation_layers.empty()) {
         exts.vulkan_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        /**
+         * Needed by the `VkValidationFeaturesEXT` chained on in the constructor
+         * below to turn on synchronization validation. The extension is
+         * implemented by the validation layers themselves, so it's always
+         * available whenever they are -- which is exactly this branch.
+         */
+        exts.vulkan_extensions.push_back(
+                VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
     }
     VkInstanceCreateInfo i = {};
     i.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -359,6 +367,28 @@ planet::vk::instance::instance(
 : handle{[&]() {
       VkInstance h = VK_NULL_HANDLE;
       auto debug_info = debug_messenger::create_info(debug_callback);
+      /**
+       * The default validation set doesn't cover semaphore/present ordering, so
+       * we opt into synchronization validation explicitly through
+       * `VkValidationFeaturesEXT` whenever the validation layers are enabled.
+       * Doing so needs the `VK_EXT_validation_features` instance extension,
+       * which `info()` pushes under the same condition. Both structs are read
+       * by `vkCreateInstance` below and so only need to live to the end of this
+       * lambda; the feature struct is declared here (rather than inside the
+       * guard) so it outlives the branch that chains it.
+       */
+      static constexpr std::array sync_validation{
+              VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
+      VkValidationFeaturesEXT validation_features{
+              .sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
+              .pNext = nullptr,
+              .enabledValidationFeatureCount = sync_validation.size(),
+              .pEnabledValidationFeatures = sync_validation.data(),
+              .disabledValidationFeatureCount = 0,
+              .pDisabledValidationFeatures = nullptr};
+      if (not exts.validation_layers.empty()) {
+          debug_info.pNext = &validation_features;
+      }
       info.pNext = &debug_info;
       planet::vk::worked(vkCreateInstance(&info, nullptr, &h));
       return h;
