@@ -361,7 +361,8 @@ felspar::coro::task<std::size_t>
     if (fence_for_image_in_flight.size() <= scfb_image_index) {
         fence_for_image_in_flight.resize(scfb_image_index + 1uz, nullptr);
     }
-    if (auto const *const using_image = fence_for_image_in_flight[scfb_image_index];
+    if (auto const *const using_image =
+                fence_for_image_in_flight[scfb_image_index];
         using_image) {
         while (not using_image->is_ready()) {
             c_fence_wait.tick();
