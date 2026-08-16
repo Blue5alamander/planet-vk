@@ -257,6 +257,7 @@ bool planet::vk::engine::renderer::recreate_swap_chain(
     by_index(swap_chain.image_views.size(), [&]() {
         render_finished_semaphore.emplace_back(app.device);
     });
+    fence_for_image_in_flight.assign(swap_chain.image_views.size(), nullptr);
 
     postprocess.recreate_swap_chain();
     scene_frame_buffers =
@@ -351,6 +352,25 @@ felspar::coro::task<std::size_t>
     }
 
     /**
+     * The image may still be in use by an earlier frame -- its present can be
+     * waiting on `render_finished_semaphore[scfb_image_index]`, which the
+     * submit below is about to signal again. Wait for that frame to finish
+     * before touching the image, or the present never completes and the
+     * presentation engine keeps the image for ever.
+     */
+    if (fence_for_image_in_flight.size() <= scfb_image_index) {
+        fence_for_image_in_flight.resize(scfb_image_index + 1uz, nullptr);
+    }
+    if (auto const *const using_image = fence_for_image_in_flight[scfb_image_index];
+        using_image) {
+        while (not using_image->is_ready()) {
+            c_fence_wait.tick();
+            co_await app.sdl.io.sleep(wait_time);
+        }
+    }
+    fence_for_image_in_flight[scfb_image_index] = &fence[fif_image_index];
+
+    /**
      * We need to wait for the image before we can run the commands to draw to
      * it, and signal the render finished one when we're done
      */
@@ -421,6 +441,26 @@ namespace {
             "planet_vk_engine_renderer_frame_count"};
     planet::telemetry::real_time_rate frame_rate{
             "planet_vk_engine_renderer_frame_rate", 500ms};
+    /**
+     * TEMPORARY DIAGNOSTIC -- which swap chain image each present goes to.
+     * `vkQueuePresentKHR` reports success and `vkAcquireNextImageKHR` keeps
+     * handing images back, yet the compositor's buffer never changes. If the
+     * acquire only ever returns one index these will show it: a healthy swap
+     * chain spreads presents across all of its images.
+     */
+    std::array presented_image{
+            planet::telemetry::counter{
+                    "planet_vk_engine_renderer__presented_image_0"},
+            planet::telemetry::counter{
+                    "planet_vk_engine_renderer__presented_image_1"},
+            planet::telemetry::counter{
+                    "planet_vk_engine_renderer__presented_image_2"},
+            planet::telemetry::counter{
+                    "planet_vk_engine_renderer__presented_image_3"},
+            planet::telemetry::counter{
+                    "planet_vk_engine_renderer__presented_image_4"},
+            planet::telemetry::counter{
+                    "planet_vk_engine_renderer__presented_image_5"}};
 }
 void planet::vk::engine::renderer::submit_and_present() {
     auto &cb = command_buffers[fif_image_index];
@@ -478,6 +518,10 @@ void planet::vk::engine::renderer::submit_and_present() {
         swap_chain_suboptimal = not recreate_swap_chain(presented);
     } else {
         worked(presented);
+    }
+
+    if (scfb_image_index < presented_image.size()) {
+        ++presented_image[scfb_image_index];
     }
 
     fif_image_index = (fif_image_index + 1) % max_frames_in_flight;

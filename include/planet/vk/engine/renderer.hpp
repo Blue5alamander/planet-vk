@@ -88,6 +88,24 @@ namespace planet::vk::engine {
                 array_of<max_frames_in_flight>(
                         [this]() { return vk::fence{app.device}; })};
 
+        /// #### The frame still using each swap chain image
+        std::vector<vk::fence const *> fence_for_image_in_flight;
+        /**
+         * `render_finished_semaphore` is indexed by swap chain image while
+         * `fence` is indexed by frame in flight, and there are more images than
+         * frames, so the two do not pair up. Without this, an image can be
+         * acquired again -- and its semaphore signalled again by the next
+         * submit -- while the present from its previous use is still waiting on
+         * that same semaphore. That present then never completes, the
+         * presentation engine never releases the image, and it drops out of
+         * rotation for good: the display sticks on whatever was last composited
+         * while the app carries on rendering into the images it has left.
+         *
+         * So record which frame's fence last used each image and wait for it
+         * before reusing that image. Entries are null until an image has been
+         * used, and are cleared whenever the swap chain is rebuilt.
+         */
+
 
         /// ### Drawing API
 
