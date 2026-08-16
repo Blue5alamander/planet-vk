@@ -285,11 +285,14 @@ planet::vk::extensions::extensions() {
                 [&](auto const vl) { return vl.layerName == vkl_validation; })
         != layers.end()) {
         validation_layers.push_back(vkl_validation.data());
+        planet::log::info("Requesting the validation layer", vkl_validation);
     } else {
         planet::log::warning(
                 "We wanted validation layer", vkl_validation,
                 "but didn't find it");
     }
+#else
+    planet::log::info("Vulkan validation is not requested for this build");
 #endif
 }
 
