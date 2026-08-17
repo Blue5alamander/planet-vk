@@ -45,20 +45,18 @@ void planet::vk::surface::refresh_characteristics(physical_device const &device)
             device.get());
 
     /**
-     * TODO OK, we can't share queues across threads, so we really need to be
-     * able to find out if we have multiple queues and then hand out queues to
-     * the threads that need them. Presumably this can be done by having the
-     * `command_pool` own the queue that it uses for as long as it lives. If no
-     * queue is available for it then it should throw -- i.e. only create a
-     * `command_pool ` if you know that there is a queue for it to use
-     * (presumably pass in the queue).
+     * A `VkQueue` can't be used from two threads at once, so a queue used off
+     * the main thread has to be checked out for as long as it's needed and no
+     * one else may touch it meanwhile. That handoff is built for the transfer
+     * queue: `device::transfer_queue()` moves the single held queue out under a
+     * mutex (a second caller gets an empty `queue` instead of a shared handle),
+     * and `vk::queue`'s destructor returns it to the device. The main thread
+     * keeps the graphics and present queues, which it never shares.
      *
-     * The "main" thread should presumably be able to use the present queue (if
-     * suitable).
-     *
-     * All of this implies a queue wrapper that is able to deal with these
-     * things, and place itself back into the "available queues" structure we're
-     * going to need here.
+     * That covers the one worker thread we actually run, so the families we
+     * discover below are the graphics/present pair plus at most one transfer
+     * queue. A general pool that hands out arbitrary queues across many threads
+     * isn't built because nothing needs it yet.
      */
     for (std::uint32_t index = {}; auto const &qf : queue_family_properties) {
         bool const is_graphics_queue =
